@@ -154,6 +154,10 @@ final class TaskbarContentView: NSView {
             self?.schedulePreferredWidthNotification()
             self?.applyResponsiveWidthCapsNowOrSchedule()
         }
+        clockWidgetView.preferredWidthDidChange = { [weak self] in
+            self?.schedulePreferredWidthNotification()
+            self?.applyResponsiveWidthCapsNowOrSchedule()
+        }
         sessionManagerWidgetView?.preferredWidthDidChange = { [weak self] in
             self?.schedulePreferredWidthNotification()
             self?.applyResponsiveWidthCapsNowOrSchedule()
@@ -202,7 +206,7 @@ final class TaskbarContentView: NSView {
             preferredTaskZoneWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.preferredContentWidth() +
+            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.preferredContentWidth() +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
 
@@ -1611,7 +1615,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.minimumOverflowContentWidth() +
+            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.minimumOverflowContentWidth() +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1628,7 +1632,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1676,7 +1680,7 @@ final class TaskbarContentView: NSView {
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
                 systemResourceWidgetView.preferredContentWidth() +
-                (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+                (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

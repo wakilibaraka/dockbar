@@ -57,10 +57,17 @@ final class EnhancedClockWidgetView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
     
+    var preferredWidthDidChange: (() -> Void)?
+    
     deinit {
         timer?.invalidate()
         timer = nil
         if let m = outsideClickMonitor { NSEvent.removeMonitor(m); outsideClickMonitor = nil }
+    }
+    
+    func preferredContentWidth() -> CGFloat {
+        if isHidden { return 0 }
+        return max(72, labelsStack.fittingSize.width + 12)
     }
 
     /// Call after init to wire up the calendar service (needed when init order requires super.init first).
@@ -152,6 +159,7 @@ final class EnhancedClockWidgetView: NSView {
             
             timeLabel.stringValue = timeStr
             dateLabel.stringValue = dateStr
+            preferredWidthDidChange?()
         }
         
         updateEventLine(now: now)
@@ -173,13 +181,19 @@ final class EnhancedClockWidgetView: NSView {
                 let timeUntil = relativeFormatter.string(from: interval) ?? ""
                 var title = next.title ?? ""
                 if title.count > 18 { title = String(title.prefix(18)) + "…" }
-                eventLabel.stringValue = "· \(title) \(timeUntil)"
-                eventLabel.isHidden = false
+                if eventLabel.stringValue != "· \(title) \(timeUntil)" || eventLabel.isHidden {
+                    eventLabel.stringValue = "· \(title) \(timeUntil)"
+                    eventLabel.isHidden = false
+                    preferredWidthDidChange?()
+                }
                 return
             }
         }
-        eventLabel.stringValue = ""
-        eventLabel.isHidden = true
+        if !eventLabel.isHidden {
+            eventLabel.stringValue = ""
+            eventLabel.isHidden = true
+            preferredWidthDidChange?()
+        }
     }
     
     // MARK: - Bindings
