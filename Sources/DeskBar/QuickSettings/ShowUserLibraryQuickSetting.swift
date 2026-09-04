@@ -9,16 +9,12 @@ final class ShowUserLibraryQuickSetting: QuickSetting {
     init() { refreshState() }
     
     func refreshState() {
-        let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library").path
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/bin/ls")
-        proc.arguments = ["-dO", path]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        try? proc.run()
-        proc.waitUntilExit()
-        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        isOn = !output.contains("hidden") // if NOT hidden, isOn=true (showing)
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library")
+        if let values = try? url.resourceValues(forKeys: [.isHiddenKey]), let isHidden = values.isHidden {
+            isOn = !isHidden
+        } else {
+            isOn = false
+        }
     }
     
     func toggle() {
