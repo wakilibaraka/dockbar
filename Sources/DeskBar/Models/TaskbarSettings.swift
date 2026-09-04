@@ -36,7 +36,7 @@ enum FrontmostAppClickBehavior: String, CaseIterable {
 final class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 48
     static let defaultTitleFontSize: CGFloat = 13
-    static let defaultMaxTaskWidth: CGFloat = 180
+    static let defaultMaxTaskWidth: CGFloat = 160
     static let defaultThumbnailSize: CGFloat = 200
 
     private let defaults: UserDefaults
@@ -279,14 +279,15 @@ final class TaskbarSettings: ObservableObject {
             sessionManagerWidgetPinnedDisplayID = nil
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
-        showClock = defaults.object(forKey: "showClock") as? Bool ?? false
-        clockTargetApp = defaults.object(forKey: "clockTargetApp") as? String ?? "Calendar 366 II"
+        showClock = defaults.object(forKey: "showClock") as? Bool ?? true
+        clockTargetApp = defaults.object(forKey: "clockTargetApp") as? String ?? "Calendar"
         richContextMenu = defaults.object(forKey: "richContextMenu") as? Bool ?? false
         pinnedTrayApps = defaults.stringArray(forKey: "pinnedTrayApps") ?? []
-        clockTheme = ClockTheme(rawValue: defaults.string(forKey: "clockTheme") ?? "") ?? .ocean
-        showClockEvents = defaults.object(forKey: "showClockEvents") as? Bool ?? false
-        showQuickSettings = defaults.object(forKey: "showQuickSettings") as? Bool ?? false
-        enabledQuickSettings = defaults.stringArray(forKey: "enabledQuickSettings") ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth"]
+        clockTheme = ClockTheme(rawValue: defaults.object(forKey: "clockTheme") as? String ?? "") ?? .ocean
+        showClockEvents = defaults.object(forKey: "showClockEvents") as? Bool ?? true
+        showQuickSettings = defaults.object(forKey: "showQuickSettings") as? Bool ?? true
+        let savedEnabledQS = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth"]
+        enabledQuickSettings = savedEnabledQS
         useAppIconAsLauncherButton = defaults.object(forKey: "useAppIconAsLauncherButton") as? Bool ?? false
         enableReopenLastQuit = defaults.object(forKey: "enableReopenLastQuit") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true

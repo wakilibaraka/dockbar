@@ -36,7 +36,7 @@ final class TaskbarContentView: NSView {
     private let clusterLeadingSpacerView = TaskZoneFlexibleSpacerView()
     private let clusterTrailingSpacerView = TaskZoneFlexibleSpacerView()
     private let minimumZoneContentHeight: CGFloat = 32
-    private let taskZoneItemSpacing: CGFloat = 8
+    private let taskZoneItemSpacing: CGFloat = 6
     private let taskZoneGroupSpacing: CGFloat = 12
     private let compactTaskZoneSpacerWidth: CGFloat = 8
     static let minimumResponsiveContentWidth: CGFloat = 320
