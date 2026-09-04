@@ -28,7 +28,7 @@ final class QuickSettingsButtonView: NSView {
         button.isBordered = false
         button.bezelStyle = .regularSquare
         let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        button.image = NSImage(systemSymbolName: "gearshape.fill", accessibilityDescription: "Quick Settings")?.withSymbolConfiguration(config)
+        button.image = NSImage(systemSymbolName: "switch.2", accessibilityDescription: "Quick Settings")?.withSymbolConfiguration(config)
         button.contentTintColor = NSColor.white.withAlphaComponent(0.8)
         button.target = self
         button.action = #selector(buttonClicked)
@@ -36,6 +36,8 @@ final class QuickSettingsButtonView: NSView {
         button.setAccessibilityLabel("Quick Settings")
         
         addSubview(button)
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
         
         NSLayoutConstraint.activate([
             button.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -65,19 +67,7 @@ final class QuickSettingsButtonView: NSView {
         flyout = panel
         panel.refreshOnOpen()
         
-        if let window = self.window {
-            let btnInScreen = window.convertToScreen(convert(bounds, to: nil))
-            var origin = NSPoint(
-                x: btnInScreen.maxX - panel.frame.width,
-                y: btnInScreen.maxY + 4
-            )
-            if let screen = window.screen ?? NSScreen.main {
-                let visible = screen.visibleFrame
-                origin.x = max(visible.minX + 4, min(origin.x, visible.maxX - panel.frame.width - 4))
-                origin.y = min(origin.y, visible.maxY - 4)
-            }
-            panel.setFrameOrigin(origin)
-        }
+        FlyoutAnchorHelper.position(flyout: panel, relativeTo: self)
         
         panel.makeKeyAndOrderFront(nil)
         

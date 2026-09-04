@@ -97,6 +97,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshPanelsForCurrentConfiguration()
         DispatchQueue.main.async { [weak self] in
             self?.refreshPanelsForCurrentConfiguration()
+            
+            // First run prompt for accessibility
+            let defaults = UserDefaults.standard
+            if !defaults.bool(forKey: "hasShownFirstRunPrompt") {
+                defaults.set(true, forKey: "hasShownFirstRunPrompt")
+                
+                if !permissions.isAccessibilityGranted {
+                    OnboardingWindowController.shared.configure(permissions: permissions, calendar: CalendarEventService())
+                    OnboardingWindowController.shared.showWindow(nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+            }
         }
 
         settingsWindowController = SettingsWindowController(
@@ -107,6 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configureStatusItem()
         bindDockMode(settings: settings)
         bindSessionManagerPlugin(settings: settings, smPluginService: smPluginService)
+        StartMenuWindowController.shared.configure(settings: settings, pinnedAppManager: pinnedAppManager)
         configureSignalHandlers()
     }
 
@@ -192,10 +205,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
+            let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
             let image = NSImage(
-                systemSymbolName: "gear",
+                systemSymbolName: "gearshape",
                 accessibilityDescription: "Settings"
-            )
+            )?.withSymbolConfiguration(config)
             image?.isTemplate = true
             button.image = image
         }

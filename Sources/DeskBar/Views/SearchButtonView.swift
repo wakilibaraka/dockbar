@@ -85,17 +85,7 @@ final class SearchButtonView: NSView {
     }
 
     private func openSpotlight() {
-        let workspace = NSWorkspace.shared
-        if let url = workspace.urlForApplication(withBundleIdentifier: "com.apple.Spotlight") {
-            workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-        } else {
-            // Fallback
-            let script = "tell application \"System Events\" to key code 49 using command down"
-            if let appleScript = NSAppleScript(source: script) {
-                var error: NSDictionary?
-                appleScript.executeAndReturnError(&error)
-            }
-        }
+        StartMenuWindowController.shared.toggle(mode: .search, triggerView: self)
     }
 
     private func updateBackgroundColor() {

@@ -31,6 +31,7 @@ final class SettingsView: NSView {
 
     private let taskbarHeightSlider = NSSlider(value: 40, minValue: 32, maxValue: 60, target: nil, action: nil)
     private let layoutModePopupButton = NSPopUpButton()
+    private let runningIndicatorStylePopupButton = NSPopUpButton()
     private let titleFontSizeSlider = NSSlider(value: 12, minValue: 8, maxValue: 18, target: nil, action: nil)
     private let maxTaskWidthSlider = NSSlider(value: 200, minValue: 100, maxValue: 400, target: nil, action: nil)
     private let showTitlesCheckbox = NSButton(checkboxWithTitle: "Show titles", target: nil, action: nil)
@@ -38,6 +39,8 @@ final class SettingsView: NSView {
     private let resetAppearanceSlidersButton = NSButton(title: "Reset Sliders to Defaults", target: nil, action: nil)
 
     private let hoverDelaySlider = NSSlider(value: 400, minValue: 100, maxValue: 1000, target: nil, action: nil)
+    private let startMenuStylePopupButton = NSPopUpButton()
+    private let unifyPinnedAndRunningCheckbox = NSButton(checkboxWithTitle: "Unify pinned and running apps (Windows-style)", target: nil, action: nil)
     private let groupingModePopupButton = NSPopUpButton()
     private let frontmostAppClickBehaviorPopupButton = NSPopUpButton()
     private let quitOnCloseCheckbox = NSButton(checkboxWithTitle: "Quit on close (last window)", target: nil, action: nil)
@@ -61,8 +64,9 @@ final class SettingsView: NSView {
     private let showSystemResourceMemoryMetricCheckbox = NSButton(checkboxWithTitle: "Memory pressure", target: nil, action: nil)
     private let showSystemResourceCPUMetricCheckbox = NSButton(checkboxWithTitle: "CPU usage", target: nil, action: nil)
     private let showSystemResourceGPUMetricCheckbox = NSButton(checkboxWithTitle: "GPU usage", target: nil, action: nil)
+    private let systemStatsDisplayModePopupButton = NSPopUpButton()
     private let systemResourceWidgetDisplayPopupButton = NSPopUpButton()
-    private let showSessionManagerWidgetCheckbox = NSButton(checkboxWithTitle: "Show SM widget", target: nil, action: nil)
+    private let showSessionManagerWidgetCheckbox = NSButton(checkboxWithTitle: "Show Terminal Agents Widget", target: nil, action: nil)
     private let sessionManagerWidgetDisplayPopupButton = NSPopUpButton()
     private let enableWindowSwitcherCheckbox = NSButton(checkboxWithTitle: "Enable Alt-Tab / Option-Tab window switcher", target: nil, action: nil)
     private let enableBareCommandLauncherCheckbox = NSButton(checkboxWithTitle: "Enable Apps launcher shortcut", target: nil, action: nil)
@@ -121,8 +125,12 @@ final class SettingsView: NSView {
             tabView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
 
-        layoutModePopupButton.addItems(withTitles: ["Full Width", "Full Width Glass", "Compact Centered", "Compact Glass", "Winstrix"])
+        layoutModePopupButton.addItems(withTitles: [
+            "Full Width", "Full Width (Glass)", "Compact", "Compact (Glass)", "Floating (Windows-Style)", "Floating (Flat)", "Floating (Pills)"
+        ])
+        runningIndicatorStylePopupButton.addItems(withTitles: ["Background Fill (Classic)", "Dot", "Underline"])
         appsLauncherShortcutPopupButton.addItems(withTitles: ["Control-Option-Return", "Option-Space", "Control-Option-Space", "Tap Command"])
+        systemStatsDisplayModePopupButton.addItems(withTitles: ["Hidden", "Flyout", "Inline"])
         configureWidgetDisplayPopupButton()
         configureSessionManagerWidgetDisplayPopupButton()
         configureLauncherTableView()
@@ -133,13 +141,17 @@ final class SettingsView: NSView {
         generalTab.view = makeFormView(rows: [
             makeCheckboxRow(startAtLoginCheckbox),
             makeCheckboxRow(hideNativeDockCheckbox),
-            makeCheckboxRow(enableReopenLastQuitCheckbox)
+            makeCheckboxRow(enableReopenLastQuitCheckbox),
+            makeSeparatorRow(),
+            makeSectionTitleRow("Permissions"),
+            makePermissionsSection()
         ])
 
         let appearanceTab = NSTabViewItem(identifier: "appearance")
         appearanceTab.label = "Appearance"
         appearanceTab.view = makeFormView(rows: [
             makeLabeledControlRow(label: "DeskBar layout", control: layoutModePopupButton),
+            makeLabeledControlRow(label: "Running indicator style", control: runningIndicatorStylePopupButton),
             makeCheckboxRow(useAppIconAsLauncherButtonCheckbox),
             makeLabeledControlRow(label: "Taskbar height", control: taskbarHeightSlider),
             makeLabeledControlRow(label: "Title font size", control: titleFontSizeSlider),
@@ -155,6 +167,8 @@ final class SettingsView: NSView {
         let behaviorTab = NSTabViewItem(identifier: "behavior")
         behaviorTab.label = "Behavior"
 
+        startMenuStylePopupButton.addItems(withTitles: ["Simple List", "Full Dashboard"])
+        
         behaviorTab.view = makeFormView(rows: [
             makeLabeledControlRow(label: "Hover delay", control: hoverDelaySlider),
             makeLabeledControlRow(label: "Window grouping", control: groupingModePopupButton),
@@ -168,7 +182,9 @@ final class SettingsView: NSView {
             makeCheckboxRow(showOnAllMonitorsCheckbox),
             makeCheckboxRow(enableWindowSwitcherCheckbox),
             makeCheckboxRow(enableBareCommandLauncherCheckbox),
-            makeLabeledControlRow(label: "Apps launcher shortcut", control: appsLauncherShortcutPopupButton)
+            makeLabeledControlRow(label: "Apps launcher shortcut", control: appsLauncherShortcutPopupButton),
+            makeLabeledControlRow(label: "Start Menu Style", control: startMenuStylePopupButton),
+            makeCheckboxRow(unifyPinnedAndRunningCheckbox)
         ])
 
         let widgetsTab = NSTabViewItem(identifier: "widgets")
@@ -182,12 +198,13 @@ final class SettingsView: NSView {
             makeLabeledControlRow(label: "Clock click app", control: clockTargetAppTextField),
             makeCheckboxRow(showQuickSettingsCheckbox),
             makeCheckboxRow(showSystemResourceWidgetCheckbox),
+            makeLabeledControlRow(label: "Stats mode", control: systemStatsDisplayModePopupButton),
             makeLabeledControlRow(label: "Show on", control: systemResourceWidgetDisplayPopupButton),
             makeCheckboxRow(showSystemResourceMemoryMetricCheckbox),
             makeCheckboxRow(showSystemResourceCPUMetricCheckbox),
             makeCheckboxRow(showSystemResourceGPUMetricCheckbox),
             makeCheckboxRow(showSessionManagerWidgetCheckbox),
-            makeLabeledControlRow(label: "SM widget show on", control: sessionManagerWidgetDisplayPopupButton)
+            makeLabeledControlRow(label: "Terminal Agents widget show on", control: sessionManagerWidgetDisplayPopupButton)
         ])
 
         let pluginsTab = NSTabViewItem(identifier: "plugins")
@@ -354,6 +371,9 @@ final class SettingsView: NSView {
         layoutModePopupButton.target = self
         layoutModePopupButton.action = #selector(layoutModeChanged(_:))
 
+        runningIndicatorStylePopupButton.target = self
+        runningIndicatorStylePopupButton.action = #selector(runningIndicatorStyleChanged(_:))
+
         titleFontSizeSlider.target = self
         titleFontSizeSlider.action = #selector(titleFontSizeChanged(_:))
 
@@ -405,6 +425,9 @@ final class SettingsView: NSView {
         showSystemResourceWidgetCheckbox.target = self
         showSystemResourceWidgetCheckbox.action = #selector(showSystemResourceWidgetChanged(_:))
 
+        systemStatsDisplayModePopupButton.target = self
+        systemStatsDisplayModePopupButton.action = #selector(systemStatsDisplayModeChanged(_:))
+
         showSystemResourceMemoryMetricCheckbox.target = self
         showSystemResourceMemoryMetricCheckbox.action = #selector(showSystemResourceMemoryMetricChanged(_:))
 
@@ -425,6 +448,12 @@ final class SettingsView: NSView {
 
         enableWindowSwitcherCheckbox.target = self
         enableWindowSwitcherCheckbox.action = #selector(enableWindowSwitcherChanged(_:))
+
+        startMenuStylePopupButton.target = self
+        startMenuStylePopupButton.action = #selector(startMenuStyleChanged(_:))
+
+        unifyPinnedAndRunningCheckbox.target = self
+        unifyPinnedAndRunningCheckbox.action = #selector(unifyPinnedAndRunningChanged(_:))
 
         enableBareCommandLauncherCheckbox.target = self
         enableBareCommandLauncherCheckbox.action = #selector(enableBareCommandLauncherChanged(_:))
@@ -559,9 +588,26 @@ final class SettingsView: NSView {
                     index = 3
                 case .winstrix:
                     index = 4
+                case .winstrixFlat:
+                    index = 5
+                case .pills:
+                    index = 6
                 }
 
                 self?.layoutModePopupButton.selectItem(at: index)
+            }
+            .store(in: &cancellables)
+
+        settings.$runningIndicatorStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] style in
+                let index: Int
+                switch style {
+                case .backgroundFill: index = 0
+                case .dot: index = 1
+                case .underline: index = 2
+                }
+                self?.runningIndicatorStylePopupButton.selectItem(at: index)
             }
             .store(in: &cancellables)
 
@@ -571,7 +617,19 @@ final class SettingsView: NSView {
                 self?.titleFontSizeSlider.doubleValue = value
             }
             .store(in: &cancellables)
+        settings.$unifyPinnedAndRunning
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.unifyPinnedAndRunningCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
 
+        settings.$startMenuStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.startMenuStylePopupButton.selectItem(at: value.rawValue)
+            }
+            .store(in: &cancellables)
         settings.$maxTaskWidth
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
@@ -692,6 +750,19 @@ final class SettingsView: NSView {
             .sink { [weak self] value in
                 self?.showSystemResourceWidgetCheckbox.state = value ? .on : .off
                 self?.updateWidgetControlsState()
+            }
+            .store(in: &cancellables)
+
+        settings.$systemStatsDisplayMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                let idx: Int
+                switch value {
+                case .hidden: idx = 0
+                case .flyout: idx = 1
+                case .inline: idx = 2
+                }
+                self?.systemStatsDisplayModePopupButton.selectItem(at: idx)
             }
             .store(in: &cancellables)
 
@@ -860,7 +931,78 @@ final class SettingsView: NSView {
 
         reloadBlacklistEntries()
     }
+    private func makeSeparatorRow() -> NSView {
+        let box = NSBox()
+        box.boxType = .separator
+        box.translatesAutoresizingMaskIntoConstraints = false
+        box.widthAnchor.constraint(equalToConstant: 400).isActive = true
+        return box
+    }
 
+    private func makeSectionTitleRow(_ title: String) -> NSView {
+        let label = NSTextField(labelWithString: title)
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        return label
+    }
+
+    private func makePermissionsSection() -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 8
+        
+        func createRow(title: String, systemSettingsPath: String, isGranted: @escaping () -> Bool) -> NSView {
+            let row = NSStackView()
+            row.orientation = .horizontal
+            row.spacing = 8
+            
+            let dot = NSView()
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.wantsLayer = true
+            dot.layer?.cornerRadius = 4
+            dot.layer?.backgroundColor = isGranted() ? NSColor.systemGreen.cgColor : NSColor.systemRed.cgColor
+            NSLayoutConstraint.activate([
+                dot.widthAnchor.constraint(equalToConstant: 8),
+                dot.heightAnchor.constraint(equalToConstant: 8)
+            ])
+            
+            let label = NSTextField(labelWithString: title)
+            
+            let button = NSButton(title: "Open Settings", target: nil, action: nil)
+            button.action = #selector(openSystemSettings(_:))
+            button.target = self
+            // Use the identifier trick to pass the path
+            button.identifier = NSUserInterfaceItemIdentifier(systemSettingsPath)
+            
+            row.addArrangedSubview(dot)
+            row.addArrangedSubview(label)
+            row.addArrangedSubview(button)
+            
+            // To make it dynamic without full combine setup here for simplicity, 
+            // the dot colour is set on init, which is fine since Settings restarts/reloads.
+            return row
+        }
+        
+        container.addArrangedSubview(createRow(
+            title: "Accessibility (Required for Start Menu & App Control)",
+            systemSettingsPath: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+            isGranted: { AXIsProcessTrusted() }
+        ))
+        
+        container.addArrangedSubview(createRow(
+            title: "Full Disk Access (Optional, for better File Search)",
+            systemSettingsPath: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
+            isGranted: { FileManager.default.isReadableFile(atPath: "/Library/Application Support/com.apple.TCC/TCC.db") }
+        ))
+        
+        return container
+    }
+
+    @objc private func openSystemSettings(_ sender: NSButton) {
+        if let path = sender.identifier?.rawValue, let url = URL(string: path) {
+            NSWorkspace.shared.open(url)
+        }
+    }
     private func makeFormView(rows: [NSView]) -> NSView {
         let container = NSView()
         let stackView = NSStackView(views: rows)
@@ -1104,6 +1246,7 @@ final class SettingsView: NSView {
 
     private func updateWidgetControlsState() {
         let isEnabled = settings.showSystemResourceWidget
+        systemStatsDisplayModePopupButton.isEnabled = isEnabled
         systemResourceWidgetDisplayPopupButton.isEnabled = isEnabled
         showSystemResourceMemoryMetricCheckbox.isEnabled = isEnabled
         showSystemResourceCPUMetricCheckbox.isEnabled = isEnabled
@@ -1348,6 +1491,18 @@ final class SettingsView: NSView {
     }
 
     @objc
+    private func startMenuStyleChanged(_ sender: NSPopUpButton) {
+        if let style = TaskbarSettings.StartMenuStyle(rawValue: sender.indexOfSelectedItem) {
+            settings.startMenuStyle = style
+        }
+    }
+
+    @objc
+    private func unifyPinnedAndRunningChanged(_ sender: NSButton) {
+        settings.unifyPinnedAndRunning = sender.state == .on
+    }
+
+    @objc
     private func taskbarHeightChanged(_ sender: NSSlider) {
         settings.taskbarHeight = sender.doubleValue
     }
@@ -1355,6 +1510,10 @@ final class SettingsView: NSView {
     @objc
     private func layoutModeChanged(_ sender: NSPopUpButton) {
         switch sender.indexOfSelectedItem {
+        case 6:
+            settings.layoutMode = .pills
+        case 5:
+            settings.layoutMode = .winstrixFlat
         case 4:
             settings.layoutMode = .winstrix
         case 3:
@@ -1365,6 +1524,18 @@ final class SettingsView: NSView {
             settings.layoutMode = .fullWidthGlass
         default:
             settings.layoutMode = .fullWidth
+        }
+    }
+
+    @objc
+    private func runningIndicatorStyleChanged(_ sender: NSPopUpButton) {
+        switch sender.indexOfSelectedItem {
+        case 2:
+            settings.runningIndicatorStyle = .underline
+        case 1:
+            settings.runningIndicatorStyle = .dot
+        default:
+            settings.runningIndicatorStyle = .backgroundFill
         }
     }
 
@@ -1463,6 +1634,15 @@ final class SettingsView: NSView {
     @objc
     private func showSystemResourceWidgetChanged(_ sender: NSButton) {
         settings.showSystemResourceWidget = sender.state == .on
+    }
+
+    @objc
+    private func systemStatsDisplayModeChanged(_ sender: NSPopUpButton) {
+        switch sender.indexOfSelectedItem {
+        case 0: settings.systemStatsDisplayMode = .hidden
+        case 2: settings.systemStatsDisplayMode = .inline
+        default: settings.systemStatsDisplayMode = .flyout
+        }
     }
 
     @objc

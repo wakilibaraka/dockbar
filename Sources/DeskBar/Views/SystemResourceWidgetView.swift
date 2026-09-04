@@ -179,6 +179,13 @@ final class SystemResourceWidgetView: NSView {
             }
             .store(in: &cancellables)
 
+        settings.$systemStatsDisplayMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateMetricVisibility()
+            }
+            .store(in: &cancellables)
+
         settings.$systemResourceWidgetPinnedDisplayID
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -239,6 +246,7 @@ final class SystemResourceWidgetView: NSView {
 
         let shouldShow = settings.showSystemResourceWidget &&
             !settings.systemResourceWidgetCollapsed &&
+            settings.systemStatsDisplayMode == .inline &&
             displayMatchesPin &&
             enabledMetricCount > 0
         isHidden = !shouldShow
@@ -454,8 +462,11 @@ final class CollapsedSystemResourceWidgetView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    private let dotLayer = CALayer()
+    private let label = NSTextField(labelWithString: "")
+    
     override var intrinsicContentSize: NSSize {
-        NSSize(width: 24, height: 24)
+        NSSize(width: 48, height: 24)
     }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -474,28 +485,43 @@ final class CollapsedSystemResourceWidgetView: NSView {
         button.wantsLayer = true
         button.layer?.cornerRadius = 6
         button.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
-        button.contentTintColor = .secondaryLabelColor
         button.target = self
         button.action = #selector(expandWidget(_:))
-
-        if let image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: "System resource widget") {
-            image.isTemplate = true
-            button.image = image
-            button.imagePosition = .imageOnly
-        } else {
-            button.title = "SYS"
-            button.font = NSFont.monospacedSystemFont(ofSize: 9, weight: .semibold)
-        }
+        button.title = ""
 
         addSubview(button)
+        
+        dotLayer.bounds = CGRect(x: 0, y: 0, width: 6, height: 6)
+        dotLayer.cornerRadius = 3
+        dotLayer.backgroundColor = NSColor.systemGreen.cgColor
+        
+        let containerLayer = CALayer()
+        containerLayer.addSublayer(dotLayer)
+        button.layer?.addSublayer(containerLayer)
+        
+        // Use a wrapper layer to position the dot properly or just set dotLayer position in layout
+        
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
+        label.textColor = .secondaryLabelColor
+        label.alignment = .center
+        button.addSubview(label)
+
         NSLayoutConstraint.activate([
-            widthAnchor.constraint(equalToConstant: 24),
+            widthAnchor.constraint(equalToConstant: 48),
             heightAnchor.constraint(equalToConstant: 24),
             button.leadingAnchor.constraint(equalTo: leadingAnchor),
             button.trailingAnchor.constraint(equalTo: trailingAnchor),
             button.topAnchor.constraint(equalTo: topAnchor),
-            button.bottomAnchor.constraint(equalTo: bottomAnchor)
+            button.bottomAnchor.constraint(equalTo: bottomAnchor),
+            label.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            label.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -4)
         ])
+    }
+    
+    override func layout() {
+        super.layout()
+        dotLayer.position = CGPoint(x: 10, y: bounds.midY)
     }
 
     private func bindState() {
@@ -521,6 +547,19 @@ final class CollapsedSystemResourceWidgetView: NSView {
 
         button.toolTip = "System resources: \(parts.joined(separator: "  "))"
         toolTip = button.toolTip
+        
+        // Update live RAM%
+        label.stringValue = percentString(snapshot.memoryUsedPercent)
+        
+        let pressure = snapshot.memoryPressureLevel
+        switch pressure {
+        case .normal, .unknown:
+            dotLayer.backgroundColor = NSColor.systemGreen.cgColor
+        case .warning:
+            dotLayer.backgroundColor = NSColor.systemYellow.cgColor
+        case .critical:
+            dotLayer.backgroundColor = NSColor.systemRed.cgColor
+        }
     }
 
     private func makeContextMenu() -> NSMenu {
@@ -572,9 +611,41 @@ final class CollapsedSystemResourceWidgetView: NSView {
         return "\(Int(value.rounded()))%"
     }
 
+    private var flyoutPanel: SystemResourceFlyoutPanel?
+    private var outsideClickMonitor: Any?
+
     @objc
     private func expandWidget(_ sender: Any?) {
-        settings.systemResourceWidgetCollapsed = false
+        if settings.systemStatsDisplayMode == .flyout {
+            if flyoutPanel != nil {
+                dismissFlyout()
+                return
+            }
+            
+            let flyout = SystemResourceFlyoutPanel(monitor: monitor, settings: settings)
+            flyoutPanel = flyout
+            
+            FlyoutAnchorHelper.position(flyout: flyout, relativeTo: self)
+            
+            flyout.makeKeyAndOrderFront(nil)
+            
+            outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.dismissFlyout()
+                }
+            }
+        } else {
+            settings.systemResourceWidgetCollapsed = false
+        }
+    }
+    
+    private func dismissFlyout() {
+        flyoutPanel?.close()
+        flyoutPanel = nil
+        if let m = outsideClickMonitor {
+            NSEvent.removeMonitor(m)
+            outsideClickMonitor = nil
+        }
     }
 
     @objc
@@ -593,15 +664,15 @@ final class CollapsedSystemResourceWidgetView: NSView {
     }
 }
 
-private enum SystemResourceMetricSeverity {
+enum SystemResourceMetricSeverity {
     case normal
     case warning
     case critical
     case unknown
 }
 
-private final class SystemResourceMetricControl: NSControl {
-    private let metric: SystemResourceMetric
+final class SystemResourceMetricControl: NSControl {
+    let metric: SystemResourceMetric
     private let titleLabel = NSTextField(labelWithString: "")
     private let valueLabel = NSTextField(labelWithString: "")
     private let trackView = NSView()
@@ -736,7 +807,7 @@ private final class SystemResourceMetricControl: NSControl {
     }
 }
 
-private extension SystemResourceMetric {
+extension SystemResourceMetric {
     var shortTitle: String {
         switch self {
         case .memory:

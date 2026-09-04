@@ -10,8 +10,15 @@ final class CalendarEventService: ObservableObject {
     private var refreshTimer: Timer?
     private var notificationObserver: NSObjectProtocol?
     
-    init() {
-        requestAccessAndFetch()
+    init(autoRequest: Bool = false) {
+        if autoRequest {
+            requestAccessAndFetch()
+        } else {
+            let status = EKEventStore.authorizationStatus(for: .event)
+            if status == .authorized || status == .fullAccess {
+                scheduleRefreshAndFetch()
+            }
+        }
     }
     
     deinit {
@@ -21,14 +28,14 @@ final class CalendarEventService: ObservableObject {
         }
     }
     
-    private func requestAccessAndFetch() {
+    func requestAccessAndFetch() {
         let status = EKEventStore.authorizationStatus(for: .event)
         switch status {
         case .authorized, .fullAccess:
             scheduleRefreshAndFetch()
         case .denied, .restricted:
             DispatchQueue.main.async { self.permissionDenied = true }
-        case .notDetermined:
+        case .notDetermined, .writeOnly:
             if #available(macOS 14.0, *) {
                 store.requestFullAccessToEvents { [weak self] granted, _ in
                     DispatchQueue.main.async {

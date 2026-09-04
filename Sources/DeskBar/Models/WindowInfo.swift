@@ -12,6 +12,8 @@ struct WindowInfo: Equatable, Identifiable {
     let isMinimized: Bool
     let isHidden: Bool
     let isProvisional: Bool
+    let isPinned: Bool
+    let pinnedApp: PinnedApp?
     private let iconSignature: ImageMetadataSignature
 
     init(
@@ -25,7 +27,9 @@ struct WindowInfo: Equatable, Identifiable {
         applicationURL: URL? = nil,
         isMinimized: Bool = false,
         isHidden: Bool = false,
-        isProvisional: Bool = false
+        isProvisional: Bool = false,
+        isPinned: Bool = false,
+        pinnedApp: PinnedApp? = nil
     ) {
         self.pid = pid
         self.cgWindowID = cgWindowID
@@ -38,7 +42,9 @@ struct WindowInfo: Equatable, Identifiable {
         self.isMinimized = isMinimized
         self.isHidden = isHidden
         self.isProvisional = isProvisional
-        iconSignature = ImageMetadataSignature(icon)
+        self.isPinned = isPinned
+        self.pinnedApp = pinnedApp
+        self.iconSignature = ImageMetadataSignature(icon)
     }
 
     var id: String {

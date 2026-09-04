@@ -28,5 +28,10 @@ sed "s|__EXECUTABLE__|$APP_NAME|g" Info.plist.template > "$CONTENTS_DIR/Info.pli
 # Ad-hoc codesign
 codesign --force --sign - "$BUNDLE_DIR"
 
-echo "Bundle created: $BUNDLE_DIR"
-echo "To run: open $BUNDLE_DIR"
+# Install cleanly
+echo "Installing to /Applications/$APP_NAME.app..."
+rm -rf "/Applications/$APP_NAME.app"
+cp -R "$BUNDLE_DIR" "/Applications/$APP_NAME.app"
+
+echo "Bundle created and installed: /Applications/$APP_NAME.app"
+echo "To run: open /Applications/$APP_NAME.app"

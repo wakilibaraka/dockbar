@@ -168,6 +168,16 @@ final class TaskbarContentView: NSView {
         }
         updateTaskbarLayout()
         rebuildTaskZone()
+        
+        let contextMenu = NSMenu()
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettingsFromMenu), keyEquivalent: "")
+        settingsItem.target = self
+        contextMenu.addItem(settingsItem)
+        self.menu = contextMenu
+    }
+
+    @objc private func openSettingsFromMenu() {
+        openSettingsHandler()
     }
 
     @available(*, unavailable)

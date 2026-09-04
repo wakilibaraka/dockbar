@@ -91,7 +91,7 @@ final class AppsLauncherButtonView: NSView {
     }
 
     private func openAppsLauncher() {
-        StartMenuWindowController.shared.toggle()
+        StartMenuWindowController.shared.toggle(triggerView: self)
     }
 
     private func launcherIcon() -> NSImage? {

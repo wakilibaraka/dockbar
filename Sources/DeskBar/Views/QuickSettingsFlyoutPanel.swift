@@ -40,11 +40,11 @@ final class QuickSettingsFlyoutPanel: NSPanel {
     required init?(coder: NSCoder) { fatalError() }
     
     private func setupUI() {
-        contentView2.material = .hudWindow
+        contentView2.material = .popover
         contentView2.blendingMode = .behindWindow
         contentView2.state = .active
         contentView2.wantsLayer = true
-        contentView2.layer?.cornerRadius = 14
+        contentView2.layer?.cornerRadius = 16
         contentView2.layer?.cornerCurve = .continuous
         contentView2.layer?.masksToBounds = true
         contentView = contentView2
@@ -102,6 +102,40 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         grid.columnSpacing = 8
         vStack.addArrangedSubview(grid)
         
+        let separator = NSBox()
+        separator.boxType = .separator
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        vStack.addArrangedSubview(separator)
+        separator.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
+        
+        // Volume Slider
+        let volStack = NSStackView()
+        volStack.orientation = .horizontal
+        let volImage = NSImage(systemSymbolName: "speaker.wave.3", accessibilityDescription: nil)!
+        volImage.isTemplate = true
+        let volIcon = NSImageView(image: volImage)
+        volIcon.contentTintColor = .white
+        let volSlider = NSSlider(value: 50, minValue: 0, maxValue: 100, target: self, action: #selector(volumeChanged(_:)))
+        volStack.addArrangedSubview(volIcon)
+        volStack.addArrangedSubview(volSlider)
+        volStack.translatesAutoresizingMaskIntoConstraints = false
+        vStack.addArrangedSubview(volStack)
+        volStack.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
+        
+        // Brightness Slider
+        let brightStack = NSStackView()
+        brightStack.orientation = .horizontal
+        let brightImage = NSImage(systemSymbolName: "sun.max", accessibilityDescription: nil)!
+        brightImage.isTemplate = true
+        let brightIcon = NSImageView(image: brightImage)
+        brightIcon.contentTintColor = .white
+        let brightSlider = NSSlider(value: 50, minValue: 0, maxValue: 100, target: self, action: #selector(brightnessChanged(_:)))
+        brightStack.addArrangedSubview(brightIcon)
+        brightStack.addArrangedSubview(brightSlider)
+        brightStack.translatesAutoresizingMaskIntoConstraints = false
+        vStack.addArrangedSubview(brightStack)
+        brightStack.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
+        
         contentView2.addSubview(vStack)
         
         NSLayoutConstraint.activate([
@@ -119,5 +153,16 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         frame.size.height = newSize.height + 28
         frame.size.width = newSize.width + 28
         setFrame(frame, display: true)
+    }
+    
+    @objc private func volumeChanged(_ sender: NSSlider) {
+        let script = "set volume output volume \(Int(sender.doubleValue))"
+        let _ = NSAppleScript(source: script)?.executeAndReturnError(nil)
+    }
+    
+    @objc private func brightnessChanged(_ sender: NSSlider) {
+        // Brightness is harder without private APIs. A simple AppleScript placeholder or tool call.
+        // We'll leave it as a UI demonstration for Phase 6 as standard apps usually use brightness tool
+        // or private APIs like DisplayServices.
     }
 }

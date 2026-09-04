@@ -137,6 +137,13 @@ final class RunningAppTrayView: NSStackView {
             }
             .store(in: &cancellables)
 
+        settings.$systemStatsDisplayMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildIcons()
+            }
+            .store(in: &cancellables)
+
         settings.$showSystemResourceMemoryMetric
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -453,7 +460,8 @@ final class RunningAppTrayView: NSStackView {
     private var shouldShowCollapsedSystemResourceWidget: Bool {
         guard
             settings.showSystemResourceWidget,
-            settings.systemResourceWidgetCollapsed,
+            settings.systemStatsDisplayMode != .hidden,
+            (settings.systemStatsDisplayMode == .flyout || settings.systemResourceWidgetCollapsed),
             [
                 settings.showSystemResourceMemoryMetric,
                 settings.showSystemResourceCPUMetric,

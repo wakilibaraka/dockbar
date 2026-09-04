@@ -251,7 +251,7 @@ final class SessionManagerWidgetView: NSView {
 
         menu.addItem(.separator())
 
-        let hideItem = NSMenuItem(title: "Hide SM Widget", action: #selector(hideWidget(_:)), keyEquivalent: "")
+        let hideItem = NSMenuItem(title: "Hide Terminal Agents Widget", action: #selector(hideWidget(_:)), keyEquivalent: "")
         hideItem.target = self
         menu.addItem(hideItem)
 

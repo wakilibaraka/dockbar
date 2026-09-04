@@ -112,6 +112,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     private let activityLabel = NSTextField(labelWithString: "")
     private let progressTrackView = NSView()
     private let progressFillView = NSView()
+    private let runningIndicatorLayer = CALayer()
     private let thumbnailPopover: ThumbnailPopover
     private let owningApplication: NSRunningApplication?
     private let dropIndicatorView = NSView()
@@ -344,6 +345,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     override func layout() {
         super.layout()
         updateProgressWidth()
+        updateRunningIndicatorFrame()
     }
 
     override func updateTrackingAreas() {
@@ -448,6 +450,10 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private func setupSubviews() {
+        wantsLayer = true
+        layer?.addSublayer(runningIndicatorLayer)
+        runningIndicatorLayer.isHidden = true
+        
         pluginActionButton.translatesAutoresizingMaskIntoConstraints = false
         pluginActionButton.contentTintColor = .secondaryLabelColor
         pluginActionButton.toolTip = "Session Manager actions"
@@ -579,6 +585,13 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private func bindSettings() {
+        settings.$runningIndicatorStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateBackgroundColor()
+            }
+            .store(in: &cancellables)
+
         settings.$titleFontSize
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
@@ -1194,15 +1207,65 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private func updateBackgroundColor() {
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if runtimeState.needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
+        let style = settings.runningIndicatorStyle
+        
+        // Base hover background
+        if isHovered && !isActive && !(runtimeState.needsAttention && style == .backgroundFill) {
             layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
         } else {
             layer?.backgroundColor = NSColor.clear.cgColor
         }
+
+        // Active / Needs Attention state
+        if isActive {
+            if style == .backgroundFill {
+                layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
+                runningIndicatorLayer.isHidden = true
+            } else {
+                runningIndicatorLayer.isHidden = false
+                runningIndicatorLayer.backgroundColor = NSColor.controlAccentColor.cgColor
+            }
+        } else if runtimeState.needsAttention {
+            if style == .backgroundFill {
+                layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
+                runningIndicatorLayer.isHidden = true
+            } else {
+                runningIndicatorLayer.isHidden = false
+                runningIndicatorLayer.backgroundColor = NSColor.systemOrange.cgColor
+            }
+        } else {
+            runningIndicatorLayer.isHidden = true
+        }
+        
+        updateRunningIndicatorFrame()
+    }
+    
+    private func updateRunningIndicatorFrame() {
+        let style = settings.runningIndicatorStyle
+        guard !runningIndicatorLayer.isHidden, style != .backgroundFill else { return }
+        
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        if style == .dot {
+            let dotSize: CGFloat = 4
+            runningIndicatorLayer.frame = CGRect(
+                x: (bounds.width - dotSize) / 2,
+                y: 2,
+                width: dotSize,
+                height: dotSize
+            )
+            runningIndicatorLayer.cornerRadius = dotSize / 2
+        } else if style == .underline {
+            let width: CGFloat = 16
+            runningIndicatorLayer.frame = CGRect(
+                x: (bounds.width - width) / 2,
+                y: 0,
+                width: width,
+                height: 3
+            )
+            runningIndicatorLayer.cornerRadius = 1.5
+        }
+        CATransaction.commit()
     }
 
     private func updateStatusIndicator() {

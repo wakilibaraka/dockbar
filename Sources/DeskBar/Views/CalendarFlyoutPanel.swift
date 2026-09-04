@@ -34,11 +34,11 @@ final class CalendarFlyoutPanel: NSPanel {
     
     private func setupUI() {
         let effectView = NSVisualEffectView()
-        effectView.material = .hudWindow
+        effectView.material = .popover
         effectView.blendingMode = .behindWindow
         effectView.state = .active
         effectView.wantsLayer = true
-        effectView.layer?.cornerRadius = 12
+        effectView.layer?.cornerRadius = 16
         effectView.layer?.cornerCurve = .continuous
         effectView.layer?.masksToBounds = true
         contentView = effectView

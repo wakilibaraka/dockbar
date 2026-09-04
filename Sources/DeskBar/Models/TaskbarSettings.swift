@@ -19,6 +19,8 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compact
     case compactGlass
     case winstrix
+    case winstrixFlat
+    case pills
 }
 
 enum AppsLauncherShortcut: String, CaseIterable {
@@ -31,6 +33,12 @@ enum AppsLauncherShortcut: String, CaseIterable {
 enum FrontmostAppClickBehavior: String, CaseIterable {
     case cycleWindows
     case minimize
+}
+
+enum SystemStatsDisplayMode: String, CaseIterable {
+    case hidden
+    case flyout
+    case inline
 }
 
 final class TaskbarSettings: ObservableObject {
@@ -63,6 +71,10 @@ final class TaskbarSettings: ObservableObject {
 
     @Published var frontmostAppClickBehavior: FrontmostAppClickBehavior {
         didSet { defaults.set(frontmostAppClickBehavior.rawValue, forKey: "frontmostAppClickBehavior") }
+    }
+
+    @Published var systemStatsDisplayMode: SystemStatsDisplayMode {
+        didSet { defaults.set(systemStatsDisplayMode.rawValue, forKey: "systemStatsDisplayMode") }
     }
 
     @Published var dragReorder: Bool {
@@ -213,6 +225,10 @@ final class TaskbarSettings: ObservableObject {
         didSet { defaults.set(appsLauncherShortcut.rawValue, forKey: "appsLauncherShortcut") }
     }
 
+    @Published var runningIndicatorStyle: RunningIndicatorStyle {
+        didSet { defaults.set(runningIndicatorStyle.rawValue, forKey: "runningIndicatorStyle") }
+    }
+
     @Published var enableSessionManagerPlugin: Bool {
         didSet { defaults.set(enableSessionManagerPlugin, forKey: "enableSessionManagerPlugin") }
     }
@@ -237,6 +253,19 @@ final class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showSessionManagerActionButton, forKey: "showSessionManagerActionButton") }
     }
 
+    @Published var unifyPinnedAndRunning: Bool {
+        didSet { defaults.set(unifyPinnedAndRunning, forKey: "unifyPinnedAndRunning") }
+    }
+
+    enum StartMenuStyle: Int {
+        case simpleList = 0
+        case fullDashboard = 1
+    }
+
+    @Published var startMenuStyle: StartMenuStyle {
+        didSet { defaults.set(startMenuStyle.rawValue, forKey: "startMenuStyle") }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
@@ -251,7 +280,8 @@ final class TaskbarSettings: ObservableObject {
         } else {
             groupingMode = .never
         }
-        frontmostAppClickBehavior = FrontmostAppClickBehavior(rawValue: defaults.string(forKey: "frontmostAppClickBehavior") ?? "") ?? .cycleWindows
+        frontmostAppClickBehavior = FrontmostAppClickBehavior(rawValue: defaults.string(forKey: "frontmostAppClickBehavior") ?? "") ?? .minimize
+        systemStatsDisplayMode = SystemStatsDisplayMode(rawValue: defaults.string(forKey: "systemStatsDisplayMode") ?? "") ?? .flyout
         dragReorder = defaults.object(forKey: "dragReorder") as? Bool ?? true
         quitOnClose = defaults.object(forKey: "quitOnClose") as? Bool ?? false
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
@@ -291,16 +321,32 @@ final class TaskbarSettings: ObservableObject {
         useAppIconAsLauncherButton = defaults.object(forKey: "useAppIconAsLauncherButton") as? Bool ?? false
         enableReopenLastQuit = defaults.object(forKey: "enableReopenLastQuit") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
-        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .winstrix
+        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .fullWidth
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? false
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? false
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .controlOptionReturn
+        runningIndicatorStyle = RunningIndicatorStyle(rawValue: defaults.string(forKey: "runningIndicatorStyle") ?? "") ?? .backgroundFill
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
         animateSessionManagerActivity = defaults.object(forKey: "animateSessionManagerActivity") as? Bool ?? false
         enableSessionManagerTerminalActions = defaults.object(forKey: "enableSessionManagerTerminalActions") as? Bool ?? true
-        showSessionManagerActionButton = defaults.object(forKey: "showSessionManagerActionButton") as? Bool ?? true
+        
+        if defaults.object(forKey: "showSessionManagerActionButton") != nil {
+            showSessionManagerActionButton = defaults.bool(forKey: "showSessionManagerActionButton")
+        } else {
+            showSessionManagerActionButton = true
+        }
+        if defaults.object(forKey: "unifyPinnedAndRunning") != nil {
+            unifyPinnedAndRunning = defaults.bool(forKey: "unifyPinnedAndRunning")
+        } else {
+            unifyPinnedAndRunning = true
+        }
+        if let rawValue = defaults.object(forKey: "startMenuStyle") as? Int, let style = StartMenuStyle(rawValue: rawValue) {
+            startMenuStyle = style
+        } else {
+            startMenuStyle = .fullDashboard
+        }
     }
 
     func resetAppearanceSlidersToDefaults() {

@@ -145,7 +145,9 @@ final class TrayIconView: NSView {
         hideItem.isEnabled = application.runningApplication != nil
         menu.addItem(hideItem)
 
-        let pinItem = NSMenuItem(title: "Pin to Launcher", action: #selector(pinToLauncher(_:)), keyEquivalent: "")
+        let isPinned = application.bundleIdentifier != nil && pinnedAppManager.isPinned(bundleIdentifier: application.bundleIdentifier!)
+        let pinTitle = isPinned ? "Unpin from Launcher" : "Pin to Launcher"
+        let pinItem = NSMenuItem(title: pinTitle, action: #selector(togglePinLauncher(_:)), keyEquivalent: "")
         pinItem.target = self
         pinItem.isEnabled = application.bundleIdentifier != nil
         menu.addItem(pinItem)
@@ -219,14 +221,18 @@ final class TrayIconView: NSView {
     }
 
     @objc
-    private func pinToLauncher(_ sender: Any?) {
+    private func togglePinLauncher(_ sender: Any?) {
         guard let bundleIdentifier = application.bundleIdentifier else {
             return
         }
 
-        pinnedAppManager.pin(
-            bundleIdentifier: bundleIdentifier,
-            name: application.name
-        )
+        if pinnedAppManager.isPinned(bundleIdentifier: bundleIdentifier) {
+            pinnedAppManager.unpin(bundleIdentifier: bundleIdentifier)
+        } else {
+            pinnedAppManager.pin(
+                bundleIdentifier: bundleIdentifier,
+                name: application.name
+            )
+        }
     }
 }

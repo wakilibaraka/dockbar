@@ -70,6 +70,11 @@ final class EnhancedClockWidgetView: NSView {
         return max(72, labelsStack.fittingSize.width + 12)
     }
 
+    override var intrinsicContentSize: NSSize {
+        if isHidden { return .zero }
+        return NSSize(width: preferredContentWidth(), height: 32)
+    }
+
     /// Call after init to wire up the calendar service (needed when init order requires super.init first).
     func configure(calendarService: CalendarEventService) {
         self.calendarService = calendarService
@@ -82,6 +87,8 @@ final class EnhancedClockWidgetView: NSView {
     
     private func setupView() {
         wantsLayer = true
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
         
         // Labels
         timeLabel.font = .systemFont(ofSize: 12, weight: .semibold)

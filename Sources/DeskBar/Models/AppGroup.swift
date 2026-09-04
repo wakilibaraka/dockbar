@@ -6,6 +6,8 @@ struct AppGroup: Identifiable {
     let icon: NSImage?
     var windows: [WindowInfo]
     var isExpanded: Bool = false
+    var isPinned: Bool = false
+    var pinnedApp: PinnedApp? = nil
 
     var windowCount: Int { windows.count }
 }
