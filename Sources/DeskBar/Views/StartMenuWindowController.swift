@@ -38,7 +38,7 @@ final class StartMenuWindowController: NSWindowController {
         guard let window = window else { return }
         
         let visualEffect = NSVisualEffectView(frame: window.contentRect(forFrameRect: window.frame))
-        visualEffect.material = .hudWindow
+        visualEffect.material = .popover
         visualEffect.blendingMode = .behindWindow
         visualEffect.state = .active
         visualEffect.wantsLayer = true
@@ -127,9 +127,9 @@ final class StartMenuWindowController: NSWindowController {
         if window.isVisible {
             window.orderOut(nil)
         } else {
-            // Position above the taskbar on the main screen
+            // Position above the taskbar on the left side
             if let screen = NSScreen.main {
-                let x = screen.frame.midX - 200 // Centered
+                let x = screen.frame.minX + 12 // Slightly offset from left edge
                 let y: CGFloat = 60 // Just above the taskbar
                 window.setFrameOrigin(NSPoint(x: x, y: y))
             }

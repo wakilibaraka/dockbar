@@ -76,13 +76,6 @@ final class EnhancedClockWidgetView: NSView {
     private func setupView() {
         wantsLayer = true
         
-        // Gradient layer (theme background)
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
-        gradientLayer.endPoint = CGPoint(x: 1, y: 0.5)
-        gradientLayer.cornerRadius = 8
-        gradientLayer.cornerCurve = .continuous
-        layer?.addSublayer(gradientLayer)
-        
         // Labels
         timeLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         timeLabel.textColor = .white
@@ -122,42 +115,12 @@ final class EnhancedClockWidgetView: NSView {
             widthAnchor.constraint(greaterThanOrEqualToConstant: 72)
         ])
         
-        updateGradient()
         updateTextColors()
     }
     
-    override func layout() {
-        super.layout()
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        gradientLayer.frame = bounds.insetBy(dx: 2, dy: 2)
-        CATransaction.commit()
-    }
-    
-    // MARK: - Gradient
-    
-    private func updateGradient() {
-        let theme = settings.clockTheme
-        // Respect Reduce Transparency
-        let reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        
-        if let colors = theme.gradientColors, !reduceTransparency {
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            gradientLayer.colors = [colors.start.cgColor, colors.end.cgColor]
-            gradientLayer.opacity = 1.0
-            CATransaction.commit()
-        } else {
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            gradientLayer.colors = nil
-            gradientLayer.opacity = 0.0
-            CATransaction.commit()
-        }
-    }
-    
     private func updateTextColors() {
-        let color = settings.clockTheme.textColor
+        // Just use white in the simplified design, respecting theme only if you want, but simple is better
+        let color = NSColor.white
         timeLabel.textColor = color
         dateLabel.textColor = color.withAlphaComponent(0.8)
         eventLabel.textColor = color.withAlphaComponent(0.75)
@@ -166,7 +129,7 @@ final class EnhancedClockWidgetView: NSView {
     // MARK: - Timer
     
     private func startTimer() {
-        timer = Timer(timeInterval: 10, repeats: true) { [weak self] _ in
+        timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.updateDisplay(force: false)
             }
@@ -183,13 +146,13 @@ final class EnhancedClockWidgetView: NSView {
         let dateStr = dateFormatter.string(from: now)
         let timeStr = timeFormatter.string(from: now)
         
-        guard force || minute != lastRenderedMinute || dateStr != lastRenderedDate else { return }
-        
-        lastRenderedMinute = minute
-        lastRenderedDate = dateStr
-        
-        timeLabel.stringValue = timeStr
-        dateLabel.stringValue = dateStr
+        if force || minute != lastRenderedMinute || dateStr != lastRenderedDate {
+            lastRenderedMinute = minute
+            lastRenderedDate = dateStr
+            
+            timeLabel.stringValue = timeStr
+            dateLabel.stringValue = dateStr
+        }
         
         updateEventLine(now: now)
     }
@@ -222,26 +185,10 @@ final class EnhancedClockWidgetView: NSView {
     // MARK: - Bindings
     
     private func bindSettings() {
-        settings.$clockTheme
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.updateGradient()
-                self?.updateTextColors()
-            }
-            .store(in: &cancellables)
-        
         settings.$showClockEvents
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.updateDisplay(force: true)
-            }
-            .store(in: &cancellables)
-        
-        // Reduce Transparency changes
-        NotificationCenter.default.publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.updateGradient()
             }
             .store(in: &cancellables)
     }

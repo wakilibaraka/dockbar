@@ -163,6 +163,7 @@ final class LauncherZoneView: NSStackView {
         }
 
         buttonsStackView.addArrangedSubview(AppsLauncherButtonView())
+        buttonsStackView.addArrangedSubview(SearchButtonView())
 
         let runningApplicationsByBundleIdentifier: [String: NSRunningApplication] =
             NSWorkspace.shared.runningApplications.reduce(into: [:]) { result, application in

@@ -1,6 +1,6 @@
 import AppKit
 
-final class AppsLauncherButtonView: NSView {
+final class SearchButtonView: NSView {
     private let iconView = NSImageView()
     private var trackingAreaRef: NSTrackingArea?
     private var isHovered = false {
@@ -15,7 +15,7 @@ final class AppsLauncherButtonView: NSView {
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
         layer?.cornerRadius = 8
-        toolTip = "Apps"
+        toolTip = "Search (Spotlight)"
 
         configureSubviews()
         updateBackgroundColor()
@@ -58,24 +58,18 @@ final class AppsLauncherButtonView: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func mouseDown(with event: NSEvent) {
-        guard !event.modifierFlags.contains(.control) else {
-            showContextMenu(with: event)
-            return
-        }
-
         IconClickFeedback.show(on: iconView)
-        openAppsLauncher()
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        showContextMenu(with: event)
+        openSpotlight()
     }
 
     private func configureSubviews() {
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.wantsLayer = true
         iconView.imageScaling = .scaleProportionallyUpOrDown
-        iconView.image = launcherIcon()
+        
+        let image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: "Search")
+        image?.isTemplate = true
+        iconView.image = image
 
         addSubview(iconView)
 
@@ -85,30 +79,23 @@ final class AppsLauncherButtonView: NSView {
 
             iconView.centerXAnchor.constraint(equalTo: centerXAnchor),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: 28),
-            iconView.heightAnchor.constraint(equalToConstant: 28)
+            iconView.widthAnchor.constraint(equalToConstant: 18), // Slightly smaller than apps icon
+            iconView.heightAnchor.constraint(equalToConstant: 18)
         ])
     }
 
-    private func openAppsLauncher() {
-        StartMenuWindowController.shared.toggle()
-    }
-
-    private func launcherIcon() -> NSImage? {
-        AppsLauncher.icon()
-    }
-
-    private func showContextMenu(with event: NSEvent) {
-        let menu = NSMenu()
-        let openItem = NSMenuItem(title: "Open Apps", action: #selector(openAppsFromMenu(_:)), keyEquivalent: "")
-        openItem.target = self
-        menu.addItem(openItem)
-        NSMenu.popUpContextMenu(menu, with: event, for: self)
-    }
-
-    @objc
-    private func openAppsFromMenu(_ sender: Any?) {
-        openAppsLauncher()
+    private func openSpotlight() {
+        let workspace = NSWorkspace.shared
+        if let url = workspace.urlForApplication(withBundleIdentifier: "com.apple.Spotlight") {
+            workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        } else {
+            // Fallback
+            let script = "tell application \"System Events\" to key code 49 using command down"
+            if let appleScript = NSAppleScript(source: script) {
+                var error: NSDictionary?
+                appleScript.executeAndReturnError(&error)
+            }
+        }
     }
 
     private func updateBackgroundColor() {
