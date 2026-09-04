@@ -18,6 +18,9 @@ final class TaskbarContentView: NSView {
     private let sessionManagerWidgetView: SessionManagerWidgetView?
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let runningAppTrayView: RunningAppTrayView
+    private let clockWidgetView: EnhancedClockWidgetView
+    private let quickSettingsButtonView: QuickSettingsButtonView
+    private let calendarEventService = CalendarEventService()
     private let axGetWindow: AXUIElementGetWindowFunc?
     private let accessibilityService = AccessibilityService()
 
@@ -131,12 +134,19 @@ final class TaskbarContentView: NSView {
         } else {
             axGetWindow = nil
         }
+        // clockWidgetView and quickSettingsButtonView are initialized after super.init
+        // because calendarEventService is a stored property already initialized above.
+        // We use a placeholder and assign real values post-super.
+        clockWidgetView = EnhancedClockWidgetView(settings: settings, calendarService: nil)
+        quickSettingsButtonView = QuickSettingsButtonView(settings: settings, manager: .shared)
         super.init(frame: .zero)
         wantsLayer = true
         autoresizingMask = [.width, .height]
 
         configureLayout()
         bindState()
+        // Wire calendar service (after super.init so calendarEventService is accessible)
+        clockWidgetView.configure(calendarService: calendarEventService)
         installCollapseMonitors()
         installModifierMonitors()
         observePinRequests()
@@ -192,7 +202,7 @@ final class TaskbarContentView: NSView {
             preferredTaskZoneWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            runningAppTrayView.preferredContentWidth() +
+            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.preferredContentWidth() +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
 
@@ -340,11 +350,12 @@ final class TaskbarContentView: NSView {
         bannerButton.translatesAutoresizingMaskIntoConstraints = false
         bannerButton.target = self
         bannerButton.action = #selector(openAccessibilitySettings)
-        rootStackView.addArrangedSubview(bannerButton)
+        addSubview(bannerButton)
 
         NSLayoutConstraint.activate([
-            bannerButton.leadingAnchor.constraint(equalTo: rootStackView.leadingAnchor),
-            bannerButton.trailingAnchor.constraint(equalTo: rootStackView.trailingAnchor),
+            bannerButton.leadingAnchor.constraint(equalTo: leadingAnchor),
+            bannerButton.trailingAnchor.constraint(equalTo: trailingAnchor),
+            bannerButton.bottomAnchor.constraint(equalTo: bottomAnchor),
             bannerButton.heightAnchor.constraint(equalToConstant: 32)
         ])
 
@@ -423,9 +434,38 @@ final class TaskbarContentView: NSView {
         }
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
         zonesStackView.addArrangedSubview(runningAppTrayView)
+        zonesStackView.addArrangedSubview(quickSettingsButtonView)
+        zonesStackView.addArrangedSubview(clockWidgetView)
+
+        // Initial visibility
+        quickSettingsButtonView.isHidden = !settings.showQuickSettings
+        clockWidgetView.isHidden = !settings.showClock
     }
 
     private func bindState() {
+        permissionsManager.$isAccessibilityGranted
+            .receive(on: RunLoop.main)
+            .sink { [weak self] granted in
+                self?.bannerButton.isHidden = granted
+            }
+            .store(in: &cancellables)
+
+        settings.$showClock
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in
+                self?.clockWidgetView.isHidden = !show
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$showQuickSettings
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in
+                self?.quickSettingsButtonView.isHidden = !show
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
         windowManager.$visibleWindows
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -664,7 +704,7 @@ final class TaskbarContentView: NSView {
     }
 
     private func rebuildTaskZone() {
-        bannerButton.isHidden = permissionsManager.isAccessibilityGranted
+        
         expandedGroupView = nil
 
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
@@ -1571,7 +1611,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            runningAppTrayView.minimumOverflowContentWidth() +
+            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.minimumOverflowContentWidth() +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1588,7 +1628,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() +
-            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+            (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1636,7 +1676,7 @@ final class TaskbarContentView: NSView {
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
                 systemResourceWidgetView.preferredContentWidth() +
-                runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+                (settings.showQuickSettings ? 36 : 0) + (settings.showClock ? 60 : 0) + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

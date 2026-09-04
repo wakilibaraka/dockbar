@@ -28,7 +28,7 @@ struct TaskbarSettingsTests {
         #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
         #expect(settings.showSessionManagerWidget)
         #expect(settings.sessionManagerWidgetPinnedDisplayID == nil)
-        #expect(settings.layoutMode == .fullWidth)
+        #expect(settings.layoutMode == .winstrix)
         #expect(settings.enableWindowSwitcher == false)
         #expect(settings.enableBareCommandLauncher == false)
         #expect(settings.appsLauncherShortcut == .controlOptionReturn)

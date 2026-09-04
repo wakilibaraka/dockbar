@@ -102,6 +102,13 @@ final class RunningAppTrayView: NSStackView {
             }
             .store(in: &cancellables)
 
+        settings.$pinnedTrayApps
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildIcons()
+            }
+            .store(in: &cancellables)
+
         pinnedAppManager.$pinnedApps
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -245,7 +252,8 @@ final class RunningAppTrayView: NSStackView {
         for application in applications {
             let iconView = TrayIconView(
                 application: application,
-                pinnedAppManager: pinnedAppManager
+                pinnedAppManager: pinnedAppManager,
+                settings: settings
             )
             applicationIconViews.append(iconView)
             iconsStackView.addArrangedSubview(iconView)
@@ -418,7 +426,28 @@ final class RunningAppTrayView: NSStackView {
             return []
         }
 
-        return windowManager.trayApplications(on: screen)
+        var apps = windowManager.trayApplications(on: screen)
+        let runningBundleIDs = Set(apps.compactMap { $0.bundleIdentifier })
+
+        for bundleID in settings.pinnedTrayApps {
+            if !runningBundleIDs.contains(bundleID),
+               let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                let name = (try? url.resourceValues(forKeys: [.localizedNameKey]).localizedName) ?? url.deletingPathExtension().lastPathComponent
+                let icon = NSWorkspace.shared.icon(forFile: url.path)
+
+                let pinnedApp = TrayApplicationInfo(
+                    pid: -1,
+                    bundleIdentifier: bundleID,
+                    name: name,
+                    icon: icon,
+                    bundleURL: url,
+                    runningApplication: nil
+                )
+                apps.append(pinnedApp)
+            }
+        }
+
+        return apps
     }
 
     private var shouldShowCollapsedSystemResourceWidget: Bool {

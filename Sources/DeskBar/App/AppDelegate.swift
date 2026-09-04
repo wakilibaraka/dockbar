@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isHandlingTerminationSignal = false
     private var screenObserver: NSObjectProtocol?
     private var workspaceObservers: [NSObjectProtocol] = []
+    private var recentlyQuitAppsService: RecentlyQuitAppsService?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard singleInstanceLock.acquire() else {
@@ -41,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = TaskbarSettings()
         self.settings = settings
         loginItemManager = LoginItemManager(settings: settings)
+        recentlyQuitAppsService = RecentlyQuitAppsService(settings: settings)
 
         let dockManager = DockManager()
         self.dockManager = dockManager
@@ -138,14 +140,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func bindDockMode(settings: TaskbarSettings) {
-        dockManager?.apply(mode: settings.dockMode)
+        dockManager?.apply(mode: settings.hideNativeDock ? .hidden : .independent)
 
-        settings.$dockMode
+        settings.$hideNativeDock
             .dropFirst()
             .removeDuplicates()
             .receive(on: RunLoop.main)
-            .sink { [weak self] mode in
-                self?.dockManager?.apply(mode: mode)
+            .sink { [weak self] hide in
+                self?.dockManager?.apply(mode: hide ? .hidden : .independent)
             }
             .store(in: &cancellables)
     }

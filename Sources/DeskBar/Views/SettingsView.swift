@@ -27,7 +27,7 @@ final class SettingsView: NSView {
     private let tabView = NSTabView()
 
     private let startAtLoginCheckbox = NSButton(checkboxWithTitle: "Start at login", target: nil, action: nil)
-    private let dockModePopupButton = NSPopUpButton()
+    private let hideNativeDockCheckbox = NSButton(checkboxWithTitle: "Hide native Dock", target: nil, action: nil)
 
     private let taskbarHeightSlider = NSSlider(value: 40, minValue: 32, maxValue: 60, target: nil, action: nil)
     private let layoutModePopupButton = NSPopUpButton()
@@ -41,6 +41,15 @@ final class SettingsView: NSView {
     private let groupingModePopupButton = NSPopUpButton()
     private let frontmostAppClickBehaviorPopupButton = NSPopUpButton()
     private let quitOnCloseCheckbox = NSButton(checkboxWithTitle: "Quit on close (last window)", target: nil, action: nil)
+    private let showClockCheckbox = NSButton(checkboxWithTitle: "Show clock", target: nil, action: nil)
+    private let clockTargetAppTextField = NSTextField(string: "")
+    private let clockThemePopupButton = NSPopUpButton()
+    private let showClockEventsCheckbox = NSButton(checkboxWithTitle: "Show next event in clock", target: nil, action: nil)
+    private let showQuickSettingsCheckbox = NSButton(checkboxWithTitle: "Show Quick Settings button", target: nil, action: nil)
+    private let richContextMenuCheckbox = NSButton(checkboxWithTitle: "Rich context menu", target: nil, action: nil)
+    private let useAppIconAsLauncherButtonCheckbox = NSButton(checkboxWithTitle: "Use app icon as launcher button", target: nil, action: nil)
+    private let enableReopenLastQuitCheckbox = NSButton(checkboxWithTitle: "Reopen last-quit app (⌥⌘T)", target: nil, action: nil)
+
     private let dragReorderCheckbox = NSButton(checkboxWithTitle: "Drag reorder", target: nil, action: nil)
     private let middleClickClosesCheckbox = NSButton(checkboxWithTitle: "Middle-click closes", target: nil, action: nil)
     private let showOverFullscreenAppsCheckbox = NSButton(checkboxWithTitle: "Show over full-screen apps", target: nil, action: nil)
@@ -112,7 +121,6 @@ final class SettingsView: NSView {
             tabView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
 
-        dockModePopupButton.addItems(withTitles: ["Independent", "Auto-Hide Dock", "Hide Dock"])
         layoutModePopupButton.addItems(withTitles: ["Full Width", "Full Width Glass", "Compact Centered", "Compact Glass", "Winstrix"])
         appsLauncherShortcutPopupButton.addItems(withTitles: ["Control-Option-Return", "Option-Space", "Control-Option-Space", "Tap Command"])
         configureWidgetDisplayPopupButton()
@@ -124,13 +132,15 @@ final class SettingsView: NSView {
         generalTab.label = "General"
         generalTab.view = makeFormView(rows: [
             makeCheckboxRow(startAtLoginCheckbox),
-            makeLabeledControlRow(label: "Dock mode", control: dockModePopupButton)
+            makeCheckboxRow(hideNativeDockCheckbox),
+            makeCheckboxRow(enableReopenLastQuitCheckbox)
         ])
 
         let appearanceTab = NSTabViewItem(identifier: "appearance")
         appearanceTab.label = "Appearance"
         appearanceTab.view = makeFormView(rows: [
             makeLabeledControlRow(label: "DeskBar layout", control: layoutModePopupButton),
+            makeCheckboxRow(useAppIconAsLauncherButtonCheckbox),
             makeLabeledControlRow(label: "Taskbar height", control: taskbarHeightSlider),
             makeLabeledControlRow(label: "Title font size", control: titleFontSizeSlider),
             makeLabeledControlRow(label: "Max task width", control: maxTaskWidthSlider),
@@ -144,6 +154,7 @@ final class SettingsView: NSView {
 
         let behaviorTab = NSTabViewItem(identifier: "behavior")
         behaviorTab.label = "Behavior"
+
         behaviorTab.view = makeFormView(rows: [
             makeLabeledControlRow(label: "Hover delay", control: hoverDelaySlider),
             makeLabeledControlRow(label: "Window grouping", control: groupingModePopupButton),
@@ -151,8 +162,7 @@ final class SettingsView: NSView {
             makeCheckboxRow(quitOnCloseCheckbox),
             makeCheckboxRow(dragReorderCheckbox),
             makeCheckboxRow(middleClickClosesCheckbox),
-            makeCheckboxRow(flashAttentionIndicatorsCheckbox),
-            makeCheckboxRow(showProgressIndicatorsCheckbox),
+            makeCheckboxRow(richContextMenuCheckbox),
             makeCheckboxRow(enableActivityModeCheckbox),
             makeCheckboxRow(showOverFullscreenAppsCheckbox),
             makeCheckboxRow(showOnAllMonitorsCheckbox),
@@ -163,7 +173,14 @@ final class SettingsView: NSView {
 
         let widgetsTab = NSTabViewItem(identifier: "widgets")
         widgetsTab.label = "Widgets"
+        clockTargetAppTextField.placeholderString = "Calendar 366 II"
+        clockThemePopupButton.addItems(withTitles: ClockTheme.allCases.map { $0.displayName })
         widgetsTab.view = makeFormView(rows: [
+            makeCheckboxRow(showClockCheckbox),
+            makeLabeledControlRow(label: "Clock theme", control: clockThemePopupButton),
+            makeCheckboxRow(showClockEventsCheckbox),
+            makeLabeledControlRow(label: "Clock click app", control: clockTargetAppTextField),
+            makeCheckboxRow(showQuickSettingsCheckbox),
             makeCheckboxRow(showSystemResourceWidgetCheckbox),
             makeLabeledControlRow(label: "Show on", control: systemResourceWidgetDisplayPopupButton),
             makeCheckboxRow(showSystemResourceMemoryMetricCheckbox),
@@ -309,8 +326,27 @@ final class SettingsView: NSView {
         startAtLoginCheckbox.target = self
         startAtLoginCheckbox.action = #selector(startAtLoginChanged(_:))
 
-        dockModePopupButton.target = self
-        dockModePopupButton.action = #selector(dockModeChanged(_:))
+        showClockCheckbox.target = self
+        showClockCheckbox.action = #selector(showClockChanged(_:))
+        clockThemePopupButton.target = self
+        clockThemePopupButton.action = #selector(clockThemeChanged(_:))
+        showClockEventsCheckbox.target = self
+        showClockEventsCheckbox.action = #selector(showClockEventsChanged(_:))
+        showQuickSettingsCheckbox.target = self
+        showQuickSettingsCheckbox.action = #selector(showQuickSettingsChanged(_:))
+        useAppIconAsLauncherButtonCheckbox.target = self
+        useAppIconAsLauncherButtonCheckbox.action = #selector(useAppIconAsLauncherButtonChanged(_:))
+        enableReopenLastQuitCheckbox.target = self
+        enableReopenLastQuitCheckbox.action = #selector(enableReopenLastQuitChanged(_:))
+
+        clockTargetAppTextField.target = self
+        clockTargetAppTextField.action = #selector(clockTargetAppChanged(_:))
+
+        richContextMenuCheckbox.target = self
+        richContextMenuCheckbox.action = #selector(richContextMenuChanged(_:))
+
+        hideNativeDockCheckbox.target = self
+        hideNativeDockCheckbox.action = #selector(hideNativeDockChanged(_:))
 
         taskbarHeightSlider.target = self
         taskbarHeightSlider.action = #selector(taskbarHeightChanged(_:))
@@ -432,20 +468,72 @@ final class SettingsView: NSView {
             }
             .store(in: &cancellables)
 
-        settings.$dockMode
+        settings.$hideNativeDock
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
-                let index: Int
-                switch value {
-                case .independent:
-                    index = 0
-                case .autoHide:
-                    index = 1
-                case .hidden:
-                    index = 2
-                }
+                self?.hideNativeDockCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
 
-                self?.dockModePopupButton.selectItem(at: index)
+        
+        settings.$clockTheme
+            .receive(on: RunLoop.main)
+            .sink { [weak self] theme in
+                guard let self else { return }
+                if let idx = ClockTheme.allCases.firstIndex(of: theme) {
+                    self.clockThemePopupButton.selectItem(at: idx)
+                }
+            }
+            .store(in: &cancellables)
+        
+        settings.$showClockEvents
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showClockEventsCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+        
+        settings.$showQuickSettings
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showQuickSettingsCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+        
+        settings.$useAppIconAsLauncherButton
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.useAppIconAsLauncherButtonCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$enableReopenLastQuit
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.enableReopenLastQuitCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$showClock
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showClockCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$clockTargetApp
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                if self?.clockTargetAppTextField.stringValue != value {
+                    self?.clockTargetAppTextField.stringValue = value
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$richContextMenu
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.richContextMenuCheckbox.state = value ? .on : .off
             }
             .store(in: &cancellables)
 
@@ -1154,6 +1242,7 @@ final class SettingsView: NSView {
         let alert = NSAlert()
         alert.messageText = "Add App to Blacklist"
         alert.informativeText = "Select a currently running app to hide from the taskbar."
+
         alert.addButton(withTitle: "Add")
         alert.addButton(withTitle: "Cancel")
 
@@ -1211,15 +1300,51 @@ final class SettingsView: NSView {
     }
 
     @objc
-    private func dockModeChanged(_ sender: NSPopUpButton) {
-        switch sender.indexOfSelectedItem {
-        case 1:
-            settings.dockMode = .autoHide
-        case 2:
-            settings.dockMode = .hidden
-        default:
-            settings.dockMode = .independent
-        }
+    private func hideNativeDockChanged(_ sender: NSButton) {
+        settings.hideNativeDock = sender.state == .on
+    }
+
+    @objc
+    private func showClockChanged(_ sender: NSButton) {
+        settings.showClock = sender.state == .on
+    }
+
+    @objc
+    private func clockTargetAppChanged(_ sender: NSTextField) {
+        settings.clockTargetApp = sender.stringValue
+    }
+
+    @objc
+    private func clockThemeChanged(_ sender: NSPopUpButton) {
+        let idx = sender.indexOfSelectedItem
+        let cases = ClockTheme.allCases
+        guard idx >= 0, idx < cases.count else { return }
+        settings.clockTheme = cases[idx]
+    }
+
+    @objc
+    private func showClockEventsChanged(_ sender: NSButton) {
+        settings.showClockEvents = sender.state == .on
+    }
+
+    @objc
+    private func showQuickSettingsChanged(_ sender: NSButton) {
+        settings.showQuickSettings = sender.state == .on
+    }
+
+    @objc
+    private func useAppIconAsLauncherButtonChanged(_ sender: NSButton) {
+        settings.useAppIconAsLauncherButton = sender.state == .on
+    }
+
+    @objc
+    private func enableReopenLastQuitChanged(_ sender: NSButton) {
+        settings.enableReopenLastQuit = sender.state == .on
+    }
+
+    @objc
+    private func richContextMenuChanged(_ sender: NSButton) {
+        settings.richContextMenu = sender.state == .on
     }
 
     @objc

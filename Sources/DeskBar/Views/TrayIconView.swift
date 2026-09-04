@@ -1,19 +1,23 @@
 import AppKit
 import ApplicationServices
+import ServiceManagement
 
 final class TrayIconView: NSView {
     private let application: TrayApplicationInfo
     private let pinnedAppManager: PinnedAppManager
     private let accessibilityService: AccessibilityService
+    private let settings: TaskbarSettings
     private let iconView = NSImageView()
 
     init(
         application: TrayApplicationInfo,
         pinnedAppManager: PinnedAppManager,
+        settings: TaskbarSettings,
         accessibilityService: AccessibilityService = AccessibilityService()
     ) {
         self.application = application
         self.pinnedAppManager = pinnedAppManager
+        self.settings = settings
         self.accessibilityService = accessibilityService
         super.init(frame: .zero)
 
@@ -146,6 +150,29 @@ final class TrayIconView: NSView {
         pinItem.isEnabled = application.bundleIdentifier != nil
         menu.addItem(pinItem)
 
+        if settings.richContextMenu {
+            menu.addItem(.separator())
+            
+            let forceQuitItem = NSMenuItem(title: "Force Quit", action: #selector(forceQuitApplication(_:)), keyEquivalent: "")
+            forceQuitItem.target = self
+            forceQuitItem.isEnabled = application.runningApplication != nil
+            menu.addItem(forceQuitItem)
+            
+            if let bundleID = application.bundleIdentifier {
+                let isPinned = settings.pinnedTrayApps.contains(bundleID)
+                let pinTitle = isPinned ? "Unpin from Taskbar" : "Pin to Taskbar"
+                let customPinItem = NSMenuItem(title: pinTitle, action: #selector(togglePinTaskbar(_:)), keyEquivalent: "")
+                customPinItem.target = self
+                menu.addItem(customPinItem)
+            }
+            
+            let isOpenAtLogin = SMAppService.mainApp.status == .enabled
+            let loginTitle = isOpenAtLogin ? "Remove from Login Items" : "Open on Login"
+            let loginItem = NSMenuItem(title: loginTitle, action: #selector(toggleOpenOnLogin(_:)), keyEquivalent: "")
+            loginItem.target = self
+            menu.addItem(loginItem)
+        }
+
         return menu
     }
 
@@ -156,6 +183,34 @@ final class TrayIconView: NSView {
     @objc
     private func quitApplication(_ sender: Any?) {
         application.runningApplication?.terminate()
+    }
+
+    @objc
+    private func forceQuitApplication(_ sender: Any?) {
+        application.runningApplication?.forceTerminate()
+    }
+
+    @objc
+    private func togglePinTaskbar(_ sender: Any?) {
+        guard let bundleID = application.bundleIdentifier else { return }
+        if settings.pinnedTrayApps.contains(bundleID) {
+            settings.pinnedTrayApps.removeAll { $0 == bundleID }
+        } else {
+            settings.pinnedTrayApps.append(bundleID)
+        }
+    }
+
+    @objc
+    private func toggleOpenOnLogin(_ sender: Any?) {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            print("Failed to toggle SMAppService: \(error)")
+        }
     }
 
     @objc

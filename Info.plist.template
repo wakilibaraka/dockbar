@@ -29,5 +29,7 @@
     </dict>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSCalendarsUsageDescription</key>
+    <string>DeskBar shows your upcoming calendar events in the clock tray widget.</string>
 </dict>
 </plist>

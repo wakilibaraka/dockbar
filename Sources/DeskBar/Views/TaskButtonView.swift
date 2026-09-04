@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Combine
+import ServiceManagement
 
 enum DeskBarDragZone: String, Codable {
     case task
@@ -879,6 +880,28 @@ final class TaskButtonView: NSView, NSDraggingSource {
         menu.addItem(.separator())
         menu.addItem(makeMenuItem(title: "Quit", action: #selector(quitApplication(_:))))
 
+        if settings.richContextMenu, let app = owningApplication {
+            menu.addItem(.separator())
+            
+            let forceQuitItem = NSMenuItem(title: "Force Quit", action: #selector(forceQuitApplication(_:)), keyEquivalent: "")
+            forceQuitItem.target = self
+            menu.addItem(forceQuitItem)
+            
+            if let bundleID = app.bundleIdentifier {
+                let isPinned = settings.pinnedTrayApps.contains(bundleID)
+                let pinTitle = isPinned ? "Unpin from Taskbar" : "Pin to Taskbar"
+                let pinItem = NSMenuItem(title: pinTitle, action: #selector(togglePinTaskbar(_:)), keyEquivalent: "")
+                pinItem.target = self
+                menu.addItem(pinItem)
+            }
+            
+            let isOpenAtLogin = SMAppService.mainApp.status == .enabled
+            let loginTitle = isOpenAtLogin ? "Remove from Login Items" : "Open on Login"
+            let loginItem = NSMenuItem(title: loginTitle, action: #selector(toggleOpenOnLogin(_:)), keyEquivalent: "")
+            loginItem.target = self
+            menu.addItem(loginItem)
+        }
+
         return menu
     }
 
@@ -1080,6 +1103,34 @@ final class TaskButtonView: NSView, NSDraggingSource {
     @objc
     private func quitApplication(_ sender: Any?) {
         owningApplication?.terminate()
+    }
+
+    @objc
+    private func forceQuitApplication(_ sender: Any?) {
+        owningApplication?.forceTerminate()
+    }
+
+    @objc
+    private func togglePinTaskbar(_ sender: Any?) {
+        guard let bundleID = owningApplication?.bundleIdentifier else { return }
+        if settings.pinnedTrayApps.contains(bundleID) {
+            settings.pinnedTrayApps.removeAll { $0 == bundleID }
+        } else {
+            settings.pinnedTrayApps.append(bundleID)
+        }
+    }
+
+    @objc
+    private func toggleOpenOnLogin(_ sender: Any?) {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            print("Failed to toggle SMAppService: \(error)")
+        }
     }
 
     @objc

@@ -85,8 +85,8 @@ final class TaskbarSettings: ObservableObject {
         didSet { defaults.set(hoverDelay, forKey: "hoverDelay") }
     }
 
-    @Published var dockMode: DockMode {
-        didSet { defaults.set(dockMode.rawValue, forKey: "dockMode") }
+    @Published var hideNativeDock: Bool {
+        didSet { defaults.set(hideNativeDock, forKey: "hideNativeDock") }
     }
 
     @Published var showOverFullScreenApps: Bool {
@@ -153,6 +153,46 @@ final class TaskbarSettings: ObservableObject {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
     }
 
+    @Published var showClock: Bool {
+        didSet { defaults.set(showClock, forKey: "showClock") }
+    }
+
+    @Published var clockTargetApp: String {
+        didSet { defaults.set(clockTargetApp, forKey: "clockTargetApp") }
+    }
+
+    @Published var richContextMenu: Bool {
+        didSet { defaults.set(richContextMenu, forKey: "richContextMenu") }
+    }
+
+    @Published var pinnedTrayApps: [String] {
+        didSet { defaults.set(pinnedTrayApps, forKey: "pinnedTrayApps") }
+    }
+
+    @Published var clockTheme: ClockTheme {
+        didSet { defaults.set(clockTheme.rawValue, forKey: "clockTheme") }
+    }
+
+    @Published var showClockEvents: Bool {
+        didSet { defaults.set(showClockEvents, forKey: "showClockEvents") }
+    }
+
+    @Published var showQuickSettings: Bool {
+        didSet { defaults.set(showQuickSettings, forKey: "showQuickSettings") }
+    }
+
+    @Published var enabledQuickSettings: [String] {
+        didSet { defaults.set(enabledQuickSettings, forKey: "enabledQuickSettings") }
+    }
+
+    @Published var useAppIconAsLauncherButton: Bool {
+        didSet { defaults.set(useAppIconAsLauncherButton, forKey: "useAppIconAsLauncherButton") }
+    }
+
+    @Published var enableReopenLastQuit: Bool {
+        didSet { defaults.set(enableReopenLastQuit, forKey: "enableReopenLastQuit") }
+    }
+
     @Published var showOnAllMonitors: Bool {
         didSet { defaults.set(showOnAllMonitors, forKey: "showOnAllMonitors") }
     }
@@ -217,7 +257,7 @@ final class TaskbarSettings: ObservableObject {
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
         thumbnailSize = defaults.object(forKey: "thumbnailSize") as? CGFloat ?? Self.defaultThumbnailSize
         hoverDelay = defaults.object(forKey: "hoverDelay") as? TimeInterval ?? 0.4
-        dockMode = DockMode(rawValue: defaults.string(forKey: "dockMode") ?? "") ?? .hidden
+        hideNativeDock = defaults.object(forKey: "hideNativeDock") as? Bool ?? true
         showOverFullScreenApps = defaults.object(forKey: "showOverFullScreenApps") as? Bool ?? false
         flashAttentionIndicators = defaults.object(forKey: "flashAttentionIndicators") as? Bool ?? true
         showProgressIndicators = defaults.object(forKey: "showProgressIndicators") as? Bool ?? true
@@ -239,6 +279,16 @@ final class TaskbarSettings: ObservableObject {
             sessionManagerWidgetPinnedDisplayID = nil
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
+        showClock = defaults.object(forKey: "showClock") as? Bool ?? false
+        clockTargetApp = defaults.object(forKey: "clockTargetApp") as? String ?? "Calendar 366 II"
+        richContextMenu = defaults.object(forKey: "richContextMenu") as? Bool ?? false
+        pinnedTrayApps = defaults.stringArray(forKey: "pinnedTrayApps") ?? []
+        clockTheme = ClockTheme(rawValue: defaults.string(forKey: "clockTheme") ?? "") ?? .ocean
+        showClockEvents = defaults.object(forKey: "showClockEvents") as? Bool ?? false
+        showQuickSettings = defaults.object(forKey: "showQuickSettings") as? Bool ?? false
+        enabledQuickSettings = defaults.stringArray(forKey: "enabledQuickSettings") ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth"]
+        useAppIconAsLauncherButton = defaults.object(forKey: "useAppIconAsLauncherButton") as? Bool ?? false
+        enableReopenLastQuit = defaults.object(forKey: "enableReopenLastQuit") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
         layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .winstrix
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? false
