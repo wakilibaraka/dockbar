@@ -25,9 +25,13 @@ final class TaskbarContentView: NSView {
     private let accessibilityService = AccessibilityService()
 
     private let rootStackView = NSStackView()
+    private let leftPillBackground = ChromePillView(frame: .zero)
+    private let centerPillBackground = ChromePillView(frame: .zero)
+    private let rightPillBackground = ChromePillView(frame: .zero)
     private let bannerButton = NSButton()
     private let zonesStackView = NSStackView()
     private let taskZoneLayoutStackView = NSStackView()
+    private let systemZoneContainer = NSStackView()
     private let leftTaskZoneStackView = NSStackView()
     private let neutralTaskZoneStackView = NSStackView()
     private let rightTaskZoneStackView = NSStackView()
@@ -441,15 +445,51 @@ final class TaskbarContentView: NSView {
             taskZoneContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 32)
         ])
 
+        systemZoneContainer.orientation = .horizontal
+        systemZoneContainer.alignment = .centerY
+        systemZoneContainer.distribution = .fill
+        systemZoneContainer.spacing = 0
+        systemZoneContainer.translatesAutoresizingMaskIntoConstraints = false
+        
         zonesStackView.addArrangedSubview(launcherZoneView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
+        
         if let sessionManagerWidgetView {
-            zonesStackView.addArrangedSubview(sessionManagerWidgetView)
+            systemZoneContainer.addArrangedSubview(sessionManagerWidgetView)
         }
-        zonesStackView.addArrangedSubview(systemResourceWidgetView)
-        zonesStackView.addArrangedSubview(runningAppTrayView)
-        zonesStackView.addArrangedSubview(quickSettingsButtonView)
-        zonesStackView.addArrangedSubview(clockWidgetView)
+        systemZoneContainer.addArrangedSubview(systemResourceWidgetView)
+        systemZoneContainer.addArrangedSubview(runningAppTrayView)
+        systemZoneContainer.addArrangedSubview(quickSettingsButtonView)
+        systemZoneContainer.addArrangedSubview(clockWidgetView)
+        
+        zonesStackView.addArrangedSubview(systemZoneContainer)
+
+        // Pill Backgrounds
+        let pad: CGFloat = 4
+        leftPillBackground.translatesAutoresizingMaskIntoConstraints = false
+        centerPillBackground.translatesAutoresizingMaskIntoConstraints = false
+        rightPillBackground.translatesAutoresizingMaskIntoConstraints = false
+        
+        addSubview(leftPillBackground, positioned: .below, relativeTo: rootStackView)
+        addSubview(centerPillBackground, positioned: .below, relativeTo: rootStackView)
+        addSubview(rightPillBackground, positioned: .below, relativeTo: rootStackView)
+        
+        NSLayoutConstraint.activate([
+            leftPillBackground.leadingAnchor.constraint(equalTo: launcherZoneView.leadingAnchor, constant: -pad),
+            leftPillBackground.trailingAnchor.constraint(equalTo: launcherZoneView.trailingAnchor, constant: pad),
+            leftPillBackground.topAnchor.constraint(equalTo: launcherZoneView.topAnchor),
+            leftPillBackground.bottomAnchor.constraint(equalTo: launcherZoneView.bottomAnchor),
+            
+            centerPillBackground.leadingAnchor.constraint(equalTo: taskZoneContainer.leadingAnchor, constant: -pad),
+            centerPillBackground.trailingAnchor.constraint(equalTo: taskZoneContainer.trailingAnchor, constant: pad),
+            centerPillBackground.topAnchor.constraint(equalTo: taskZoneContainer.topAnchor),
+            centerPillBackground.bottomAnchor.constraint(equalTo: taskZoneContainer.bottomAnchor),
+            
+            rightPillBackground.leadingAnchor.constraint(equalTo: systemZoneContainer.leadingAnchor, constant: -pad),
+            rightPillBackground.trailingAnchor.constraint(equalTo: systemZoneContainer.trailingAnchor, constant: pad),
+            rightPillBackground.topAnchor.constraint(equalTo: systemZoneContainer.topAnchor),
+            rightPillBackground.bottomAnchor.constraint(equalTo: systemZoneContainer.bottomAnchor)
+        ])
 
         // Initial visibility
         quickSettingsButtonView.isHidden = !settings.showQuickSettings
@@ -477,6 +517,21 @@ final class TaskbarContentView: NSView {
             .sink { [weak self] show in
                 self?.quickSettingsButtonView.isHidden = !show
                 self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$layoutMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] mode in
+                guard let self else { return }
+                let isPills = mode == .pills
+                self.leftPillBackground.isHidden = !isPills
+                self.centerPillBackground.isHidden = !isPills
+                self.rightPillBackground.isHidden = !isPills
+                
+                self.leftPillBackground.updateVisualStyle(layoutMode: mode)
+                self.centerPillBackground.updateVisualStyle(layoutMode: mode)
+                self.rightPillBackground.updateVisualStyle(layoutMode: mode)
             }
             .store(in: &cancellables)
 
@@ -3205,47 +3260,3 @@ private extension NSEvent {
     }
 }
 
-extension TaskbarContentView: ChromeGeometryProvider {
-    func customChromeRects(for bounds: NSRect) -> [NSRect]? {
-        layoutSubtreeIfNeeded()
-        
-        let pad: CGFloat = 4 // padding around views
-        var rects: [NSRect] = []
-        
-        // 1. Left Pill (Launcher)
-        if !launcherZoneView.isHidden && launcherZoneView.bounds.width > 0 {
-            let frame = launcherZoneView.convert(launcherZoneView.bounds, to: self)
-            rects.append(frame.insetBy(dx: -pad, dy: 0))
-        }
-        
-        // 2. Center Pill (Task Zone)
-        if !taskZoneContainer.isHidden && taskZoneContainer.bounds.width > 0 {
-            let frame = taskZoneContainer.convert(taskZoneContainer.bounds, to: self)
-            rects.append(frame.insetBy(dx: -pad, dy: 0))
-        }
-        
-        // 3. Right Pill (System)
-        let rightViews: [NSView?] = [
-            sessionManagerWidgetView,
-            systemResourceWidgetView,
-            runningAppTrayView,
-            quickSettingsButtonView,
-            clockWidgetView
-        ]
-        
-        let visibleRightViews = rightViews.compactMap { $0 }.filter { !$0.isHidden && $0.bounds.width > 0 }
-        
-        if let first = visibleRightViews.first, let last = visibleRightViews.last {
-            let firstFrame = first.convert(first.bounds, to: self)
-            let lastFrame = last.convert(last.bounds, to: self)
-            let unionFrame = firstFrame.union(lastFrame)
-            rects.append(unionFrame.insetBy(dx: -pad, dy: 0))
-        }
-        
-        // Ensure no overlap? And ensure they don't exceed bounds?
-        // Let's constrain them to bounds height.
-        return rects.map { rect in
-            NSRect(x: rect.minX, y: bounds.minY, width: rect.width, height: bounds.height)
-        }
-    }
-}

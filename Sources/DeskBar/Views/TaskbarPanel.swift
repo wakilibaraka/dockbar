@@ -147,36 +147,13 @@ final class TaskbarPanel: NSPanel {
             hostedView.frame = hostedFrame
         }
 
-        if settings.layoutMode == .pills, let provider = hostedView as? ChromeGeometryProvider, let rects = provider.customChromeRects(for: rootView.bounds) {
-            // Pills mode: use multiple pills
-            if let firstRect = rects.first {
-                if !Self.framesApproximatelyEqual(primaryChromeView.frame, firstRect) {
-                    primaryChromeView.frame = firstRect
-                }
-            } else {
-                primaryChromeView.frame = .zero
-            }
-            primaryChromeView.updateVisualStyle(layoutMode: settings.layoutMode)
-
-            let extraRects = Array(rects.dropFirst())
-            while extraChromeViews.count < extraRects.count {
-                let newPill = ChromePillView(frame: .zero)
-                rootView.addSubview(newPill, positioned: .below, relativeTo: hostedView)
-                extraChromeViews.append(newPill)
-            }
-            while extraChromeViews.count > extraRects.count {
-                extraChromeViews.removeLast().removeFromSuperview()
-            }
-            for (index, rect) in extraRects.enumerated() {
-                let pill = extraChromeViews[index]
-                if !Self.framesApproximatelyEqual(pill.frame, rect) {
-                    pill.frame = rect
-                }
-                pill.updateVisualStyle(layoutMode: settings.layoutMode)
-            }
-            rootView.extraChromeViews = extraChromeViews
+        if settings.layoutMode == .pills {
+            primaryChromeView.isHidden = true
+            extraChromeViews.forEach { $0.removeFromSuperview() }
+            extraChromeViews.removeAll()
+            rootView.extraChromeViews = []
         } else {
-            // Normal mode
+            primaryChromeView.isHidden = false
             extraChromeViews.forEach { $0.removeFromSuperview() }
             extraChromeViews.removeAll()
             rootView.extraChromeViews = []

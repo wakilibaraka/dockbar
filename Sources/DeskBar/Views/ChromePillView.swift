@@ -31,8 +31,20 @@ final class ChromePillView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    private var currentLayoutMode: DeskBarLayoutMode = .pills
+
     func updateVisualStyle(layoutMode: DeskBarLayoutMode) {
-        let usesGlassChrome = layoutMode.usesGlassChrome || layoutMode == .pills
+        self.currentLayoutMode = layoutMode
+        updateLayers()
+    }
+    
+    override func layout() {
+        super.layout()
+        updateLayers()
+    }
+    
+    private func updateLayers() {
+        let usesGlassChrome = currentLayoutMode.usesGlassChrome || currentLayoutMode == .pills
         let cornerRadius = usesGlassChrome ? min(bounds.height / 2, 18) : 0
 
         layer?.cornerRadius = cornerRadius
@@ -49,7 +61,7 @@ final class ChromePillView: NSView {
         visualEffectView.layer?.cornerCurve = .continuous
         visualEffectView.layer?.masksToBounds = usesGlassChrome
 
-        glassHighlightLayer.isHidden = (layoutMode != .winstrix && layoutMode != .pills)
+        glassHighlightLayer.isHidden = (currentLayoutMode != .winstrix && currentLayoutMode != .pills)
         glassHighlightLayer.cornerRadius = cornerRadius
         glassHighlightLayer.cornerCurve = .continuous
         
