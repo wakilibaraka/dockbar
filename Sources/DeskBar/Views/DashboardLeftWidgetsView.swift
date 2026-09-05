@@ -97,7 +97,33 @@ final class DashboardLeftWidgetsView: NSView, NSTextViewDelegate {
     private let weatherLabel = NSTextField(labelWithString: "Weather: --")
     private let calendarLabel = NSTextField(labelWithString: "Next Event: None")
     private let noteTextView = NSTextView()
+    private let noteScroll = NSScrollView()
     private var cancellables = Set<AnyCancellable>()
+    private var settingsCancellables = Set<AnyCancellable>()
+    
+    func configure(settings: TaskbarSettings) {
+        settings.$showDashboardWeather
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in self?.weatherLabel.isHidden = !show }
+            .store(in: &settingsCancellables)
+            
+        settings.$showDashboardCalendar
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in self?.calendarLabel.isHidden = !show }
+            .store(in: &settingsCancellables)
+            
+        settings.$showDashboardStickyNotes
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in self?.noteScroll.isHidden = !show }
+            .store(in: &settingsCancellables)
+            
+        settings.$weatherLocation
+            .removeDuplicates()
+            .sink { [weak self] location in
+                self?.weatherService.fetchWeather(for: location)
+            }
+            .store(in: &settingsCancellables)
+    }
     
     init() {
         super.init(frame: .zero)
@@ -121,8 +147,6 @@ final class DashboardLeftWidgetsView: NSView, NSTextViewDelegate {
                 }
             }
             .store(in: &cancellables)
-            
-        weatherService.fetchWeather(for: UserDefaults.standard.string(forKey: "weatherLocation") ?? "San Francisco")
     }
     
     required init?(coder: NSCoder) {
@@ -146,7 +170,6 @@ final class DashboardLeftWidgetsView: NSView, NSTextViewDelegate {
         calendarLabel.font = .systemFont(ofSize: 13)
         stack.addArrangedSubview(calendarLabel)
         
-        let noteScroll = NSScrollView()
         noteScroll.translatesAutoresizingMaskIntoConstraints = false
         noteScroll.hasVerticalScroller = true
         

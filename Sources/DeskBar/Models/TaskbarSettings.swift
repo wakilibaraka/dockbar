@@ -266,6 +266,22 @@ final class TaskbarSettings: ObservableObject {
         didSet { defaults.set(startMenuStyle.rawValue, forKey: "startMenuStyle") }
     }
 
+    @Published var showDashboardWeather: Bool {
+        didSet { defaults.set(showDashboardWeather, forKey: "showDashboardWeather") }
+    }
+
+    @Published var showDashboardCalendar: Bool {
+        didSet { defaults.set(showDashboardCalendar, forKey: "showDashboardCalendar") }
+    }
+
+    @Published var showDashboardStickyNotes: Bool {
+        didSet { defaults.set(showDashboardStickyNotes, forKey: "showDashboardStickyNotes") }
+    }
+
+    @Published var weatherLocation: String {
+        didSet { defaults.set(weatherLocation, forKey: "weatherLocation") }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
@@ -347,6 +363,11 @@ final class TaskbarSettings: ObservableObject {
         } else {
             startMenuStyle = .fullDashboard
         }
+        
+        showDashboardWeather = defaults.object(forKey: "showDashboardWeather") as? Bool ?? true
+        showDashboardCalendar = defaults.object(forKey: "showDashboardCalendar") as? Bool ?? true
+        showDashboardStickyNotes = defaults.object(forKey: "showDashboardStickyNotes") as? Bool ?? true
+        weatherLocation = defaults.string(forKey: "weatherLocation") ?? "San Francisco"
     }
 
     func resetAppearanceSlidersToDefaults() {

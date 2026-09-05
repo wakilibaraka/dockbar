@@ -46,6 +46,7 @@ final class SettingsView: NSView {
     private let quitOnCloseCheckbox = NSButton(checkboxWithTitle: "Quit on close (last window)", target: nil, action: nil)
     private let showClockCheckbox = NSButton(checkboxWithTitle: "Show clock", target: nil, action: nil)
     private let clockTargetAppTextField = NSTextField(string: "")
+    private let weatherLocationTextField = NSTextField(string: "")
     private let clockThemePopupButton = NSPopUpButton()
     private let showClockEventsCheckbox = NSButton(checkboxWithTitle: "Show next event in clock", target: nil, action: nil)
     private let showQuickSettingsCheckbox = NSButton(checkboxWithTitle: "Show Quick Settings button", target: nil, action: nil)
@@ -66,6 +67,9 @@ final class SettingsView: NSView {
     private let showSystemResourceGPUMetricCheckbox = NSButton(checkboxWithTitle: "GPU usage", target: nil, action: nil)
     private let systemStatsDisplayModePopupButton = NSPopUpButton()
     private let systemResourceWidgetDisplayPopupButton = NSPopUpButton()
+    private let showDashboardWeatherCheckbox = NSButton(checkboxWithTitle: "Show Weather in Start", target: nil, action: nil)
+    private let showDashboardCalendarCheckbox = NSButton(checkboxWithTitle: "Show Calendar in Start", target: nil, action: nil)
+    private let showDashboardStickyNotesCheckbox = NSButton(checkboxWithTitle: "Show Sticky Notes in Start", target: nil, action: nil)
     private let showSessionManagerWidgetCheckbox = NSButton(checkboxWithTitle: "Show Terminal Agents Widget", target: nil, action: nil)
     private let sessionManagerWidgetDisplayPopupButton = NSPopUpButton()
     private let enableWindowSwitcherCheckbox = NSButton(checkboxWithTitle: "Enable Alt-Tab / Option-Tab window switcher", target: nil, action: nil)
@@ -190,8 +194,13 @@ final class SettingsView: NSView {
         let widgetsTab = NSTabViewItem(identifier: "widgets")
         widgetsTab.label = "Widgets"
         clockTargetAppTextField.placeholderString = "Calendar 366 II"
+        weatherLocationTextField.placeholderString = "San Francisco"
         clockThemePopupButton.addItems(withTitles: ClockTheme.allCases.map { $0.displayName })
         widgetsTab.view = makeFormView(rows: [
+            makeCheckboxRow(showDashboardWeatherCheckbox),
+            makeLabeledControlRow(label: "Weather City", control: weatherLocationTextField),
+            makeCheckboxRow(showDashboardCalendarCheckbox),
+            makeCheckboxRow(showDashboardStickyNotesCheckbox),
             makeCheckboxRow(showClockCheckbox),
             makeLabeledControlRow(label: "Clock theme", control: clockThemePopupButton),
             makeCheckboxRow(showClockEventsCheckbox),
@@ -359,6 +368,9 @@ final class SettingsView: NSView {
         clockTargetAppTextField.target = self
         clockTargetAppTextField.action = #selector(clockTargetAppChanged(_:))
 
+        weatherLocationTextField.target = self
+        weatherLocationTextField.action = #selector(weatherLocationChanged(_:))
+
         richContextMenuCheckbox.target = self
         richContextMenuCheckbox.action = #selector(richContextMenuChanged(_:))
 
@@ -424,6 +436,15 @@ final class SettingsView: NSView {
 
         showSystemResourceWidgetCheckbox.target = self
         showSystemResourceWidgetCheckbox.action = #selector(showSystemResourceWidgetChanged(_:))
+
+        showDashboardWeatherCheckbox.target = self
+        showDashboardWeatherCheckbox.action = #selector(showDashboardWeatherChanged(_:))
+
+        showDashboardCalendarCheckbox.target = self
+        showDashboardCalendarCheckbox.action = #selector(showDashboardCalendarChanged(_:))
+
+        showDashboardStickyNotesCheckbox.target = self
+        showDashboardStickyNotesCheckbox.action = #selector(showDashboardStickyNotesChanged(_:))
 
         systemStatsDisplayModePopupButton.target = self
         systemStatsDisplayModePopupButton.action = #selector(systemStatsDisplayModeChanged(_:))
@@ -555,6 +576,15 @@ final class SettingsView: NSView {
             .sink { [weak self] value in
                 if self?.clockTargetAppTextField.stringValue != value {
                     self?.clockTargetAppTextField.stringValue = value
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$weatherLocation
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                if self?.weatherLocationTextField.stringValue != value {
+                    self?.weatherLocationTextField.stringValue = value
                 }
             }
             .store(in: &cancellables)
@@ -742,6 +772,27 @@ final class SettingsView: NSView {
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
                 self?.enableActivityModeCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$showDashboardWeather
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showDashboardWeatherCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$showDashboardCalendar
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showDashboardCalendarCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$showDashboardStickyNotes
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showDashboardStickyNotesCheckbox.state = value ? .on : .off
             }
             .store(in: &cancellables)
 
@@ -1458,6 +1509,11 @@ final class SettingsView: NSView {
     }
 
     @objc
+    private func weatherLocationChanged(_ sender: NSTextField) {
+        settings.weatherLocation = sender.stringValue
+    }
+
+    @objc
     private func clockThemeChanged(_ sender: NSPopUpButton) {
         let idx = sender.indexOfSelectedItem
         let cases = ClockTheme.allCases
@@ -1634,6 +1690,21 @@ final class SettingsView: NSView {
     @objc
     private func showSystemResourceWidgetChanged(_ sender: NSButton) {
         settings.showSystemResourceWidget = sender.state == .on
+    }
+
+    @objc
+    private func showDashboardWeatherChanged(_ sender: NSButton) {
+        settings.showDashboardWeather = sender.state == .on
+    }
+
+    @objc
+    private func showDashboardCalendarChanged(_ sender: NSButton) {
+        settings.showDashboardCalendar = sender.state == .on
+    }
+
+    @objc
+    private func showDashboardStickyNotesChanged(_ sender: NSButton) {
+        settings.showDashboardStickyNotes = sender.state == .on
     }
 
     @objc

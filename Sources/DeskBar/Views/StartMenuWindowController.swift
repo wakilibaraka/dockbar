@@ -18,6 +18,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
     func configure(settings: TaskbarSettings, pinnedAppManager: PinnedAppManager) {
         self.settings = settings
         self.dashboardCenterView?.configure(pinnedAppManager: pinnedAppManager)
+        self.leftWidgetsView?.configure(settings: settings)
     }
     
     // Simplistic application model
@@ -64,6 +65,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
     private let leftWidgetsContainer = NSView()
     private let centerDashboardContainer = NSView()
     private let rightRailContainer = NSView()
+    private var leftWidgetsView: DashboardLeftWidgetsView?
     private var dashboardCenterView: DashboardCenterView?
     
     private func setupUI() {
@@ -128,6 +130,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
         rightRailContainer.addSubview(rightRailView)
         
         let leftWidgetsView = DashboardLeftWidgetsView()
+        self.leftWidgetsView = leftWidgetsView
         leftWidgetsView.translatesAutoresizingMaskIntoConstraints = false
         leftWidgetsContainer.addSubview(leftWidgetsView)
         
