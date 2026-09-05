@@ -163,7 +163,6 @@ final class LauncherZoneView: NSStackView {
         }
 
         buttonsStackView.addArrangedSubview(AppsLauncherButtonView())
-        buttonsStackView.addArrangedSubview(SearchButtonView())
 
         if settings.unifyPinnedAndRunning {
             return
