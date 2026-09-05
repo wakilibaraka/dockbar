@@ -1595,6 +1595,10 @@ final class TaskbarContentView: NSView {
     }
 
     private func shouldGroupWindows(_ windows: [WindowInfo]) -> Bool {
+        if settings.unifyPinnedAndRunning {
+            return true
+        }
+        
         switch settings.groupingMode {
         case .never:
             return false

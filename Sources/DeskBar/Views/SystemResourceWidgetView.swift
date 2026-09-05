@@ -4,8 +4,8 @@ import Combine
 final class SystemResourceWidgetView: NSView {
     static let separatorWidth: CGFloat = 1
     static let separatorHeight: CGFloat = 24
-    static let memoryWidth: CGFloat = 170
-    static let metricWidth: CGFloat = 125
+    static let memoryWidth: CGFloat = 88
+    static let metricWidth: CGFloat = 88
     static let collapseWidth: CGFloat = 28
     static let widgetHeight: CGFloat = 32
     static let stackSpacing: CGFloat = 8
@@ -675,11 +675,9 @@ final class SystemResourceMetricControl: NSControl {
     let metric: SystemResourceMetric
     private let titleLabel = NSTextField(labelWithString: "")
     private let valueLabel = NSTextField(labelWithString: "")
-    private let trackView = NSView()
-    private let fillView = NSView()
-    private var fillWidthConstraint: NSLayoutConstraint?
+    private let dotLayer = CALayer()
     private var fraction: Double?
-    private var fillColor = NSColor.controlAccentColor
+    private var severityColor: NSColor = .controlAccentColor
 
     init(metric: SystemResourceMetric) {
         self.metric = metric
@@ -706,7 +704,7 @@ final class SystemResourceMetricControl: NSControl {
 
     override func layout() {
         super.layout()
-        updateFillWidth()
+        dotLayer.frame = CGRect(x: bounds.width - 10, y: bounds.midY - 3, width: 6, height: 6)
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -726,7 +724,6 @@ final class SystemResourceMetricControl: NSControl {
             toolTip = detail
         }
         updateColors(severity: severity)
-        updateFillWidth()
     }
 
     private func configureSubviews() {
@@ -738,75 +735,50 @@ final class SystemResourceMetricControl: NSControl {
 
         valueLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
         valueLabel.textColor = .labelColor
-        valueLabel.alignment = .left
+        valueLabel.alignment = .right
         valueLabel.lineBreakMode = .byTruncatingTail
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        trackView.wantsLayer = true
-        trackView.layer?.cornerRadius = 4
-        trackView.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.35).cgColor
-        trackView.translatesAutoresizingMaskIntoConstraints = false
-
-        fillView.wantsLayer = true
-        fillView.layer?.cornerRadius = 4
-        fillView.translatesAutoresizingMaskIntoConstraints = false
+        dotLayer.cornerRadius = 3
+        dotLayer.backgroundColor = NSColor.systemGreen.cgColor
+        wantsLayer = true
+        layer?.addSublayer(dotLayer)
 
         addSubview(titleLabel)
         addSubview(valueLabel)
-        addSubview(trackView)
-        trackView.addSubview(fillView)
-
-        let fillWidthConstraint = fillView.widthAnchor.constraint(equalToConstant: 0)
-        self.fillWidthConstraint = fillWidthConstraint
 
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            titleLabel.widthAnchor.constraint(equalToConstant: 28),
+            titleLabel.widthAnchor.constraint(equalToConstant: 24),
 
-            trackView.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 8),
-            trackView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            trackView.widthAnchor.constraint(equalToConstant: metric == .memory ? 76 : 54),
-            trackView.heightAnchor.constraint(equalToConstant: 10),
-
-            valueLabel.leadingAnchor.constraint(equalTo: trackView.trailingAnchor, constant: 8),
-            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
-            valueLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-
-            fillView.leadingAnchor.constraint(equalTo: trackView.leadingAnchor),
-            fillView.topAnchor.constraint(equalTo: trackView.topAnchor),
-            fillView.bottomAnchor.constraint(equalTo: trackView.bottomAnchor),
-            fillWidthConstraint
+            valueLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 4),
+            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            valueLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
     }
 
     private func updateColors(severity: SystemResourceMetricSeverity) {
         switch severity {
         case .normal:
-            fillColor = metric == .memory ? .systemGreen : .controlAccentColor
+            severityColor = metric == .memory ? .systemGreen : .controlAccentColor
         case .warning:
-            fillColor = .systemYellow
+            severityColor = .systemYellow
         case .critical:
-            fillColor = .systemRed
+            severityColor = .systemRed
         case .unknown:
-            fillColor = .separatorColor
+            severityColor = .separatorColor
         }
 
-        fillView.layer?.backgroundColor = fillColor.cgColor
-        layer?.shadowColor = fillColor.cgColor
-        layer?.shadowOpacity = severity == .critical ? 0.35 : 0
-        layer?.shadowRadius = severity == .critical ? 5 : 0
-        layer?.shadowOffset = .zero
-    }
-
-    private func updateFillWidth() {
-        guard let fillWidthConstraint else {
-            return
-        }
-
-        let nextWidth = trackView.bounds.width * CGFloat(fraction ?? 0)
-        if abs(fillWidthConstraint.constant - nextWidth) > 0.5 {
-            fillWidthConstraint.constant = nextWidth
+        dotLayer.backgroundColor = severityColor.cgColor
+        
+        if severity == .critical {
+            dotLayer.shadowColor = severityColor.cgColor
+            dotLayer.shadowOpacity = 0.8
+            dotLayer.shadowRadius = 4
+            dotLayer.shadowOffset = .zero
+        } else {
+            dotLayer.shadowOpacity = 0
         }
     }
 }

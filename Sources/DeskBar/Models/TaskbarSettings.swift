@@ -321,7 +321,7 @@ final class TaskbarSettings: ObservableObject {
         useAppIconAsLauncherButton = defaults.object(forKey: "useAppIconAsLauncherButton") as? Bool ?? false
         enableReopenLastQuit = defaults.object(forKey: "enableReopenLastQuit") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
-        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .fullWidth
+        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .pills
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? false
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? false
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .controlOptionReturn
