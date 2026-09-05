@@ -2,14 +2,14 @@ import AppKit
 import Combine
 
 final class SystemResourceWidgetView: NSView {
-    private static let separatorWidth: CGFloat = 1
-    private static let separatorHeight: CGFloat = 24
-    private static let memoryWidth: CGFloat = 170
-    private static let metricWidth: CGFloat = 125
-    private static let collapseWidth: CGFloat = 28
-    private static let widgetHeight: CGFloat = 32
-    private static let stackSpacing: CGFloat = 8
-    private static let leadingInset: CGFloat = 4
+    static let separatorWidth: CGFloat = 1
+    static let separatorHeight: CGFloat = 24
+    static let memoryWidth: CGFloat = 170
+    static let metricWidth: CGFloat = 125
+    static let collapseWidth: CGFloat = 28
+    static let widgetHeight: CGFloat = 32
+    static let stackSpacing: CGFloat = 8
+    static let leadingInset: CGFloat = 4
 
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
@@ -697,7 +697,7 @@ final class SystemResourceMetricControl: NSControl {
     }
 
     override var intrinsicContentSize: NSSize {
-        NSSize(width: metric == .memory ? 170 : 125, height: 32)
+        NSSize(width: metric == .memory ? SystemResourceWidgetView.memoryWidth : SystemResourceWidgetView.metricWidth, height: SystemResourceWidgetView.widgetHeight)
     }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -718,9 +718,13 @@ final class SystemResourceMetricControl: NSControl {
     }
 
     func update(value: String, fraction: Double?, detail: String, severity: SystemResourceMetricSeverity) {
-        valueLabel.stringValue = value
+        if valueLabel.stringValue != value {
+            valueLabel.stringValue = value
+        }
         self.fraction = fraction.map { min(max($0, 0), 1) }
-        toolTip = detail
+        if toolTip != detail {
+            toolTip = detail
+        }
         updateColors(severity: severity)
         updateFillWidth()
     }

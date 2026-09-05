@@ -203,14 +203,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configureStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        self.statusItem = statusItem
 
         if let button = statusItem.button {
-            let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
-            let image = NSImage(
-                systemSymbolName: "gearshape",
-                accessibilityDescription: "Settings"
-            )?.withSymbolConfiguration(config)
-            image?.isTemplate = true
+            // Draw a distinct, custom-designed template icon (DeskBar mark)
+            let iconSize = NSSize(width: 18, height: 18)
+            let image = NSImage(size: iconSize, flipped: false) { rect in
+                NSColor.black.setFill()
+                
+                // Draw a stylized dock at the bottom
+                let dockRect = NSRect(x: 2, y: 4, width: 14, height: 6)
+                let dockPath = NSBezierPath(roundedRect: dockRect, xRadius: 2, yRadius: 2)
+                dockPath.fill()
+                
+                // Draw tiny pills to represent the taskbar segments
+                NSColor.clear.set()
+                let leftPill = NSRect(x: 3.5, y: 5.5, width: 2, height: 3)
+                NSBezierPath(roundedRect: leftPill, xRadius: 1, yRadius: 1).fill()
+                
+                let centerPill = NSRect(x: 6.5, y: 5.5, width: 5, height: 3)
+                NSBezierPath(roundedRect: centerPill, xRadius: 1, yRadius: 1).fill()
+                
+                let rightPill = NSRect(x: 12.5, y: 5.5, width: 2, height: 3)
+                NSBezierPath(roundedRect: rightPill, xRadius: 1, yRadius: 1).fill()
+                
+                return true
+            }
+            image.isTemplate = true
             button.image = image
         }
 

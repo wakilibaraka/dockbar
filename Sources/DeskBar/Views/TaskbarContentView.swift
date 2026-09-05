@@ -3200,3 +3200,48 @@ private extension NSEvent {
             type == .otherMouseDown
     }
 }
+
+extension TaskbarContentView: ChromeGeometryProvider {
+    func customChromeRects(for bounds: NSRect) -> [NSRect]? {
+        layoutSubtreeIfNeeded()
+        
+        let pad: CGFloat = 4 // padding around views
+        var rects: [NSRect] = []
+        
+        // 1. Left Pill (Launcher)
+        if !launcherZoneView.isHidden && launcherZoneView.bounds.width > 0 {
+            let frame = launcherZoneView.convert(launcherZoneView.bounds, to: self)
+            rects.append(frame.insetBy(dx: -pad, dy: 0))
+        }
+        
+        // 2. Center Pill (Task Zone)
+        if !taskZoneContainer.isHidden && taskZoneContainer.bounds.width > 0 {
+            let frame = taskZoneContainer.convert(taskZoneContainer.bounds, to: self)
+            rects.append(frame.insetBy(dx: -pad, dy: 0))
+        }
+        
+        // 3. Right Pill (System)
+        let rightViews: [NSView?] = [
+            sessionManagerWidgetView,
+            systemResourceWidgetView,
+            runningAppTrayView,
+            quickSettingsButtonView,
+            clockWidgetView
+        ]
+        
+        let visibleRightViews = rightViews.compactMap { $0 }.filter { !$0.isHidden && $0.bounds.width > 0 }
+        
+        if let first = visibleRightViews.first, let last = visibleRightViews.last {
+            let firstFrame = first.convert(first.bounds, to: self)
+            let lastFrame = last.convert(last.bounds, to: self)
+            let unionFrame = firstFrame.union(lastFrame)
+            rects.append(unionFrame.insetBy(dx: -pad, dy: 0))
+        }
+        
+        // Ensure no overlap? And ensure they don't exceed bounds?
+        // Let's constrain them to bounds height.
+        return rects.map { rect in
+            NSRect(x: rect.minX, y: bounds.minY, width: rect.width, height: bounds.height)
+        }
+    }
+}
