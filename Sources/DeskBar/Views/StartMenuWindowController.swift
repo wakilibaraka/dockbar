@@ -17,8 +17,6 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
     
     func configure(settings: TaskbarSettings, pinnedAppManager: PinnedAppManager) {
         self.settings = settings
-        self.dashboardCenterView?.configure(pinnedAppManager: pinnedAppManager)
-        self.leftWidgetsView?.configure(settings: settings)
     }
     
     // Simplistic application model
@@ -62,11 +60,8 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
     }
 
     private let bodyStackView = NSStackView()
-    private let leftWidgetsContainer = NSView()
-    private let centerDashboardContainer = NSView()
+    private let appsContainer = NSView()
     private let rightRailContainer = NSView()
-    private var leftWidgetsView: DashboardLeftWidgetsView?
-    private var dashboardCenterView: DashboardCenterView?
     
     private func setupUI() {
         guard let window = window else { return }
@@ -94,75 +89,35 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
         bodyStackView.distribution = .fillProportionally
         visualEffect.addSubview(bodyStackView)
         
-        leftWidgetsContainer.translatesAutoresizingMaskIntoConstraints = false
-        centerDashboardContainer.translatesAutoresizingMaskIntoConstraints = false
+        appsContainer.translatesAutoresizingMaskIntoConstraints = false
         rightRailContainer.translatesAutoresizingMaskIntoConstraints = false
         
-        // Setup simple list (scrollView) inside center container for now
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true
         scrollView.documentView = resultsTableView
         scrollView.drawsBackground = false
-        centerDashboardContainer.addSubview(scrollView)
-        
-
-        
-        let dashboardCenterView = DashboardCenterView()
-        dashboardCenterView.translatesAutoresizingMaskIntoConstraints = false
-        centerDashboardContainer.addSubview(dashboardCenterView)
-        
-        self.dashboardCenterView = dashboardCenterView
-        
-        dashboardCenterView.onToggleAllApps = { [weak self] in
-            guard let self = self else { return }
-            let showingList = !self.scrollView.isHidden
-            self.scrollView.isHidden = showingList
-            self.dashboardCenterView?.isHidden = !showingList
-        }
-        
-        dashboardCenterView.onLaunchApp = { [weak self] url in
-            NSWorkspace.shared.open(url)
-            self?.toggle() // close menu
-        }
+        appsContainer.addSubview(scrollView)
         
         let rightRailView = DashboardRightRailView()
         rightRailView.translatesAutoresizingMaskIntoConstraints = false
         rightRailContainer.addSubview(rightRailView)
         
-        let leftWidgetsView = DashboardLeftWidgetsView()
-        self.leftWidgetsView = leftWidgetsView
-        leftWidgetsView.translatesAutoresizingMaskIntoConstraints = false
-        leftWidgetsContainer.addSubview(leftWidgetsView)
-        
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: centerDashboardContainer.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: centerDashboardContainer.bottomAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: centerDashboardContainer.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: centerDashboardContainer.trailingAnchor),
-            
-            dashboardCenterView.topAnchor.constraint(equalTo: centerDashboardContainer.topAnchor),
-            dashboardCenterView.bottomAnchor.constraint(equalTo: centerDashboardContainer.bottomAnchor),
-            dashboardCenterView.leadingAnchor.constraint(equalTo: centerDashboardContainer.leadingAnchor),
-            dashboardCenterView.trailingAnchor.constraint(equalTo: centerDashboardContainer.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: appsContainer.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: appsContainer.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: appsContainer.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: appsContainer.trailingAnchor),
             
             rightRailView.topAnchor.constraint(equalTo: rightRailContainer.topAnchor),
             rightRailView.bottomAnchor.constraint(equalTo: rightRailContainer.bottomAnchor),
             rightRailView.leadingAnchor.constraint(equalTo: rightRailContainer.leadingAnchor),
-            rightRailView.trailingAnchor.constraint(equalTo: rightRailContainer.trailingAnchor),
-            
-            leftWidgetsView.topAnchor.constraint(equalTo: leftWidgetsContainer.topAnchor),
-            leftWidgetsView.bottomAnchor.constraint(equalTo: leftWidgetsContainer.bottomAnchor),
-            leftWidgetsView.leadingAnchor.constraint(equalTo: leftWidgetsContainer.leadingAnchor),
-            leftWidgetsView.trailingAnchor.constraint(equalTo: leftWidgetsContainer.trailingAnchor)
+            rightRailView.trailingAnchor.constraint(equalTo: rightRailContainer.trailingAnchor)
         ])
         
-        bodyStackView.addArrangedSubview(leftWidgetsContainer)
-        bodyStackView.addArrangedSubview(centerDashboardContainer)
+        bodyStackView.addArrangedSubview(appsContainer)
         bodyStackView.addArrangedSubview(rightRailContainer)
         
-        // Set widths for side panels
         NSLayoutConstraint.activate([
-            leftWidgetsContainer.widthAnchor.constraint(equalToConstant: 240),
             rightRailContainer.widthAnchor.constraint(equalToConstant: 240)
         ])
         
@@ -221,11 +176,8 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
         let query = searchField.stringValue
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if settings?.startMenuStyle == .fullDashboard {
-            let isTyping = !trimmed.isEmpty
-            scrollView.isHidden = !isTyping
-            dashboardCenterView?.isHidden = isTyping
-        }
+        // We always show the scrollView now
+        scrollView.isHidden = false
         
         if trimmed.isEmpty {
             stopQuery()
@@ -280,6 +232,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
         let mdQuery = NSMetadataQuery()
         mdQuery.predicate = NSPredicate(format: "%K CONTAINS[cd] %@", NSMetadataItemFSNameKey, query)
         mdQuery.searchScopes = [NSMetadataQueryUserHomeScope]
+        mdQuery.operationQueue = OperationQueue()
         
         NotificationCenter.default.addObserver(self, selector: #selector(queryDidUpdate(_:)), name: .NSMetadataQueryDidUpdate, object: mdQuery)
         NotificationCenter.default.addObserver(self, selector: #selector(queryDidUpdate(_:)), name: .NSMetadataQueryDidFinishGathering, object: mdQuery)
@@ -301,18 +254,22 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
             }
         }
         
-        // Merge results: Apps -> Files -> WebSearch
-        let apps = displayedResults.compactMap { if case .app(let u) = $0 { return u } else { return nil } }
-        let web = displayedResults.compactMap { if case .webSearch(let q) = $0 { return q } else { return nil } }.first ?? ""
-        
-        var newResults = apps.map { SearchResultItem.app($0) }
-        newResults.append(contentsOf: files.map { SearchResultItem.file($0) })
-        if !web.isEmpty {
-            newResults.append(.webSearch(web))
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Merge results: Apps -> Files -> WebSearch
+            let apps = self.displayedResults.compactMap { if case .app(let u) = $0 { return u } else { return nil } }
+            let web = self.displayedResults.compactMap { if case .webSearch(let q) = $0 { return q } else { return nil } }.first ?? ""
+            
+            var newResults = apps.map { SearchResultItem.app($0) }
+            newResults.append(contentsOf: files.map { SearchResultItem.file($0) })
+            if !web.isEmpty {
+                newResults.append(.webSearch(web))
+            }
+            
+            self.displayedResults = newResults
+            self.resultsTableView.reloadData()
         }
-        
-        displayedResults = newResults
-        resultsTableView.reloadData()
         
         query.enableUpdates()
     }
@@ -360,7 +317,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
             stopQuery()
         } else {
             let isDashboard = settings?.startMenuStyle == .fullDashboard
-            let width: CGFloat = isDashboard ? 900 : 450
+            let width: CGFloat = isDashboard ? 650 : 450
             let height: CGFloat = 600
             
             if window.frame.width != width {
@@ -369,7 +326,6 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
                 window.setFrame(newFrame, display: true)
             }
             
-            leftWidgetsContainer.isHidden = !isDashboard
             rightRailContainer.isHidden = !isDashboard
             
             if let triggerView = triggerView {
@@ -383,13 +339,7 @@ final class StartMenuWindowController: NSWindowController, NSSearchFieldDelegate
             searchField.placeholderString = mode == .search ? "Search files..." : "Type to search..."
             searchField.stringValue = ""
             
-            if isDashboard && mode != .search {
-                scrollView.isHidden = true
-                dashboardCenterView?.isHidden = false
-            } else {
-                scrollView.isHidden = false
-                dashboardCenterView?.isHidden = true
-            }
+            scrollView.isHidden = false
             
             if mode == .search {
                 displayedResults = allApps.map { .app($0) }
