@@ -218,9 +218,9 @@ final class TaskbarContentView: NSView {
         let contentWidth =
             launcherZoneView.preferredContentWidth() +
             preferredTaskZoneWidth() +
-            (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.preferredContentWidth() +
+            0 +
+            0 +
+            0 + runningAppTrayView.preferredContentWidth() +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
 
@@ -455,12 +455,12 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
         if let sessionManagerWidgetView {
-            systemZoneContainer.addArrangedSubview(sessionManagerWidgetView)
+            // systemZoneContainer.addArrangedSubview(sessionManagerWidgetView)
         }
-        systemZoneContainer.addArrangedSubview(systemResourceWidgetView)
+        // systemZoneContainer.addArrangedSubview(systemResourceWidgetView)
         systemZoneContainer.addArrangedSubview(runningAppTrayView)
-        systemZoneContainer.addArrangedSubview(quickSettingsButtonView)
-        systemZoneContainer.addArrangedSubview(clockWidgetView)
+        // systemZoneContainer.addArrangedSubview(quickSettingsButtonView)
+        // systemZoneContainer.addArrangedSubview(clockWidgetView)
         
         zonesStackView.addArrangedSubview(systemZoneContainer)
 
@@ -1682,9 +1682,9 @@ final class TaskbarContentView: NSView {
 
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.minimumOverflowContentWidth() +
+            0 +
+            0 +
+            0 + runningAppTrayView.minimumOverflowContentWidth() +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1699,9 +1699,9 @@ final class TaskbarContentView: NSView {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
-            (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+            0 +
+            0 +
+            0 + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1731,8 +1731,8 @@ final class TaskbarContentView: NSView {
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
-                (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-                systemResourceWidgetView.preferredContentWidth() +
+                0 +
+                0 +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets)
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             trayVisibleApplicationCapacity = runningAppTrayView.visibleApplicationCapacity(
@@ -1747,9 +1747,9 @@ final class TaskbarContentView: NSView {
             trayVisibleApplicationCapacity = nil
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
-                (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-                systemResourceWidgetView.preferredContentWidth() +
-                (settings.showQuickSettings ? 32 : 0) + clockWidgetView.preferredContentWidth() + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+                0 +
+                0 +
+                0 + runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

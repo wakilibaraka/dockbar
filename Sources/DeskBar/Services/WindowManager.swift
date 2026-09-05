@@ -359,7 +359,7 @@ final class WindowManager: ObservableObject {
     }
 
     private func startPollTimer() {
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
             self?.refresh(forceDerivedState: false)
         }
         pollTimer?.tolerance = 5.0

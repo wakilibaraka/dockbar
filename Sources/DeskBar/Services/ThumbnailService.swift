@@ -6,7 +6,7 @@ import ScreenCaptureKit
 final class ThumbnailService: ObservableObject {
     @Published var isScreenRecordingGranted: Bool
 
-    private let cacheTTL: TimeInterval = 2
+    private let cacheTTL: TimeInterval = 5
     private var cache: [CGWindowID: CachedThumbnail] = [:]
 
     init() {
