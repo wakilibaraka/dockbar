@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func singleInstanceLockRejectsSecondHolderUntilReleased() {

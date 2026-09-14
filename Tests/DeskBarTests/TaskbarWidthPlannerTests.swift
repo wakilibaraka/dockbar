@@ -1,6 +1,6 @@
 import CoreGraphics
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 struct TaskbarWidthPlannerTests {
     @Test

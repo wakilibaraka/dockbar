@@ -1,8 +1,10 @@
 import CoreGraphics
+import QuartzCore
 
 struct BareCommandShortcutDetector {
     private(set) var isTrackingCommandTap = false
     private var isCommandDown = false
+    private var lastCommandDownTime: CFTimeInterval = 0
 
     mutating func handleFlagsChanged(_ flags: CGEventFlags) -> Bool {
         let commandIsDown = flags.contains(.maskCommand)
@@ -14,6 +16,7 @@ struct BareCommandShortcutDetector {
         if commandIsDown {
             if !isCommandDown {
                 isTrackingCommandTap = !hasOtherModifier
+                lastCommandDownTime = CACurrentMediaTime()
             } else if hasOtherModifier {
                 isTrackingCommandTap = false
             }
@@ -25,8 +28,9 @@ struct BareCommandShortcutDetector {
             isTrackingCommandTap = false
             isCommandDown = false
         }
-
-        return isCommandDown && isTrackingCommandTap && !hasOtherModifier
+        
+        let elapsed = CACurrentMediaTime() - lastCommandDownTime
+        return isCommandDown && isTrackingCommandTap && !hasOtherModifier && elapsed >= 0.25
     }
 
     mutating func handleKeyDown() {

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func launcherAppLoginItemManagerWritesLaunchAgentPlist() throws {

@@ -1,166 +1,150 @@
-# DeskBar
+# DockBar
 
-A native macOS taskbar replacement built with Swift and AppKit. Sits at the bottom of your screen and shows your running windows — click to switch, right-click for a Dock-style menu.
+> **A Windows-style taskbar for macOS** — native AppKit, zero dependencies, beautiful glass UI.
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <img src="Resources/icon_preview.jpg" width="128" alt="DockBar Icon"/>
+</p>
 
-## Why
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/Swift-5.10-orange?style=flat-square" />
+  <img src="https://img.shields.io/badge/AppKit-native-purple?style=flat-square" />
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
+</p>
 
-macOS doesn't have a Windows-style taskbar — the Dock shows apps, not windows. If you work with many windows across multiple apps, switching between them means Cmd+Tab, Mission Control, or clicking through stacks. DeskBar gives you a persistent bottom bar with one button per window, so you always know what's open and can switch with a single click.
+---
 
-Lightweight, native, no external dependencies. Does not modify any system settings or shortcuts.
+macOS shows you **apps**, not **windows**. DockBar fixes that.
+
+It sits at the bottom of your screen — like the Windows taskbar — and shows you every open window as its own button. One click to switch, right-click for a full action menu. No Cmd+Tab roulette, no Mission Control hunting.
+
+---
 
 ## Features
 
-- **Three-zone layout** — Launcher (pinned apps) | Task Zone (windows) | Running-App Tray
-- **System resource widget** — collapsible MEM/CPU/GPU widget with per-metric toggles and Activity Monitor history shortcuts
-- **Per-window switching** — click a task button to raise that specific window, not all windows from the app
-- **AltTab-style window switcher** — Option+Tab cycles individual windows with a bold glass thumbnail overlay
-- **Dock-style right-click menus** — task and launcher menus expose windows plus Show All Windows, Hide, Quit, and launcher options
-- **Real-time updates** — windows appear/disappear as you open/close them, no polling lag
-- **Multi-monitor** — taskbar on every display, each showing only that display's windows
-- **Hover thumbnails** — live window previews via ScreenCaptureKit (requires Screen Recording permission)
-- **Window grouping** — optionally group windows by app with expandable groups
-- **Drag reorder** — rearrange task buttons, pinned items hold position across activations
-- **Stable ordering** — tasks stay where they are, no jarring MRU jumps
-- **Minimized windows stay visible** — dimmed in the taskbar (Windows-style), click to restore
-- **Settings** — configurable full-width/compact layouts, shortcuts, appearance, Dock behavior, launchers, and blacklist
-- **Dock coexistence** — three modes (independent, auto-hide, hidden) with crash-safe restore
-- **Start at login** — LaunchAgent-based, no Developer ID required
-- **Blacklist** — hide apps you don't want in the taskbar
-- **Badge dots** — best-effort notification indicators
-- **Smooth animations** — fade in/out on window appear/disappear
-- **Accessibility graceful degradation** — works in reduced mode without AX permission
+### Core Taskbar
+- **Per-window task buttons** — one button per open window, not per app
+- **Floating compact glass mode** — a pill-shaped bar that doesn't take up your whole screen
+- **Full-width mode** — classic Windows-style edge-to-edge bar
+- **Multi-monitor** — separate bar on each display showing only that screen's windows
+- **Minimized windows stay visible** — dimmed badge (Windows-style), click to restore
+- **Stable ordering** — windows stay where they are, no MRU jump surprises
+- **Drag to reorder** — rearrange task buttons freely
+
+### Window Switching
+- **Option+Tab window switcher** — cycles individual windows (not apps) with a glass thumbnail overlay
+- **Hover thumbnails** — live window previews via ScreenCaptureKit
+- **Middle-click** a button to close that window instantly
+
+### System Tray
+- **Wi-Fi widget** — shows connection status with SSID and signal quality on hover; click to open Wi-Fi settings
+- **Quick Settings panel** — Windows-style action center with a grid of toggles:
+  - 🌙 Dark Mode  
+  - 🔇 Mute Audio  
+  - 🎙️ Mute Mic  
+  - ☕ Keep Awake  
+  - 📡 Bluetooth  
+  - 🗂️ Hide Desktop  
+  - 👁️ Hidden Files  
+- **Volume slider** — real-time CoreAudio volume control directly in the panel
+- **Visual divider** between running apps and system tray
+
+### Launcher Zone
+- **Pinned apps** — pin any app to the left launcher zone
+- **Apps launcher shortcut** — customizable keyboard shortcut (default: Control+Option+Return)
+
+### System Resource Widget
+- Collapsible MEM/CPU/GPU widget
+- Per-metric toggles
+- Click to open Activity Monitor
+
+### Appearance & Settings
+- Configurable taskbar height, font size, max button width
+- Icon-only mode (hide window titles)
+- Window grouping by app with group indicator dots
+- Dock coexistence — auto-hide, independent, or hidden modes
+
+---
 
 ## Install
 
+### Download (Recommended)
+Download the latest **DockBar-v1.x.x.dmg** from [Releases](https://github.com/wakilibaraka/dockbar/releases), open it, and drag `DockBar.app` to your `/Applications` folder.
+
+### Build from Source
 ```bash
-# Clone and build
-git clone https://github.com/rajeshgoli/deskbar.git
-cd deskbar
+git clone https://github.com/wakilibaraka/dockbar.git
+cd dockbar
 swift build -c release
-
-# Package into .app bundle
 bash scripts/package.sh
-
-# Install
-ditto .build/release/DeskBar.app /Applications/DeskBar.app
+cp -r .build/release/DockBar.app /Applications/
+open /Applications/DockBar.app
 ```
 
-Then open `/Applications/DeskBar.app`. Use `ditto` rather than `cp -r` so the
-code signature survives the copy intact.
+No Xcode required — only the Swift toolchain (`xcode-select --install`).
+
+---
 
 ## First Launch
 
-1. **Accessibility permission** — an amber banner will appear. Click it to open System Settings, then add DeskBar under Privacy & Security > Accessibility.
-2. **Screen Recording permission** (optional, for hover and switcher thumbnails) — System Settings > Privacy & Security > Screen Recording > add DeskBar.
-3. **Gear icon** in the menu bar — access Settings or Quit.
+1. **Accessibility permission** — a banner will appear. Click it → System Settings → Privacy & Security → Accessibility → add DockBar. Required for window detection.
+2. **Screen Recording** (optional) — for hover thumbnails and the window switcher overlay. System Settings → Privacy & Security → Screen Recording → add DockBar.
 
-Rebuilding and reinstalling does *not* cost you those grants, as long as the
-bundle is signed with a persistent certificate -- see [Code signing](#code-signing).
-If you do need to start over:
+If you rebuild, you may need to re-grant:
 ```bash
 tccutil reset Accessibility com.deskbar.app
-tccutil reset ScreenCapture com.deskbar.app
 ```
 
-## Code signing
-
-macOS remembers an Accessibility or Screen Recording grant by the app's
-*designated requirement*, not by its path. An ad-hoc signature (`codesign -s -`)
-has no certificate to anchor that requirement to, so every rebuild looks like a
-different app and macOS asks for permission all over again.
-
-`scripts/package.sh` therefore signs the bundle with a persistent local
-certificate, and verifies afterwards that the identifier and designated
-requirement came out exactly as configured -- a mismatch fails the package
-rather than handing you a bundle that will silently ask for approval again. The
-identity lives in `config/signing.env` as the SHA-1 fingerprint from
-`security find-identity -v -p codesigning`.
-
-On a machine without that certificate, packaging warns loudly and falls back to
-ad-hoc signing so a fresh clone still builds. Set `DESKBAR_REQUIRE_SIGNING=1` to
-make that a hard failure instead.
-
-To use your own certificate, create a self-signed code signing certificate in
-Keychain Access (*Certificate Assistant > Create a Certificate*, type *Code
-Signing*, self-signed), then point the config at it. The requirement has to be
-read back off a bundle your certificate actually signed rather than assembled by
-hand, so this is a two-step bootstrap:
-
-```bash
-# 1. Copy the 40-hex fingerprint of your certificate
-security find-identity -v -p codesigning
-
-# 2. In config/signing.env, set DESKBAR_SIGN_IDENTITY to that fingerprint and
-#    leave DESKBAR_SIGN_DESIGNATED_REQUIREMENT empty. An empty requirement
-#    skips the requirement check, which is what makes this first package
-#    possible before the expected value is known.
-
-# 3. Package, then read back the requirement your certificate produced
-swift build -c release
-bash scripts/package.sh
-codesign -d -r- .build/release/DeskBar.app   # copy the exact 'designated =>' line
-
-# 4. Paste that line into config/signing.env as
-#    DESKBAR_SIGN_DESIGNATED_REQUIREMENT, and repackage to confirm it passes
-bash scripts/package.sh
-```
-
-Leaving the requirement blank permanently is not the same thing: the check is
-the only guard that a certificate swap has not quietly changed the identity your
-existing grants are keyed to. Switching certificates does change the designated
-requirement, so the permissions have to be granted once more after a switch.
+---
 
 ## Usage
 
-| Action | What happens |
-|--------|-------------|
-| **Click** a task button | Raises that specific window |
-| **Right-click** a task button | Dock-style menu: window list, Show All Windows, Hide, Pin, Blacklist, Quit |
-| **Click** the Apps button | Opens the macOS Apps launcher |
-| **Click** a launcher icon | Activates the app (launches if not running) |
-| **Right-click** a launcher icon | Dock-style menu: app-specific actions, window list, Options, Show All Windows, Hide, Quit |
-| **Option+Tab** | Opens the window switcher and advances to the next window |
-| **Shift+Option+Tab** | Moves backward in the window switcher |
-| **Release Option** | Activates the highlighted window |
-| **Escape** while switching | Cancels the switcher without changing windows |
-| **Apps launcher shortcut** | Opens the macOS Apps launcher; defaults to Control-Option-Return and can be changed in Settings |
-| **Hover** a task button | Shows live window thumbnail (if Screen Recording granted) |
-| **Middle-click** a task button | Closes that window |
-| **Click a tray icon** | Activates the app, or reopens it if it is running without windows |
-| **Drag** task buttons | Reorder; dragged items hold position |
-| **Gear icon** in menu bar | Open Settings or Quit |
+| Action | Result |
+|--------|--------|
+| **Click** a task button | Raise that specific window |
+| **Right-click** a task button | Window list, Hide, Pin, Blacklist, Quit |
+| **Option+Tab** | Window switcher — cycle all open windows |
+| **Hover** a task button | Live window thumbnail |
+| **Middle-click** a task button | Close that window |
+| **Click Wi-Fi icon** | Open Wi-Fi settings |
+| **Hover Wi-Fi icon** | Show SSID + signal quality |
+| **Click ⊟ icon** | Open Quick Settings panel |
+| **Drag** task buttons | Reorder freely |
+| **Gear** in menu bar | Open Settings or Quit |
 
-## Settings
-
-Accessible via the gear icon in the menu bar.
-
-| Tab | Options |
-|-----|---------|
-| General | Start at login, Dock mode |
-| Appearance | DeskBar layout, taskbar height, font size, max button width, show titles, thumbnail size, reset sliders |
-| Behavior | Hover delay, group by app, drag reorder, middle-click closes, attention/progress indicators, activity mode, show over full-screen, multi-monitor, Alt-Tab / Option-Tab, Apps launcher shortcut |
-| Widgets | System resource widget on/off, display pinning, memory/CPU/GPU metric toggles |
-| Launcher | Manage pinned apps |
-| Blacklist | Manage hidden apps |
+---
 
 ## Requirements
 
-- macOS 14.0+
-- No external dependencies — system frameworks only
-- No Xcode required — builds with Swift Package Manager
+- macOS 14.0 (Sonoma) or later
+- No external dependencies — pure system frameworks
+- No Xcode required to build
+
+---
 
 ## Architecture
 
-Pure AppKit, no SwiftUI. Key components:
+Pure AppKit — no SwiftUI, no Electron, no web views.
 
-- **TaskbarPanel** — `NSPanel` with `.nonactivatingPanel` at `.statusBar` level
-- **WindowManager** — two-tier storage (authoritative + provisional), AXObserver + CGWindowList polling
-- **AccessibilityService** — `_AXUIElementGetWindow` via dlsym with frame-matching fallback
-- **ThumbnailService** — ScreenCaptureKit capture with 2s cache
-- **WindowSwitcherService** — global Option+Tab event tap, glass overlay, and deferred per-window activation
-- **DockManager** — three-mode Dock control with watchdog LaunchAgent for crash recovery
+| Component | Description |
+|-----------|-------------|
+| `TaskbarPanel` | `NSPanel` at `.statusBar` level, non-activating |
+| `WindowManager` | AXObserver + CGWindowList polling, two-tier authoritative/provisional storage |
+| `AccessibilityService` | `_AXUIElementGetWindow` via dlsym with frame-matching fallback |
+| `ThumbnailService` | ScreenCaptureKit with 2s cache |
+| `WindowSwitcherService` | Global Option+Tab event tap, glass overlay |
+| `QuickSettingsManager` | Modular protocol-based toggle system — 20+ toggles, all extensible |
+| `DockManager` | Three-mode Dock control with watchdog LaunchAgent |
+| `ConnectivityTrayView` | CoreWLAN Wi-Fi status + CoreAudio volume |
+
+---
+
+## Credits
+
+DockBar is a fork of [DeskBar by rajeshgoli](https://github.com/rajeshgoli/deskbar), substantially extended with the Quick Settings system, connectivity tray, enhanced window switcher, and visual improvements.
+
+---
 
 ## License
 

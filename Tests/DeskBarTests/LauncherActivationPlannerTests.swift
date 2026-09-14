@@ -1,5 +1,5 @@
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func launcherActivationPlannerLaunchesNonRunningApps() {

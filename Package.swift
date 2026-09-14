@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "DeskBar",
+    name: "DockBar",
     platforms: [
         .macOS(.v14)
     ],
@@ -12,13 +12,13 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "DeskBar",
+            name: "DockBar",
             path: "Sources/DeskBar"
         ),
         .testTarget(
             name: "DeskBarTests",
             dependencies: [
-                "DeskBar",
+                "DockBar",
                 .product(name: "Testing", package: "swift-testing")
             ],
             path: "Tests/DeskBarTests"

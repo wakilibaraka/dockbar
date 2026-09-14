@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 struct TaskButtonWidthTests {
     @Test
@@ -195,8 +195,7 @@ struct TaskButtonWidthTests {
             terminalWindowID: 42,
             terminalTTY: "/dev/ttys001",
             terminalFrame: nil,
-            isSelectedTerminalTab: true,
-            waiting: nil
+            isSelectedTerminalTab: true
         )
     }
 }

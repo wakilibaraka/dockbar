@@ -28,12 +28,17 @@ enum AppsLauncherShortcut: String, CaseIterable {
 }
 
 class TaskbarSettings: ObservableObject {
-    static let defaultTaskbarHeight: CGFloat = 40
+    static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
-    static let defaultMaxTaskWidth: CGFloat = 200
+    static let defaultMaxTaskWidth: CGFloat = 240
     static let defaultThumbnailSize: CGFloat = 200
 
     private let defaults: UserDefaults
+
+
+        @Published var enabledQuickSettings: [String] {
+        didSet { defaults.set(enabledQuickSettings, forKey: "enabledQuickSettings") }
+    }
 
     @Published var taskbarHeight: CGFloat {
         didSet { defaults.set(taskbarHeight, forKey: "taskbarHeight") }
@@ -185,17 +190,18 @@ class TaskbarSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+                enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth", "hideDesktop", "hiddenFiles"]
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
-        showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
+        showTitles = defaults.object(forKey: "showTitles") as? Bool ?? false
         if let rawValue = defaults.string(forKey: "groupingMode"),
            let groupingMode = WindowGroupingMode(rawValue: rawValue) {
             self.groupingMode = groupingMode
         } else if defaults.object(forKey: "groupByApp") != nil {
             self.groupingMode = (defaults.object(forKey: "groupByApp") as? Bool ?? false) ? .always : .never
         } else {
-            groupingMode = .never
+            groupingMode = .automatic
         }
         dragReorder = defaults.object(forKey: "dragReorder") as? Bool ?? true
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
@@ -224,8 +230,8 @@ class TaskbarSettings: ObservableObject {
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
-        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .fullWidth
-        enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? false
+        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .compactGlass
+        enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? false
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .controlOptionReturn
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true

@@ -6,6 +6,7 @@ final class LauncherZoneView: NSStackView {
     private let settings: TaskbarSettings
     private let pinnedAppManager: PinnedAppManager
     private let windowManager: WindowManager
+    private let badgeMonitor: BadgeMonitor
     private let displayID: CGDirectDisplayID
     private let buttonsStackView = NSStackView()
     private let dividerView = NSView()
@@ -17,11 +18,13 @@ final class LauncherZoneView: NSStackView {
         settings: TaskbarSettings,
         pinnedAppManager: PinnedAppManager,
         windowManager: WindowManager,
+        badgeMonitor: BadgeMonitor,
         displayID: CGDirectDisplayID
     ) {
         self.settings = settings
         self.pinnedAppManager = pinnedAppManager
         self.windowManager = windowManager
+        self.badgeMonitor = badgeMonitor
         self.displayID = displayID
         super.init(frame: .zero)
 
@@ -182,11 +185,13 @@ final class LauncherZoneView: NSStackView {
 
             let runningApp = runningApplicationsByBundleIdentifier[pinnedApp.bundleIdentifier]
             let icon = cachedIcon(for: pinnedApp, runningApplication: runningApp)
+            let hasBadge = badgeMonitor.appBadges[pinnedApp.bundleIdentifier] ?? false
 
             let buttonView = LauncherZoneButtonView(
                 pinnedApp: pinnedApp,
                 visibleLocalWindows: visibleLocalWindows,
                 runningApplication: runningApp,
+                hasBadge: hasBadge,
                 settings: settings,
                 cachedIcon: icon,
                 dragConfiguration: makeLauncherDragConfiguration(for: pinnedApp.bundleIdentifier)
@@ -313,6 +318,7 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
     }
 
     private let pinnedApp: PinnedApp
+    private let hasBadge: Bool
     private let visibleLocalWindows: [WindowInfo]
     private let runningApplication: NSRunningApplication?
     private let settings: TaskbarSettings
@@ -346,6 +352,7 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
         pinnedApp: PinnedApp,
         visibleLocalWindows: [WindowInfo],
         runningApplication: NSRunningApplication?,
+        hasBadge: Bool,
         settings: TaskbarSettings,
         cachedIcon: NSImage? = nil,
         accessibilityService: AccessibilityService = AccessibilityService(),
@@ -354,6 +361,7 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
         unpinHandler: @escaping () -> Void
     ) {
         self.pinnedApp = pinnedApp
+        self.hasBadge = hasBadge
         self.visibleLocalWindows = visibleLocalWindows
         self.runningApplication = runningApplication
         self.settings = settings
@@ -487,7 +495,8 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
     }
 
     private func displayIcon() -> NSImage? {
-        resolvedIcon()
+        guard let icon = resolvedIcon() else { return nil }
+        return hasBadge ? icon.withBadgeDot() : icon
     }
 
     private func resolvedIcon() -> NSImage? {

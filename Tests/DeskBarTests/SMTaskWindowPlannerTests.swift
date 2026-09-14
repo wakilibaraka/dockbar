@@ -1,7 +1,7 @@
 import AppKit
 import CoreGraphics
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func smTaskPlannerDropsAgentAnnotationWithoutCurrentTerminalWindow() {
@@ -189,7 +189,6 @@ private func agentAnnotation(
         terminalWindowID: terminalWindowID,
         terminalTTY: "/dev/ttys001",
         terminalFrame: terminalFrame,
-        isSelectedTerminalTab: true,
-        waiting: nil
+        isSelectedTerminalTab: true
     )
 }

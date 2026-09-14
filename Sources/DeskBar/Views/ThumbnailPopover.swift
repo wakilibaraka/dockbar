@@ -44,13 +44,20 @@ final class ThumbnailPopover: NSPopover, NSPopoverDelegate {
         super.close()
     }
 
-    func show(thumbnail: NSImage, relativeTo view: NSView) {
+    func show(thumbnail: NSImage, relativeTo view: NSView, title: String) {
         guard view.window != nil else {
             return
         }
 
-        thumbnailViewController.show(thumbnail: thumbnail)
-        show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
+        thumbnailViewController.show(thumbnail: thumbnail, title: title)
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            self.contentViewController?.view.alphaValue = 0
+            show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
+            self.contentViewController?.view.animator().alphaValue = 1
+        }, completionHandler: nil)
+        
         installDismissalMonitors()
     }
 
@@ -153,6 +160,7 @@ final class ThumbnailPopover: NSPopover, NSPopoverDelegate {
 private final class ThumbnailPopoverViewController: NSViewController {
     private var thumbnailSize: CGFloat
     private let imageView = NSImageView()
+    private let titleLabel = NSTextField(labelWithString: "")
 
     init(thumbnailSize: CGFloat) {
         self.thumbnailSize = thumbnailSize
@@ -166,17 +174,29 @@ private final class ThumbnailPopoverViewController: NSViewController {
 
     override func loadView() {
         let containerView = NSView(frame: NSRect(origin: .zero, size: squareSize))
+        containerView.wantsLayer = true
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        titleLabel.textColor = .labelColor
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.alignment = .center
 
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.imageAlignment = .alignCenter
 
+        containerView.addSubview(titleLabel)
         containerView.addSubview(imageView)
 
         NSLayoutConstraint.activate([
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -8),
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 8),
+            
             imageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            imageView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            imageView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             imageView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
 
@@ -184,9 +204,14 @@ private final class ThumbnailPopoverViewController: NSViewController {
         preferredContentSize = squareSize
     }
 
-    func show(thumbnail: NSImage) {
+    func show(thumbnail: NSImage, title: String) {
         imageView.image = thumbnail
-        preferredContentSize = resolvedSize(for: thumbnail)
+        titleLabel.stringValue = title
+        
+        var size = resolvedSize(for: thumbnail)
+        size.height += 24 // Add space for title
+        
+        preferredContentSize = size
         view.setFrameSize(preferredContentSize)
     }
 
@@ -194,30 +219,25 @@ private final class ThumbnailPopoverViewController: NSViewController {
         self.thumbnailSize = thumbnailSize
 
         if let image = imageView.image {
-            preferredContentSize = resolvedSize(for: image)
+            var size = resolvedSize(for: image)
+            size.height += 24
+            preferredContentSize = size
         } else {
             preferredContentSize = squareSize
         }
-
-        if isViewLoaded {
-            view.setFrameSize(preferredContentSize)
-        }
-    }
-
-    private func resolvedSize(for thumbnail: NSImage) -> NSSize {
-        let size = thumbnail.size
-
-        guard size.width > 0, size.height > 0 else {
-            return squareSize
-        }
-
-        let scale = min(thumbnailSize / size.width, thumbnailSize / size.height)
-        let resizedWidth = max(1, size.width * scale)
-        let resizedHeight = max(1, size.height * scale)
-        return NSSize(width: resizedWidth, height: resizedHeight)
+        view.setFrameSize(preferredContentSize)
     }
 
     private var squareSize: NSSize {
         NSSize(width: thumbnailSize, height: thumbnailSize)
+    }
+
+    private func resolvedSize(for image: NSImage) -> NSSize {
+        let aspectRatio = image.size.width / max(image.size.height, 1)
+        if aspectRatio >= 1 {
+            return NSSize(width: thumbnailSize, height: thumbnailSize / aspectRatio)
+        } else {
+            return NSSize(width: thumbnailSize * aspectRatio, height: thumbnailSize)
+        }
     }
 }

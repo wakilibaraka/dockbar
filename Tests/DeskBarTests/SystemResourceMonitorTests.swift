@@ -1,6 +1,6 @@
 import Darwin
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func activityMonitorMemoryUsedExcludesFileBackedCache() {

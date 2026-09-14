@@ -18,6 +18,7 @@ final class TaskbarContentView: NSView {
     private let sessionManagerWidgetView: SessionManagerWidgetView?
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let runningAppTrayView: RunningAppTrayView
+    private let connectivityTrayView: ConnectivityTrayView
     private let axGetWindow: AXUIElementGetWindowFunc?
     private let accessibilityService = AccessibilityService()
 
@@ -103,6 +104,7 @@ final class TaskbarContentView: NSView {
             settings: settings,
             pinnedAppManager: pinnedAppManager,
             windowManager: windowManager,
+            badgeMonitor: badgeMonitor,
             displayID: displayID
         )
         systemResourceWidgetView = SystemResourceWidgetView(
@@ -131,13 +133,8 @@ final class TaskbarContentView: NSView {
         } else {
             axGetWindow = nil
         }
+        self.connectivityTrayView = ConnectivityTrayView(settings: settings)
         super.init(frame: .zero)
-
-        // Clicking a minimized window parked in the tray runs the same activation path as a task
-        // button, so unhide/unminimize/raise and the SM agent-tab case all behave identically.
-        runningAppTrayView.activateWindow = { [weak self] windowInfo in
-            self?.activate(windowInfo: windowInfo)
-        }
         wantsLayer = true
         autoresizingMask = [.width, .height]
 
@@ -197,7 +194,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             preferredTaskZoneWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
             runningAppTrayView.preferredContentWidth() +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
@@ -429,6 +426,18 @@ final class TaskbarContentView: NSView {
         }
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
         zonesStackView.addArrangedSubview(runningAppTrayView)
+
+        // Vertical divider between running apps and system tray
+        let trayDivider = NSView()
+        trayDivider.wantsLayer = true
+        trayDivider.layer?.backgroundColor = NSColor.separatorColor.cgColor
+        trayDivider.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            trayDivider.widthAnchor.constraint(equalToConstant: 1),
+            trayDivider.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        zonesStackView.addArrangedSubview(trayDivider)
+        zonesStackView.addArrangedSubview(connectivityTrayView)
     }
 
     private func bindState() {
@@ -674,19 +683,13 @@ final class TaskbarContentView: NSView {
         expandedGroupView = nil
 
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        let baseKnownWindows = scopedKnownWindows()
-        let frontmostWindowID = currentFrontmostWindowID(
-            in: baseKnownWindows.filter(WindowManager.belongsInTaskZone)
-        )
-        // `knownWindows` includes windows parked in the tray; `scopedWindows` is the subset that
-        // actually gets task buttons. Virtual SM agent tabs inherit their terminal window's
-        // minimized state, so the same predicate partitions them correctly.
-        let knownWindows = smScopedWindows(baseWindows: baseKnownWindows)
-        let scopedWindows = knownWindows.filter(WindowManager.belongsInTaskZone)
+        let baseScopedWindows = scopedVisibleWindows()
+        let frontmostWindowID = currentFrontmostWindowID(in: baseScopedWindows)
+        let scopedWindows = smScopedWindows(baseWindows: baseScopedWindows)
         let screen = ScreenGeometry.screen(for: displayID)
         let shouldGroupWindows = shouldGroupWindows(scopedWindows)
         if shouldGroupWindows {
-            let items = orderedGroupedTaskItems(from: scopedWindows, knownWindows: knownWindows)
+            let items = orderedGroupedTaskItems(from: scopedWindows)
             var placedViews: [TaskZonePlacedView] = []
             var retainedItemIDs = Set<String>()
 
@@ -725,7 +728,7 @@ final class TaskbarContentView: NSView {
         if !shouldGroupWindows {
             expandedGroupID = nil
         }
-        let orderedWindows = orderedUngroupedWindows(from: scopedWindows, knownWindows: knownWindows)
+        let orderedWindows = orderedUngroupedWindows(from: scopedWindows)
         let placedViews = orderedWindows.map { window in
             TaskZonePlacedView(
                 view: taskButtonView(
@@ -745,22 +748,14 @@ final class TaskbarContentView: NSView {
         schedulePreferredWidthNotification()
     }
 
-    /// Every window DeskBar knows about on this display, minimized and hidden ones included.
-    /// Only `WindowManager.belongsInTaskZone` members get task buttons — the rest are parked in
-    /// the tray — but the ordering state still needs to hear about the parked ones so their slot
-    /// survives until the window is genuinely gone. See `rebuildTaskZone()`.
-    private func scopedKnownWindows() -> [WindowInfo] {
+    private func scopedVisibleWindows() -> [WindowInfo] {
         guard let screen = ScreenGeometry.screen(for: displayID) else {
             return []
         }
 
+        // Include all windows (including minimized/hidden) so they stay in the taskbar
+        // with dimmed appearance — Windows-style behavior
         return windowManager.windows(on: screen)
-    }
-
-    /// The windows that actually get task buttons: known windows, SM agent tabs resolved, minus
-    /// anything parked in the tray.
-    private func scopedTaskZoneWindows() -> [WindowInfo] {
-        smScopedWindows(baseWindows: scopedKnownWindows()).filter(WindowManager.belongsInTaskZone)
     }
 
     private func smScopedWindows(baseWindows: [WindowInfo]) -> [WindowInfo] {
@@ -987,16 +982,10 @@ final class TaskbarContentView: NSView {
         }
     }
 
-    private func orderedUngroupedWindows(
-        from windows: [WindowInfo],
-        knownWindows: [WindowInfo]
-    ) -> [WindowInfo] {
+    private func orderedUngroupedWindows(from windows: [WindowInfo]) -> [WindowInfo] {
         let windows = uniqueWindowsByUngroupedTaskItemID(windows)
         let ids = windows.map(ungroupedTaskItemID(for:))
-        ungroupedTaskOrderState.reconcile(
-            currentIDs: ids,
-            knownIDs: Set(knownWindows.map(ungroupedTaskItemID(for:)))
-        )
+        ungroupedTaskOrderState.reconcile(currentIDs: ids)
 
         let orderedIDs = ungroupedTaskOrderState.arrangedIDs(for: ids)
         let windowsByID = Dictionary(preservingFirstValues: windows.map { (ungroupedTaskItemID(for: $0), $0) })
@@ -1010,16 +999,10 @@ final class TaskbarContentView: NSView {
         }
     }
 
-    private func orderedGroupedTaskItems(
-        from windows: [WindowInfo],
-        knownWindows: [WindowInfo]
-    ) -> [TaskZoneItem] {
+    private func orderedGroupedTaskItems(from windows: [WindowInfo]) -> [TaskZoneItem] {
         let items = groupedTaskItems(from: windows)
         let ids = items.map(groupedTaskItemID(for:))
-        groupedTaskOrderState.reconcile(
-            currentIDs: ids,
-            knownIDs: Set(knownWindows.map(groupedTaskItemID(for:)))
-        )
+        groupedTaskOrderState.reconcile(currentIDs: ids)
 
         let orderedIDs = groupedTaskOrderState.arrangedIDs(for: ids)
         let itemsByID = Dictionary(preservingFirstValues: items.map { (groupedTaskItemID(for: $0), $0) })
@@ -1114,7 +1097,7 @@ final class TaskbarContentView: NSView {
         }
 
         if let annotation = smAnnotation(for: window),
-           let sourceWindow = scopedKnownWindows().first(where: { $0.cgWindowID == annotation.terminalWindowID }) {
+           let sourceWindow = scopedVisibleWindows().first(where: { $0.cgWindowID == annotation.terminalWindowID }) {
             return windowManager.taskbarZone(for: sourceWindow, on: screen)
         }
 
@@ -1300,7 +1283,7 @@ final class TaskbarContentView: NSView {
             return false
         }
 
-        if shouldGroupWindows(scopedTaskZoneWindows()) {
+        if shouldGroupWindows(scopedVisibleWindows()) {
             groupedTaskOrderState.applyManualOrder(reorderedIDs, userPositionedItemID: payload.itemID)
         } else {
             ungroupedTaskOrderState.applyManualOrder(reorderedIDs, userPositionedItemID: payload.itemID)
@@ -1311,7 +1294,7 @@ final class TaskbarContentView: NSView {
     }
 
     private func currentTaskOrderIDs() -> [String] {
-        let scopedWindows = scopedTaskZoneWindows()
+        let scopedWindows = smScopedWindows(baseWindows: scopedVisibleWindows())
 
         if shouldGroupWindows(scopedWindows) {
             let items = groupedTaskItems(from: scopedWindows)
@@ -1600,7 +1583,7 @@ final class TaskbarContentView: NSView {
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
             runningAppTrayView.minimumOverflowContentWidth() +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
@@ -1617,7 +1600,7 @@ final class TaskbarContentView: NSView {
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-            systemResourceWidgetView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
             runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
@@ -1649,7 +1632,7 @@ final class TaskbarContentView: NSView {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-                systemResourceWidgetView.preferredContentWidth() +
+                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets)
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             trayVisibleApplicationCapacity = runningAppTrayView.visibleApplicationCapacity(
@@ -1665,7 +1648,7 @@ final class TaskbarContentView: NSView {
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
-                systemResourceWidgetView.preferredContentWidth() +
+                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
                 runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
@@ -2231,105 +2214,38 @@ private struct TaskZonePlacedView {
     let zone: TaskbarWindowZone
 }
 
-struct TaskZoneOrderingState {
-    /// How long an item keeps its slot after it stops being reported. Items vanish for a pass for
-    /// reasons that have nothing to do with the user closing a window — an AX enumeration timeout,
-    /// a Session Manager fetch failure, a terminal-window match that misses by a few points. Before
-    /// this grace period existed, any such blip deleted the item's position and it came back at the
-    /// far right of the taskbar.
-    static let itemRetentionInterval: TimeInterval = 45
-    static let maximumRetainedAbsentItems = 128
+private struct TaskZoneOrderingState {
+    private(set) var nonPositionedItemIDs: [String] = []
+    private(set) var userPositionedRanks: [String: Int] = [:]
 
-    /// Every item we have seen and not yet expired, in display order. Includes items that are
-    /// currently absent; `arrangedIDs(for:)` filters those out when rendering.
-    private(set) var orderedItemIDs: [String] = []
-    /// Items the user has explicitly dragged. Recorded so a future MRU pass can reorder around
-    /// them; position itself lives in `orderedItemIDs`, never in an absolute index.
-    private(set) var userPositionedItemIDs: Set<String> = []
-    private var absentSinceByItemID: [String: Date] = [:]
-
-    /// - Parameters:
-    ///   - currentIDs: items being rendered right now, in the order the caller produced them.
-    ///   - knownIDs: items that still exist but are deliberately not rendered — a minimized or
-    ///     hidden window parked in the tray. These hold their slot for as long as they exist, so
-    ///     restoring one puts it back where it was rather than at the end. Only items in neither
-    ///     set are on the clock.
-    mutating func reconcile(
-        currentIDs: [String],
-        knownIDs: Set<String> = [],
-        now: Date = Date()
-    ) {
+    mutating func reconcile(currentIDs: [String]) {
         let currentIDSet = Set(currentIDs)
-        let liveIDs = currentIDSet.union(knownIDs)
-
-        for itemID in orderedItemIDs {
-            if liveIDs.contains(itemID) {
-                absentSinceByItemID.removeValue(forKey: itemID)
-            } else if absentSinceByItemID[itemID] == nil {
-                absentSinceByItemID[itemID] = now
-            }
+        userPositionedRanks = userPositionedRanks.filter { currentIDSet.contains($0.key) }
+        nonPositionedItemIDs = nonPositionedItemIDs.filter {
+            currentIDSet.contains($0) && userPositionedRanks[$0] == nil
         }
 
-        var expiredItemIDs = Set(
-            absentSinceByItemID
-                .filter { now.timeIntervalSince($0.value) > Self.itemRetentionInterval }
-                .keys
-        )
-
-        // Bound the retained set so long sessions cannot accumulate placeholders without limit.
-        let survivingAbsentCount = absentSinceByItemID.count - expiredItemIDs.count
-        if survivingAbsentCount > Self.maximumRetainedAbsentItems {
-            let overflowItemIDs = absentSinceByItemID
-                .filter { !expiredItemIDs.contains($0.key) }
-                .sorted { $0.value < $1.value }
-                .prefix(survivingAbsentCount - Self.maximumRetainedAbsentItems)
-                .map(\.key)
-            expiredItemIDs.formUnion(overflowItemIDs)
-        }
-
-        if !expiredItemIDs.isEmpty {
-            orderedItemIDs.removeAll { expiredItemIDs.contains($0) }
-            userPositionedItemIDs.subtract(expiredItemIDs)
-            expiredItemIDs.forEach { absentSinceByItemID.removeValue(forKey: $0) }
-        }
-
-        var knownItemIDs = Set(orderedItemIDs)
-        for itemID in currentIDs where knownItemIDs.insert(itemID).inserted {
-            orderedItemIDs.append(itemID)
+        let knownItemIDs = Set(nonPositionedItemIDs).union(userPositionedRanks.keys)
+        let newItemIDs = currentIDs.filter { !knownItemIDs.contains($0) }
+        for itemID in newItemIDs {
+            nonPositionedItemIDs.append(itemID)
         }
     }
 
     mutating func applyManualOrder(_ orderedIDs: [String], userPositionedItemID: String) {
-        userPositionedItemIDs.insert(userPositionedItemID)
+        var positionedItemIDs = Set(userPositionedRanks.keys)
+        positionedItemIDs.insert(userPositionedItemID)
 
-        // `orderedIDs` covers only the items on screen. Absent items keep their slot by staying
-        // attached to whichever visible item preceded them before the drag.
-        let reorderedItemIDs = Set(orderedIDs)
-        var absentItemIDsByPredecessor: [String: [String]] = [:]
-        var leadingAbsentItemIDs: [String] = []
-        var previousVisibleItemID: String?
+        userPositionedRanks = [:]
+        nonPositionedItemIDs = []
 
-        for itemID in orderedItemIDs {
-            if reorderedItemIDs.contains(itemID) {
-                previousVisibleItemID = itemID
-            } else if let previousVisibleItemID {
-                absentItemIDsByPredecessor[previousVisibleItemID, default: []].append(itemID)
+        for (index, itemID) in orderedIDs.enumerated() {
+            if positionedItemIDs.contains(itemID) {
+                userPositionedRanks[itemID] = index
             } else {
-                leadingAbsentItemIDs.append(itemID)
+                nonPositionedItemIDs.append(itemID)
             }
         }
-
-        var rebuiltItemIDs = leadingAbsentItemIDs
-        var seenItemIDs = Set(leadingAbsentItemIDs)
-        for itemID in orderedIDs where seenItemIDs.insert(itemID).inserted {
-            rebuiltItemIDs.append(itemID)
-            for absentItemID in absentItemIDsByPredecessor[itemID] ?? []
-            where seenItemIDs.insert(absentItemID).inserted {
-                rebuiltItemIDs.append(absentItemID)
-            }
-        }
-
-        self.orderedItemIDs = rebuiltItemIDs
     }
 
     func arrangedIDs(for currentIDs: [String]) -> [String] {
@@ -2338,14 +2254,49 @@ struct TaskZoneOrderingState {
         }
 
         let currentIDSet = Set(currentIDs)
-        var seenItemIDs = Set<String>()
-        var arrangedIDs = orderedItemIDs.filter {
-            currentIDSet.contains($0) && seenItemIDs.insert($0).inserted
+        var arrangedIDs = Array<String?>(repeating: nil, count: currentIDs.count)
+        let positionedItems = userPositionedRanks
+            .filter { currentIDSet.contains($0.key) }
+            .sorted {
+                if $0.value != $1.value {
+                    return $0.value < $1.value
+                }
+
+                return $0.key < $1.key
+            }
+
+        for (itemID, desiredRank) in positionedItems {
+            var targetIndex = min(max(desiredRank, 0), arrangedIDs.count - 1)
+
+            while targetIndex < arrangedIDs.count, arrangedIDs[targetIndex] != nil {
+                targetIndex += 1
+            }
+
+            if targetIndex >= arrangedIDs.count,
+               let fallbackIndex = arrangedIDs.indices.last(where: { arrangedIDs[$0] == nil }) {
+                targetIndex = fallbackIndex
+            }
+
+            arrangedIDs[targetIndex] = itemID
         }
 
-        // Anything present but not yet reconciled goes to the end rather than being dropped.
-        arrangedIDs.append(contentsOf: currentIDs.filter { seenItemIDs.insert($0).inserted })
-        return arrangedIDs
+        var seenNonPositioned = Set<String>()
+        let fallbackNonPositionedIDs = currentIDs.filter {
+            userPositionedRanks[$0] == nil && seenNonPositioned.insert($0).inserted
+        }
+        let orderedNonPositionedIDs = nonPositionedItemIDs.filter {
+            currentIDSet.contains($0) && userPositionedRanks[$0] == nil
+        } + fallbackNonPositionedIDs.filter {
+            !nonPositionedItemIDs.contains($0)
+        }
+
+        var nonPositionedIterator = orderedNonPositionedIDs.makeIterator()
+
+        for index in arrangedIDs.indices where arrangedIDs[index] == nil {
+            arrangedIDs[index] = nonPositionedIterator.next()
+        }
+
+        return arrangedIDs.compactMap { $0 }
     }
 }
 
@@ -2366,6 +2317,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     private let progressTrackView = NSView()
     private let progressFillView = NSView()
     private let dropIndicatorView = NSView()
+    private let dotsStackView = NSStackView()
     private var trackingAreaRef: NSTrackingArea?
     private var progressWidthConstraint: NSLayoutConstraint?
     private var dropIndicatorLeadingConstraint: NSLayoutConstraint?
@@ -2554,6 +2506,11 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         addSubview(progressTrackView)
         progressTrackView.addSubview(progressFillView)
         addSubview(dropIndicatorView)
+        addSubview(dotsStackView)
+        dotsStackView.translatesAutoresizingMaskIntoConstraints = false
+        dotsStackView.orientation = .horizontal
+        dotsStackView.spacing = 2
+        dotsStackView.alignment = .centerY
 
         let progressWidthConstraint = progressFillView.widthAnchor.constraint(equalToConstant: 0)
         self.progressWidthConstraint = progressWidthConstraint
@@ -2564,6 +2521,8 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
 
         NSLayoutConstraint.activate([
             widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
+            dotsStackView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            dotsStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
             heightAnchor.constraint(equalToConstant: 32),
 
             statusIndicatorView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
@@ -2621,6 +2580,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         updateStatusIndicator()
         updateActivityBadge()
         updateProgressIndicator()
+        updateDots()
         updateBackgroundColor()
     }
 
@@ -2828,6 +2788,23 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         progressTrackView.isHidden = false
         progressFillView.layer?.backgroundColor = progressFraction >= 1 ? NSColor.systemBlue.cgColor : NSColor.systemGreen.cgColor
         updateProgressWidth()
+    }
+    
+    private func updateDots() {
+        dotsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let count = min(appGroup.windowCount, 3)
+        for _ in 0..<count {
+            let dot = NSView()
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.wantsLayer = true
+            dot.layer?.backgroundColor = NSColor.labelColor.cgColor
+            dot.layer?.cornerRadius = 2
+            NSLayoutConstraint.activate([
+                dot.widthAnchor.constraint(equalToConstant: 4),
+                dot.heightAnchor.constraint(equalToConstant: 4)
+            ])
+            dotsStackView.addArrangedSubview(dot)
+        }
     }
 
     private func updateProgressWidth() {

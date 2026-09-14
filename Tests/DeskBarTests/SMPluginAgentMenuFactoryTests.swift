@@ -1,7 +1,7 @@
 import AppKit
 import CoreGraphics
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func smPluginMatchesDirectSMWatchCommand() {
@@ -152,8 +152,7 @@ func smAgentMenuHidesTerminalOnlyActionsWithoutTerminalBacking() {
         terminalWindowID: 0,
         terminalTTY: "",
         terminalFrame: nil,
-        isSelectedTerminalTab: false,
-        waiting: nil
+        isSelectedTerminalTab: false
     )
 
     let menu = SMPluginAgentMenuFactory.makeMenu(
@@ -221,8 +220,7 @@ func smPluginMapsStudioSSHAttachTabToAnnotation() {
         lastActionSummary: nil,
         tokensUsed: nil,
         tmuxSession: "claude-studio-1",
-        tmuxSocketName: nil,
-        waiting: nil
+        tmuxSocketName: nil
     )
     let terminalTab = SMTerminalTabSnapshot(
         windowID: 7,
@@ -263,7 +261,6 @@ private func smTestAnnotation(sessionID: String) -> SMAgentWindowAnnotation {
         terminalWindowID: 42,
         terminalTTY: "/dev/ttys001",
         terminalFrame: nil,
-        isSelectedTerminalTab: true,
-        waiting: nil
+        isSelectedTerminalTab: true
     )
 }

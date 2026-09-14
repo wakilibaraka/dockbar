@@ -22,13 +22,9 @@ final class RunningAppTrayView: NSStackView {
     private var applicationIconViews: [TrayIconView] = []
     private var currentApplications: [TrayApplicationInfo] = []
     private var overflowedApplications: [TrayApplicationInfo] = []
-    private var currentMinimizedWindows: [WindowInfo] = []
     private var visibleApplicationCapacity: Int?
 
     var preferredWidthDidChange: (() -> Void)?
-    /// Restores a minimized window parked in the tray. Supplied by `TaskbarContentView` so tray
-    /// items and task buttons share one activation path (SM agent tabs, unhide, unminimize, raise).
-    var activateWindow: ((WindowInfo) -> Void)?
 
     init(
         windowManager: WindowManager,
@@ -183,7 +179,6 @@ final class RunningAppTrayView: NSStackView {
         return plannedContentWidth(visibleApplicationCapacity: 0)
     }
 
-
     func visibleApplicationCapacity(fitting availableWidth: CGFloat) -> Int? {
         guard !currentApplications.isEmpty else {
             return nil
@@ -219,24 +214,8 @@ final class RunningAppTrayView: NSStackView {
         return true
     }
 
-    static func trayApplications(
-        _ applications: [TrayApplicationInfo],
-        excludingOwnersOf minimizedWindows: [WindowInfo]
-    ) -> [TrayApplicationInfo] {
-        let minimizedWindowPIDs = Set(minimizedWindows.map(\.pid))
-        return applications.filter { !minimizedWindowPIDs.contains($0.pid) }
-    }
-
     private func rebuildIcons() {
-        let minimizedWindows = localMinimizedWindows
-        // An app whose windows are all minimized would otherwise appear twice: once as a tray app
-        // icon (it has no visible windows here) and again as its per-window items. The per-window
-        // items are the more useful representation — they name the window and restore just it — so
-        // they win and the app-level icon is dropped.
-        let applications = Self.trayApplications(
-            localTrayApps,
-            excludingOwnersOf: minimizedWindows
-        )
+        let applications = localTrayApps
         let showsCollapsedWidget = shouldShowCollapsedSystemResourceWidget
         let signature = ContentSignature(
             applications: applications.map {
@@ -248,8 +227,6 @@ final class RunningAppTrayView: NSStackView {
                     iconSignature: ImageMetadataSignature($0.icon)
                 )
             },
-            minimizedWindowIDs: minimizedWindows.map(\.id),
-            minimizedWindowTitles: minimizedWindows.map(\.title),
             showsCollapsedSystemResourceWidget: showsCollapsedWidget
         )
         guard signature != lastContentSignature else {
@@ -258,20 +235,11 @@ final class RunningAppTrayView: NSStackView {
 
         lastContentSignature = signature
         currentApplications = applications
-        currentMinimizedWindows = minimizedWindows
         applicationIconViews.removeAll()
 
         iconsStackView.arrangedSubviews.forEach { view in
             iconsStackView.removeArrangedSubview(view)
             view.removeFromSuperview()
-        }
-
-        for windowInfo in minimizedWindows {
-            iconsStackView.addArrangedSubview(
-                MinimizedWindowTrayIconView(windowInfo: windowInfo) { [weak self] window in
-                    self?.activateWindow?(window)
-                }
-            )
         }
 
         for application in applications {
@@ -322,9 +290,6 @@ final class RunningAppTrayView: NSStackView {
         if shouldShowCollapsedSystemResourceWidget {
             itemCount += 1
         }
-        // Minimized windows are the only way back to those windows, so they always stay visible
-        // rather than being folded into the overflow menu.
-        itemCount += currentMinimizedWindows.count
         itemCount += visibleAppCount
         if hiddenAppCount > 0 {
             itemCount += 1
@@ -456,16 +421,6 @@ final class RunningAppTrayView: NSStackView {
         return windowManager.trayApplications(on: screen)
     }
 
-    /// Minimized windows on this display. They are parked here instead of holding task-zone width,
-    /// one item per window so an app with both open and minimized windows shows both.
-    private var localMinimizedWindows: [WindowInfo] {
-        guard let screen = ScreenGeometry.screen(for: displayID) else {
-            return []
-        }
-
-        return windowManager.minimizedWindows(on: screen)
-    }
-
     private var shouldShowCollapsedSystemResourceWidget: Bool {
         guard
             settings.showSystemResourceWidget,
@@ -498,7 +453,5 @@ private struct ContentSignature: Equatable {
     }
 
     let applications: [Application]
-    let minimizedWindowIDs: [String]
-    let minimizedWindowTitles: [String]
     let showsCollapsedSystemResourceWidget: Bool
 }

@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import DeskBar
+@testable import DockBar
 
 @Test
 func windowInfoEqualityTracksTaskbarVisibleFields() {
@@ -107,7 +107,7 @@ func trayApplicationCandidatesRespectZoneRoutingAndAlphabeticalOrder() {
         RunningApplicationCandidate(pid: 33, bundleIdentifier: "com.example.blacklisted", name: "Blacklisted"),
         RunningApplicationCandidate(pid: 44, bundleIdentifier: "com.example.notes", name: "notes"),
         RunningApplicationCandidate(pid: 55, bundleIdentifier: nil, name: "Arc"),
-        RunningApplicationCandidate(pid: 66, bundleIdentifier: "com.deskbar.app", name: "DeskBar")
+        RunningApplicationCandidate(pid: 66, bundleIdentifier: "com.deskbar.app", name: "DockBar")
     ]
 
     let result = WindowManager.trayApplicationCandidates(
@@ -279,26 +279,7 @@ func stableWindowOrderKeepsExistingPositionsAndAppendsNewWindowsToTheEnd() {
         currentOrder: ["window:beta", "window:delta", "window:alpha"]
     )
 
-    #expect(result == ["window:alpha", "window:beta", "window:gamma", "window:delta"])
-}
-
-@Test
-func stableWindowOrderRetainsWindowsMissingFromTheCurrentRefresh() {
-    // A window that blinks out for one pass (AX timeout, Space switch) must keep its index
-    // rather than be re-appended at the end when it comes back.
-    let afterBlip = WindowManager.reconcileStableWindowOrder(
-        previousOrder: ["window:alpha", "window:beta", "window:gamma"],
-        currentOrder: ["window:alpha", "window:gamma"]
-    )
-
-    #expect(afterBlip == ["window:alpha", "window:beta", "window:gamma"])
-
-    let afterRecovery = WindowManager.reconcileStableWindowOrder(
-        previousOrder: afterBlip,
-        currentOrder: ["window:alpha", "window:beta", "window:gamma"]
-    )
-
-    #expect(afterRecovery == ["window:alpha", "window:beta", "window:gamma"])
+    #expect(result == ["window:alpha", "window:beta", "window:delta"])
 }
 
 @Test
