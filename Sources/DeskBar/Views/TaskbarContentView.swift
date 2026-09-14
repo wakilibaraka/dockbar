@@ -1933,6 +1933,7 @@ final class TaskbarContentView: NSView {
                 title: resolvedTitle,
                 font: font,
                 maxWidth: settings.maxTaskWidth,
+                taskbarHeight: settings.taskbarHeight,
                 showsTitles: settings.showTitles,
                 showsPluginActionButton: smPluginMenuConfiguration(for: window)?.showsActionButton == true,
                 isAgentWindow: smAnnotation(for: window) != nil

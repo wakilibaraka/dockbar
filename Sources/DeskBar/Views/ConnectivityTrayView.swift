@@ -1,7 +1,6 @@
 import AppKit
 
 final class ConnectivityTrayView: NSStackView {
-    private let wifiWidget = WiFiWidgetView()
     private let quickSettingsButton = TrayIconButton(
         symbolName: "slider.horizontal.3",
         accessibilityLabel: "Quick Settings"
@@ -21,7 +20,6 @@ final class ConnectivityTrayView: NSStackView {
         quickSettingsButton.button.action = #selector(toggleQuickSettings)
         quickSettingsButton.toolTip = "Quick Settings"
 
-        addArrangedSubview(wifiWidget)
         addArrangedSubview(quickSettingsButton)
 
         setContentHuggingPriority(.required, for: .horizontal)
@@ -32,7 +30,7 @@ final class ConnectivityTrayView: NSStackView {
     required init?(coder: NSCoder) { fatalError() }
 
     func preferredContentWidth() -> CGFloat {
-        return 24 + 24 + 4 + 8
+        return 24 + 8
     }
 
     @objc private func toggleQuickSettings() {

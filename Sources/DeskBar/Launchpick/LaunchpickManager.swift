@@ -6,6 +6,8 @@ final class LaunchpickManager {
     
     private var panel: LaunchpickPanel?
     private var state: LaunchpickState?
+    private var localMonitor: Any?
+    private var globalMonitor: Any?
     
     private init() {}
     
@@ -59,10 +61,31 @@ final class LaunchpickManager {
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        setupMonitors()
     }
     
     func hide() {
         panel?.orderOut(nil)
+        removeMonitors()
+    }
+    
+    private func setupMonitors() {
+        guard localMonitor == nil else { return }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self, let panel = self.panel, panel.isVisible else { return event }
+            if panel.contentView?.frame.contains(event.locationInWindow) == false {
+                self.hide()
+            }
+            return event
+        }
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.hide()
+        }
+    }
+    
+    private func removeMonitors() {
+        if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
+        if let m = globalMonitor { NSEvent.removeMonitor(m); globalMonitor = nil }
     }
     
     private func launch(item: LaunchpickItem) {

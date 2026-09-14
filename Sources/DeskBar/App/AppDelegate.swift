@@ -189,12 +189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            let image = NSImage(
-                systemSymbolName: "gear",
-                accessibilityDescription: "Settings"
-            )
-            image?.isTemplate = true
-            button.image = image
+            button.image = NSImage.dockBarMenuIcon()
         }
 
         let menu = NSMenu()

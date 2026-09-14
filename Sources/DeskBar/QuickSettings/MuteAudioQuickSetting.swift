@@ -5,6 +5,7 @@ final class MuteAudioQuickSetting: QuickSetting {
     let id = "mute"
     let title = "Mute"
     let symbolName = "speaker.slash.fill"
+    var settingsURL: URL? { URL(string: "x-apple.systempreferences:com.apple.Sound-Settings.extension") }
     var isOn: Bool = false
     
     init() { refreshState() }

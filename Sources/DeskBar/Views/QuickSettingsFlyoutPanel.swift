@@ -7,6 +7,8 @@ final class QuickSettingsFlyoutPanel: NSPanel {
     private let blurView = NSVisualEffectView()
     private var tileViews: [QuickSettingsTileView] = []
     private var volSlider: NSSlider?
+    private var globalMonitor: Any?
+    private var localMonitor: Any?
 
     init(settings: TaskbarSettings, manager: QuickSettingsManager) {
         self.settings = settings
@@ -33,8 +35,48 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         }
     }
 
+    // MARK: - Lifecycle
+    
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
+
+    override func makeKeyAndOrderFront(_ sender: Any?) {
+        super.makeKeyAndOrderFront(sender)
+        setupMonitors()
+    }
+    
+    override func close() {
+        super.close()
+        removeMonitors()
+    }
+    
+    private func setupMonitors() {
+        guard localMonitor == nil else { return }
+        
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self, self.isVisible else { return event }
+            let location = event.locationInWindow
+            if self.contentView?.frame.contains(location) == false {
+                self.close()
+            }
+            return event
+        }
+        
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.close()
+        }
+    }
+    
+    private func removeMonitors() {
+        if let local = localMonitor {
+            NSEvent.removeMonitor(local)
+            localMonitor = nil
+        }
+        if let global = globalMonitor {
+            NSEvent.removeMonitor(global)
+            globalMonitor = nil
+        }
+    }
 
     // MARK: - UI Setup
 

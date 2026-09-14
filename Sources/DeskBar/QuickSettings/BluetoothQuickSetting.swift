@@ -3,7 +3,9 @@ import AppKit
 final class BluetoothQuickSetting: QuickSetting {
     let id = "bluetooth"
     let title = "Bluetooth"
-    let symbolName = "dot.radiowaves.left.and.right"
+    let symbolName = "" // Not used
+    var customImage: NSImage? { NSImage.bluetoothIcon() }
+    var settingsURL: URL? { URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") }
     var isOn: Bool = false
     
     init() { refreshState() }

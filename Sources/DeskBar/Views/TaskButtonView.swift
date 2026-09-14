@@ -131,6 +131,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     private var statusSMLeadingConstraint: NSLayoutConstraint?
     private var iconDefaultLeadingConstraint: NSLayoutConstraint?
     private var iconSMLeadingConstraint: NSLayoutConstraint?
+    private var iconCenterXConstraint: NSLayoutConstraint?
     private var titleLeadingConstraint: NSLayoutConstraint?
     private var titleTrailingConstraint: NSLayoutConstraint?
     private var progressWidthConstraint: NSLayoutConstraint?
@@ -174,6 +175,10 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private var fullTaskWidth: CGFloat {
+        if !settings.showTitles {
+            return settings.taskbarHeight + 8
+        }
+        
         guard agentAnnotation != nil else {
             return maxWidth
         }
@@ -194,6 +199,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
             title: resolvedTitle(),
             font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
             maxWidth: maxWidth,
+            taskbarHeight: settings.taskbarHeight,
             showsTitles: settings.showTitles,
             showsPluginActionButton: showsPluginActionButton,
             isAgentWindow: agentAnnotation != nil
@@ -216,14 +222,15 @@ final class TaskButtonView: NSView, NSDraggingSource {
         title: String,
         font: NSFont,
         maxWidth: CGFloat,
+        taskbarHeight: CGFloat,
         showsTitles: Bool,
         showsPluginActionButton: Bool,
         isAgentWindow: Bool
     ) -> CGFloat {
-        let minimumWidth = showsPluginActionButton ? minimumPluginActionTaskWidth : minimumTaskWidth
         guard showsTitles else {
-            return minimumWidth
+            return taskbarHeight + 8
         }
+        let minimumWidth = showsPluginActionButton ? minimumPluginActionTaskWidth : minimumTaskWidth
 
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let textWidth = trimmedTitle.isEmpty ? 0 : measuredTextWidth(trimmedTitle, font: font)
@@ -528,6 +535,8 @@ final class TaskButtonView: NSView, NSDraggingSource {
         self.statusSMLeadingConstraint = statusSMLeadingConstraint
         self.iconDefaultLeadingConstraint = iconDefaultLeadingConstraint
         self.iconSMLeadingConstraint = iconSMLeadingConstraint
+        let iconCenterXConstraint = iconView.centerXAnchor.constraint(equalTo: centerXAnchor)
+        self.iconCenterXConstraint = iconCenterXConstraint
         self.dropIndicatorLeadingConstraint = dropIndicatorLeadingConstraint
         self.dropIndicatorTrailingConstraint = dropIndicatorTrailingConstraint
 
@@ -959,8 +968,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
         pluginActionButton.isHidden = !shouldShowInlinePluginActionButton
         statusDefaultLeadingConstraint?.isActive = !shouldShowInlinePluginActionButton
         statusSMLeadingConstraint?.isActive = shouldShowInlinePluginActionButton
-        iconDefaultLeadingConstraint?.isActive = !shouldShowInlinePluginActionButton
-        iconSMLeadingConstraint?.isActive = shouldShowInlinePluginActionButton
+        
         pluginActionButton.title = pluginMenuConfiguration?.buttonTitle ?? ""
         pluginActionButton.contentTintColor = pluginMenuConfiguration?.tintColor ?? .secondaryLabelColor
         pluginActionButton.activityColor = pluginMenuConfiguration?.tintColor ?? .secondaryLabelColor
@@ -1018,9 +1026,24 @@ final class TaskButtonView: NSView, NSDraggingSource {
         titleLabel.isHidden = !showsTitle
         titleLeadingConstraint?.isActive = showsTitle
         titleTrailingConstraint?.isActive = showsTitle
+        
+        let shouldShowInlinePluginActionButton = showsInlinePluginActionButton
+        if !showsTitle {
+            iconDefaultLeadingConstraint?.isActive = false
+            iconSMLeadingConstraint?.isActive = false
+            iconCenterXConstraint?.isActive = true
+        } else {
+            iconCenterXConstraint?.isActive = false
+            iconDefaultLeadingConstraint?.isActive = !shouldShowInlinePluginActionButton
+            iconSMLeadingConstraint?.isActive = shouldShowInlinePluginActionButton
+        }
     }
 
     private func minimumTaskWidth(usesAdaptiveWidth: Bool) -> CGFloat {
+        if !settings.showTitles {
+            return settings.taskbarHeight + 8
+        }
+        
         if usesAdaptiveWidth {
             return showsPluginActionButton ? Self.minimumAdaptivePluginActionTaskWidth : Self.minimumAdaptiveTaskWidth
         }

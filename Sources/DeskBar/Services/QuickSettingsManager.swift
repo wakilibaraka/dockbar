@@ -5,11 +5,13 @@ final class QuickSettingsManager {
     
     /// All available quick settings, indexed by id
     let allSettings: [QuickSetting] = [
+        WiFiQuickSetting(),
+        BluetoothQuickSetting(),
         DarkModeQuickSetting(),
+        TrueToneQuickSetting(),
         MuteAudioQuickSetting(),
         MuteMicQuickSetting(),
         KeepAwakeQuickSetting(),
-        BluetoothQuickSetting(),
         AutohideDockQuickSetting(),
         AutohideMenuBarQuickSetting(),
         HiddenFilesQuickSetting(),

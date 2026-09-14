@@ -8,6 +8,13 @@ final class WiFiWidgetView: TrayIconButton {
         super.init(symbolName: "wifi", accessibilityLabel: "Wi-Fi")
         button.target = self
         button.action = #selector(handleClick)
+        
+        rightAction = {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.wifi-settings-extension") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+        
         updateState()
         wifiTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             DispatchQueue.main.async { self?.updateState() }
@@ -18,8 +25,14 @@ final class WiFiWidgetView: TrayIconButton {
     required init?(coder: NSCoder) { fatalError() }
 
     @objc private func handleClick() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.wifi-settings-extension") {
-            NSWorkspace.shared.open(url)
+        guard let interface = CWWiFiClient.shared().interface() else { return }
+        do {
+            try interface.setPower(!interface.powerOn())
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.updateState()
+            }
+        } catch {
+            print("Failed to toggle Wi-Fi: \(error)")
         }
     }
 

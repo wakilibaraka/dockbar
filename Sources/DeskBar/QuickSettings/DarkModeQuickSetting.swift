@@ -4,6 +4,7 @@ final class DarkModeQuickSetting: QuickSetting {
     let id = "darkMode"
     let title = "Dark Mode"
     let symbolName = "moon.fill"
+    var settingsURL: URL? { URL(string: "x-apple.systempreferences:com.apple.Appearance-Settings.extension") }
     var isOn: Bool = false
 
     init() { refreshState() }

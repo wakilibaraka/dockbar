@@ -23,8 +23,12 @@ final class QuickSettingsTileView: NSView {
         
         // Icon
         let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-        let image = NSImage(systemSymbolName: setting.symbolName, accessibilityDescription: setting.title)
-        iconView.image = image?.withSymbolConfiguration(config)
+        if let custom = setting.customImage {
+            iconView.image = custom
+        } else {
+            let image = NSImage(systemSymbolName: setting.symbolName, accessibilityDescription: setting.title)
+            iconView.image = image?.withSymbolConfiguration(config)
+        }
         iconView.imageScaling = .scaleProportionallyDown
         iconView.contentTintColor = .white
         iconView.translatesAutoresizingMaskIntoConstraints = false
@@ -87,6 +91,13 @@ final class QuickSettingsTileView: NSView {
             self.setting.refreshState()
             self.refresh()
             self.onToggle?()
+        }
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        if let url = setting.settingsURL {
+            NSWorkspace.shared.open(url)
+            self.onToggle?() // Close the flyout when opening settings
         }
     }
 }

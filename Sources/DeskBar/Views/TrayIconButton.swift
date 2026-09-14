@@ -6,6 +6,7 @@ class TrayIconButton: NSView {
     private var trackingArea: NSTrackingArea?
     var target: AnyObject? { get { button.target } set { button.target = newValue } }
     var action: Selector? { get { button.action } set { button.action = newValue } }
+    var rightAction: (() -> Void)?
     override var toolTip: String? { get { button.toolTip } set { button.toolTip = newValue } }
 
     init(symbolName: String, accessibilityLabel: String) {
@@ -60,5 +61,9 @@ class TrayIconButton: NSView {
             ctx.duration = 0.12
             layer?.backgroundColor = NSColor.clear.cgColor
         }
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        rightAction?()
     }
 }

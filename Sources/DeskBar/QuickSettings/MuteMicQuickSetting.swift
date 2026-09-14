@@ -4,6 +4,7 @@ final class MuteMicQuickSetting: QuickSetting {
     let id = "muteMic"
     let title = "Mute Mic"
     let symbolName = "mic.slash.fill"
+    var settingsURL: URL? { URL(string: "x-apple.systempreferences:com.apple.Sound-Settings.extension") }
     var isOn: Bool = false
     
     init() { refreshState() }
