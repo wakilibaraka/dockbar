@@ -96,7 +96,7 @@ final class WindowSwitcherService {
         }
 
         switch shortcut {
-        case .commandTap:
+        case .commandTap, .rightCommandTap:
             return false
         case .controlOptionReturn:
             return keyCode == returnKeyCode &&
@@ -330,13 +330,22 @@ final class WindowSwitcherService {
         }
 
         if type == .flagsChanged {
-            if settings.enableBareCommandLauncher,
-               settings.appsLauncherShortcut == .commandTap,
-               bareCommandDetector.handleFlagsChanged(flags) {
-                DispatchQueue.main.async {
-                    AppsLauncher.open()
+            if settings.enableBareCommandLauncher {
+                let isCommandTap = settings.appsLauncherShortcut == .commandTap
+                let isRightCommandTap = settings.appsLauncherShortcut == .rightCommandTap
+                
+                if (isCommandTap || isRightCommandTap),
+                   bareCommandDetector.handleFlagsChanged(flags, event: event) {
+                    
+                    let triggered = isCommandTap || (isRightCommandTap && bareCommandDetector.isRightCommandTap)
+                    
+                    if triggered {
+                        DispatchQueue.main.async {
+                            AppsLauncher.open()
+                        }
+                    }
                 }
-            } else if !settings.enableBareCommandLauncher || settings.appsLauncherShortcut != .commandTap {
+            } else {
                 bareCommandDetector.cancel()
             }
 

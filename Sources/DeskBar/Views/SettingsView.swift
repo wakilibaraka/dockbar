@@ -112,7 +112,7 @@ final class SettingsView: NSView {
 
         dockModePopupButton.addItems(withTitles: ["Independent", "Auto-Hide Dock", "Hide Dock"])
         layoutModePopupButton.addItems(withTitles: ["Full Width", "Full Width Glass", "Compact Centered", "Compact Glass"])
-        appsLauncherShortcutPopupButton.addItems(withTitles: ["Control-Option-Return", "Option-Space", "Control-Option-Space", "Tap Command"])
+        appsLauncherShortcutPopupButton.addItems(withTitles: ["Control-Option-Return", "Option-Space", "Control-Option-Space", "Tap Command", "Tap Right Command"])
         configureWidgetDisplayPopupButton()
         configureSessionManagerWidgetDisplayPopupButton()
         configureLauncherTableView()
@@ -654,6 +654,8 @@ final class SettingsView: NSView {
                     index = 2
                 case .commandTap:
                     index = 3
+                case .rightCommandTap:
+                    index = 4
                 }
 
                 self?.appsLauncherShortcutPopupButton.selectItem(at: index)
@@ -1342,6 +1344,8 @@ final class SettingsView: NSView {
     @objc
     private func appsLauncherShortcutChanged(_ sender: NSPopUpButton) {
         switch sender.indexOfSelectedItem {
+        case 4:
+            settings.appsLauncherShortcut = .rightCommandTap
         case 3:
             settings.appsLauncherShortcut = .commandTap
         case 2:

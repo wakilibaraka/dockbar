@@ -22,6 +22,7 @@ enum DeskBarLayoutMode: String, CaseIterable {
 
 enum AppsLauncherShortcut: String, CaseIterable {
     case commandTap
+    case rightCommandTap
     case controlOptionReturn
     case controlOptionSpace
     case optionSpace
@@ -232,8 +233,8 @@ class TaskbarSettings: ObservableObject {
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
         layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .compactGlass
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
-        enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? false
-        appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .controlOptionReturn
+        enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true
+        appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true

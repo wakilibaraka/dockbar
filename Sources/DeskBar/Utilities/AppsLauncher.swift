@@ -6,10 +6,7 @@ enum AppsLauncher {
     private static let legacyLaunchpadPath = "/System/Applications/Launchpad.app"
 
     static func open() {
-        LauncherApplicationActivator.launch(
-            bundleIdentifier: appsBundleIdentifier,
-            applicationURL: applicationURL()
-        )
+        LaunchpickManager.shared.toggle()
     }
 
     static func applicationURL() -> URL? {
