@@ -112,8 +112,8 @@ final class QuickSettingsFlyoutPanel: NSPanel {
 
         let hostingView = NSHostingView(rootView: CalendarView())
         hostingView.translatesAutoresizingMaskIntoConstraints = false
-        hostingView.widthAnchor.constraint(equalToConstant: 280).isActive = true
-        hostingView.heightAnchor.constraint(equalToConstant: 280).isActive = true
+        hostingView.widthAnchor.constraint(equalToConstant: 312).isActive = true
+        hostingView.heightAnchor.constraint(equalToConstant: 360).isActive = true
         outer.addArrangedSubview(hostingView)
 
         let sep2 = NSBox()

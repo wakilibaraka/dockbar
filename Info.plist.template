@@ -22,6 +22,8 @@
     <true/>
     <key>NSAppleEventsUsageDescription</key>
     <string>DeskBar uses Terminal window metadata to show Session Manager agent names and activity on terminal task buttons.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>DeskBar integrates with your calendar to display upcoming events and holidays in the Quick Settings menu.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsLocalNetworking</key>
