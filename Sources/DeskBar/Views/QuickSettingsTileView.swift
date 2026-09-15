@@ -37,7 +37,7 @@ final class QuickSettingsTileView: NSView {
         titleLabel.stringValue = setting.title
         titleLabel.font = .systemFont(ofSize: 10, weight: .medium)
         titleLabel.textColor = .labelColor
-        titleLabel.alignment = .center
+        titleLabel.alignment = .left
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
@@ -45,15 +45,17 @@ final class QuickSettingsTileView: NSView {
         addSubview(titleLabel)
         
         NSLayoutConstraint.activate([
-            widthAnchor.constraint(equalToConstant: 72),
-            heightAnchor.constraint(equalToConstant: 64),
-            iconView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            iconView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            iconView.widthAnchor.constraint(equalToConstant: 22),
-            iconView.heightAnchor.constraint(equalToConstant: 22),
-            titleLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 6),
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
+            widthAnchor.constraint(equalToConstant: 96),
+            heightAnchor.constraint(equalToConstant: 48),
+            
+            iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 18),
+            iconView.heightAnchor.constraint(equalToConstant: 18),
+            
+            titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 6),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         
         // Accessibility

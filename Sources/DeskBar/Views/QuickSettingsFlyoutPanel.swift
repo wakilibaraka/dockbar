@@ -113,7 +113,6 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         let hostingView = NSHostingView(rootView: CalendarView())
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         hostingView.widthAnchor.constraint(equalToConstant: 312).isActive = true
-        hostingView.heightAnchor.constraint(equalToConstant: 360).isActive = true
         outer.addArrangedSubview(hostingView)
 
         let sep2 = NSBox()
@@ -128,9 +127,9 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         header.textColor = .labelColor
         outer.addArrangedSubview(header)
 
-        // Tile grid — 4 columns
+        // Tile grid — 3 columns
         let enabledSettings = manager.enabledSettings(for: settings.enabledQuickSettings)
-        let columns = 4
+        let columns = 3
         var rows: [[NSView]] = []
         var row: [NSView] = []
 
@@ -151,8 +150,8 @@ final class QuickSettingsFlyoutPanel: NSPanel {
                 let spacer = NSView()
                 spacer.translatesAutoresizingMaskIntoConstraints = false
                 NSLayoutConstraint.activate([
-                    spacer.widthAnchor.constraint(equalToConstant: 72),
-                    spacer.heightAnchor.constraint(equalToConstant: 64),
+                    spacer.widthAnchor.constraint(equalToConstant: 96),
+                    spacer.heightAnchor.constraint(equalToConstant: 48),
                 ])
                 row.append(spacer)
             }
@@ -162,7 +161,7 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         if !rows.isEmpty {
             let grid = NSGridView(views: rows)
             grid.rowSpacing = 8
-            grid.columnSpacing = 8
+            grid.columnSpacing = 12
             outer.addArrangedSubview(grid)
         }
 
@@ -174,10 +173,12 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         sep.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
         // Volume slider
-        outer.addArrangedSubview(makeSliderRow(
+        let sliderRow = makeSliderRow(
             symbol: "speaker.wave.2.fill",
             slider: makeVolumeSlider()
-        ))
+        )
+        outer.addArrangedSubview(sliderRow)
+        sliderRow.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
         // Pin everything
         NSLayoutConstraint.activate([

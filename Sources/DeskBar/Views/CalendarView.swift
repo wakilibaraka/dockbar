@@ -73,14 +73,14 @@ struct CalendarView: View {
             }
             
             Divider()
-                .padding(.top, 4)
+                .padding(.top, 2)
             
             let selectedEvents = eventService.events.filter { calendar.isDate($0.startDate, inSameDayAs: state.selectedDay) }
             
-            HStack {
+            HStack(alignment: .top) {
                 if selectedEvents.isEmpty {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Image(systemName: "calendar.badge.clock")
                                     .foregroundStyle(.secondary)
@@ -106,8 +106,10 @@ struct CalendarView: View {
                                     EventRow(event: ev, showDate: true)
                                 }
                             }
+                            Spacer(minLength: 0)
                         }
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
                     ScrollView {
@@ -116,14 +118,15 @@ struct CalendarView: View {
                                 EventRow(event: ev, showDate: false)
                             }
                         }
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                Spacer()
             }
             .padding(.vertical, 4)
         }
-        .padding(20)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
         // Colourful Windows-like background using a gradient overlay
         .background {
             LinearGradient(
@@ -132,7 +135,6 @@ struct CalendarView: View {
                 endPoint: .bottomTrailing
             )
         }
-        .frame(width: 320)
     }
     
     private func changeMonth(by value: Int) {
