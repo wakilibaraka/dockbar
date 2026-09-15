@@ -29,7 +29,7 @@ final class SystemResourceWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
     
     func preferredContentWidth() -> CGFloat {
-        return isHidden ? 0 : 96
+        return isHidden ? 0 : 56
     }
     
     private func setupUI() {
