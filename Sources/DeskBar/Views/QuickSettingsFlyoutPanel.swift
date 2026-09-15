@@ -82,7 +82,7 @@ final class QuickSettingsFlyoutPanel: NSPanel {
     // MARK: - UI Setup
 
     private func setupUI() {
-        blurView.material = .popover
+        blurView.material = .hudWindow
         blurView.blendingMode = .behindWindow
         blurView.state = .active
         blurView.wantsLayer = true

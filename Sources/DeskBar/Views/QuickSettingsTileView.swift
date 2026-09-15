@@ -30,13 +30,13 @@ final class QuickSettingsTileView: NSView {
             iconView.image = image?.withSymbolConfiguration(config)
         }
         iconView.imageScaling = .scaleProportionallyDown
-        iconView.contentTintColor = .white
+        iconView.contentTintColor = .labelColor
         iconView.translatesAutoresizingMaskIntoConstraints = false
         
         // Title
         titleLabel.stringValue = setting.title
         titleLabel.font = .systemFont(ofSize: 10, weight: .medium)
-        titleLabel.textColor = NSColor.white.withAlphaComponent(0.85)
+        titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -69,16 +69,17 @@ final class QuickSettingsTileView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         if isAction {
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
+            layer?.backgroundColor = NSColor.controlTextColor.withAlphaComponent(0.08).cgColor
         } else {
             layer?.backgroundColor = on
-                ? NSColor.systemBlue.withAlphaComponent(0.45).cgColor
-                : NSColor.white.withAlphaComponent(0.10).cgColor
+                ? NSColor.controlAccentColor.cgColor
+                : NSColor.controlTextColor.withAlphaComponent(0.08).cgColor
         }
         CATransaction.commit()
         
-        iconView.contentTintColor = on || isAction ? .white : NSColor.white.withAlphaComponent(0.5)
-        titleLabel.textColor = on || isAction ? .white : NSColor.white.withAlphaComponent(0.5)
+        let fgColor: NSColor = (on && !isAction) ? .white : .labelColor
+        iconView.contentTintColor = fgColor
+        titleLabel.textColor = fgColor
     }
     
     override func mouseDown(with event: NSEvent) {

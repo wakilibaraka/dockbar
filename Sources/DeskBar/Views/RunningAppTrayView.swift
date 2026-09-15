@@ -40,7 +40,8 @@ final class RunningAppTrayView: NSStackView {
         self.collapsedSystemResourceWidgetView = CollapsedSystemResourceWidgetView(
             settings: settings,
             monitor: systemResourceMonitor,
-            displayID: displayID
+            displayID: displayID,
+            isCollapsedInstance: true
         )
         super.init(frame: .zero)
 

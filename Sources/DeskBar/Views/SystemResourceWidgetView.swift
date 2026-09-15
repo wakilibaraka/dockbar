@@ -13,12 +13,16 @@ final class SystemResourceWidgetView: NSView {
     
     var preferredWidthDidChange: (() -> Void)?
     
-    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, displayID: CGDirectDisplayID? = nil) {
+    private let isCollapsedInstance: Bool
+    
+    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, displayID: CGDirectDisplayID? = nil, isCollapsedInstance: Bool = false) {
         self.settings = settings
         self.monitor = monitor
+        self.isCollapsedInstance = isCollapsedInstance
         super.init(frame: .zero)
         setupUI()
         bindState()
+        updateVisibility()
     }
     
     @available(*, unavailable)
@@ -26,7 +30,7 @@ final class SystemResourceWidgetView: NSView {
     
     func preferredContentWidth() -> CGFloat {
         // Fixed width to prevent layout glitches
-        return 56
+        return isHidden ? 0 : 56
     }
     
     private func setupUI() {
@@ -61,6 +65,24 @@ final class SystemResourceWidgetView: NSView {
                 self?.update(with: snapshot)
             }
             .store(in: &cancellables)
+            
+        settings.$showSystemResourceWidget
+            .combineLatest(settings.$systemResourceWidgetCollapsed)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _, _ in
+                self?.updateVisibility()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func updateVisibility() {
+        if isCollapsedInstance { return }
+        
+        let shouldShow = settings.showSystemResourceWidget && !settings.systemResourceWidgetCollapsed
+        if isHidden != !shouldShow {
+            isHidden = !shouldShow
+            preferredWidthDidChange?()
+        }
     }
     
     private func update(with snapshot: SystemResourceSnapshot) {
