@@ -111,7 +111,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     private let activityLabel = NSTextField(labelWithString: "")
     private let progressTrackView = NSView()
     private let progressFillView = NSView()
-    private let thumbnailPopover: ThumbnailPopover
+    private let popover: GroupThumbnailPopover
     private let owningApplication: NSRunningApplication?
     private let dropIndicatorView = NSView()
     private lazy var windowElement: AXUIElement? = {
@@ -123,6 +123,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }()
     private var trackingAreaRef: NSTrackingArea?
     private var hoverWorkItem: DispatchWorkItem?
+    private var closePopoverWorkItem: DispatchWorkItem?
     private var thumbnailRequestTask: Task<Void, Never>?
     private var maxWidthConstraint: NSLayoutConstraint?
     private var widthCap: CGFloat?
@@ -301,7 +302,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
         self.dragConfiguration = dragConfiguration
         self.pluginMenuConfiguration = pluginMenuConfiguration
         self.activationHandler = activationHandler
-        self.thumbnailPopover = ThumbnailPopover(settings: settings)
+        self.popover = GroupThumbnailPopover(settings: settings)
         self.owningApplication = owningApplication
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
@@ -774,7 +775,20 @@ final class TaskButtonView: NSView, NSDraggingSource {
             }
 
             if let thumbnail {
-                self.thumbnailPopover.show(thumbnail: thumbnail, relativeTo: self, title: self.resolvedTitle())
+                let item = WindowThumbnailItem(
+                    windowID: cgWindowID,
+                    thumbnail: thumbnail,
+                    title: self.resolvedTitle(),
+                    activationHandler: { [weak self] in
+                        guard let self = self else { return }
+                        self.activationHandler(self.windowInfo)
+                    },
+                    peekHandler: { [weak self] in
+                        guard let self = self else { return }
+                        self.activationHandler(self.windowInfo)
+                    }
+                )
+                self.popover.show(items: [item], relativeTo: self)
             }
         }
     }
@@ -784,7 +798,42 @@ final class TaskButtonView: NSView, NSDraggingSource {
         hoverWorkItem = nil
         thumbnailRequestTask?.cancel()
         thumbnailRequestTask = nil
-        thumbnailPopover.close()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            if let popoverWindow = self.popover.contentViewController?.view.window,
+               NSMouseInRect(NSEvent.mouseLocation, popoverWindow.frame, false) {
+                self.monitorMouseLeavingPopover()
+            } else {
+                self.popover.close()
+            }
+        }
+        closePopoverWorkItem?.cancel()
+        closePopoverWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+    }
+    
+    private func monitorMouseLeavingPopover() {
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            guard self.popover.isShown else { return }
+            
+            if let popoverWindow = self.popover.contentViewController?.view.window {
+                let mouseLoc = NSEvent.mouseLocation
+                let buttonScreenRect = self.window?.convertToScreen(self.convert(self.bounds, to: nil)) ?? .zero
+                
+                let inPopover = NSMouseInRect(mouseLoc, popoverWindow.frame, false)
+                let inButton = NSMouseInRect(mouseLoc, buttonScreenRect, false)
+                
+                if !inPopover && !inButton {
+                    self.popover.close()
+                } else {
+                    self.monitorMouseLeavingPopover()
+                }
+            }
+        }
+        closePopoverWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
 
     private var canStartDragSession: Bool {
