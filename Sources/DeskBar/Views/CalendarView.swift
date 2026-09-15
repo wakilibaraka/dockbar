@@ -78,29 +78,26 @@ struct CalendarView: View {
             let selectedEvents = eventService.events.filter { calendar.isDate($0.startDate, inSameDayAs: state.selectedDay) }
             
             HStack {
-                ScrollView {
+                if selectedEvents.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        if selectedEvents.isEmpty {
-                            HStack {
-                                Image(systemName: "calendar.badge.clock")
-                                    .foregroundStyle(.secondary)
-                                Text("No events")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else {
+                        HStack {
+                            Image(systemName: "calendar.badge.clock")
+                                .foregroundStyle(.secondary)
+                            Text("No events")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 6) {
                             ForEach(selectedEvents) { ev in
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(ev.color)
-                                        .frame(width: 6, height: 6)
-                                    Text(ev.title)
-                                        .font(.system(size: 11))
-                                        .lineLimit(1)
-                                        .foregroundStyle(.primary)
-                                }
+                                EventRow(event: ev)
                             }
                         }
+                        .padding(.trailing, 8)
                     }
                 }
                 Spacer()
@@ -198,5 +195,37 @@ struct DayCell: View {
                 state.hoveredDay = nil
             }
         }
+    }
+}
+
+struct EventRow: View {
+    let event: CalendarEvent
+    
+    var timeString: String {
+        let f = DateFormatter()
+        f.timeStyle = .short
+        return "\(f.string(from: event.startDate)) - \(f.string(from: event.endDate))"
+    }
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(event.color)
+                .frame(width: 3)
+                .padding(.vertical, 2)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                
+                Text(event.isAllDay ? "All Day" : timeString)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
     }
 }
