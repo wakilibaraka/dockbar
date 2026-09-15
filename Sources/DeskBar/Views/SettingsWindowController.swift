@@ -4,7 +4,9 @@ class SettingsWindowController: NSWindowController {
     convenience init(
         settings: TaskbarSettings,
         blacklistManager: BlacklistManager,
-        pinnedAppManager: PinnedAppManager
+        pinnedAppManager: PinnedAppManager,
+        permissionsManager: PermissionsManager,
+        thumbnailService: ThumbnailService
     ) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 660, height: 480),
@@ -19,7 +21,9 @@ class SettingsWindowController: NSWindowController {
         let settingsView = SettingsView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,
-            blacklistManager: blacklistManager
+            blacklistManager: blacklistManager,
+            permissionsManager: permissionsManager,
+            thumbnailService: thumbnailService
         )
         window.contentView = settingsView
     }

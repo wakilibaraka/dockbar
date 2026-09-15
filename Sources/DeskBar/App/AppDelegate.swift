@@ -99,7 +99,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindowController = SettingsWindowController(
             settings: settings,
             blacklistManager: blacklistManager,
-            pinnedAppManager: pinnedAppManager
+            pinnedAppManager: pinnedAppManager,
+            permissionsManager: permissions,
+            thumbnailService: thumbnailService
         )
         configureStatusItem()
         bindDockMode(settings: settings)

@@ -2,7 +2,6 @@ import AppKit
 import Combine
 
 final class TaskbarPanel: NSPanel {
-    private static let bannerHeight: CGFloat = 32
     private static let minimumContentHeight: CGFloat = 32
     private static let compactHorizontalMargin: CGFloat = 12
     private static let compactMinimumWidth: CGFloat = 420
@@ -180,7 +179,7 @@ final class TaskbarPanel: NSPanel {
         }
 
         let contentHeight = max(taskbarHeight, minimumContentHeight)
-        let height = contentHeight + (isAccessibilityGranted ? 0 : bannerHeight)
+        let height = contentHeight
 
         return NSRect(
             x: screen.frame.origin.x,

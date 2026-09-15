@@ -24,7 +24,6 @@ final class TaskbarContentView: NSView {
     private let accessibilityService = AccessibilityService()
 
     private let rootStackView = NSStackView()
-    private let bannerButton = NSButton()
     private let zonesStackView = NSStackView()
     private let taskZoneLayoutStackView = NSStackView()
     private let leftTaskZoneStackView = NSStackView()
@@ -299,7 +298,6 @@ final class TaskbarContentView: NSView {
         }
 
         let occupiedViews: [NSView] = [
-            bannerButton,
             launcherZoneView,
             sessionManagerWidgetView,
             systemResourceWidgetView,
@@ -335,25 +333,6 @@ final class TaskbarContentView: NSView {
             rootStackView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
 
-        bannerButton.title = "Accessibility permission required — Click to grant (you may need to add DeskBar manually in System Settings > Privacy & Security > Accessibility)"
-        bannerButton.toolTip = bannerButton.title
-        bannerButton.isBordered = false
-        bannerButton.bezelStyle = .regularSquare
-        bannerButton.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        bannerButton.contentTintColor = NSColor.black.withAlphaComponent(0.85)
-        bannerButton.alignment = .center
-        bannerButton.wantsLayer = true
-        bannerButton.layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.85).cgColor
-        bannerButton.translatesAutoresizingMaskIntoConstraints = false
-        bannerButton.target = self
-        bannerButton.action = #selector(openAccessibilitySettings)
-        rootStackView.addArrangedSubview(bannerButton)
-
-        NSLayoutConstraint.activate([
-            bannerButton.leadingAnchor.constraint(equalTo: rootStackView.leadingAnchor),
-            bannerButton.trailingAnchor.constraint(equalTo: rootStackView.trailingAnchor),
-            bannerButton.heightAnchor.constraint(equalToConstant: 32)
-        ])
 
         zonesStackView.orientation = .horizontal
         zonesStackView.alignment = .centerY
@@ -683,7 +662,6 @@ final class TaskbarContentView: NSView {
     }
 
     private func rebuildTaskZone() {
-        bannerButton.isHidden = permissionsManager.isAccessibilityGranted
         expandedGroupView = nil
 
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier

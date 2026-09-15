@@ -24,9 +24,19 @@ final class SettingsView: NSView {
     private let settings: TaskbarSettings
     private let pinnedAppManager: PinnedAppManager
     private let blacklistManager: BlacklistManager
+    private let permissionsManager: PermissionsManager
+    private let thumbnailService: ThumbnailService
+
     private let tabView = NSTabView()
 
     private let startAtLoginCheckbox = NSButton(checkboxWithTitle: "Start at login", target: nil, action: nil)
+    private let axPermissionStatusLabel = NSTextField(labelWithString: "")
+    private let axPermissionButton = NSButton(title: "Request Access", target: nil, action: nil)
+    private let screenRecordingStatusLabel = NSTextField(labelWithString: "")
+    private let screenRecordingButton = NSButton(title: "Request Access", target: nil, action: nil)
+    private let calendarStatusLabel = NSTextField(labelWithString: "")
+    private let calendarButton = NSButton(title: "Request Access", target: nil, action: nil)
+
     private let dockModePopupButton = NSPopUpButton()
 
     private let taskbarHeightSlider = NSSlider(value: 40, minValue: 32, maxValue: 60, target: nil, action: nil)
@@ -85,11 +95,16 @@ final class SettingsView: NSView {
     init(
         settings: TaskbarSettings,
         pinnedAppManager: PinnedAppManager = PinnedAppManager(),
-        blacklistManager: BlacklistManager
+        blacklistManager: BlacklistManager,
+        permissionsManager: PermissionsManager,
+        thumbnailService: ThumbnailService
     ) {
         self.settings = settings
         self.pinnedAppManager = pinnedAppManager
         self.blacklistManager = blacklistManager
+        self.permissionsManager = permissionsManager
+        self.thumbnailService = thumbnailService
+
         super.init(frame: .zero)
 
         configureLayout()
@@ -129,7 +144,11 @@ final class SettingsView: NSView {
         generalTab.view = makeFormView(rows: [
             makeCheckboxRow(startAtLoginCheckbox),
             makeCheckboxRow(trackBluetoothDevicesCheckbox),
-            makeLabeledControlRow(label: "Dock mode", control: dockModePopupButton)
+            makeLabeledControlRow(label: "Dock mode", control: dockModePopupButton),
+            makeSectionHeader(title: "Permissions"),
+            makePermissionRow(label: "Accessibility", statusLabel: axPermissionStatusLabel, button: axPermissionButton),
+            makePermissionRow(label: "Screen Recording", statusLabel: screenRecordingStatusLabel, button: screenRecordingButton),
+            makePermissionRow(label: "Calendar", statusLabel: calendarStatusLabel, button: calendarButton)
         ])
 
         let appearanceTab = NSTabViewItem(identifier: "appearance")
@@ -442,9 +461,45 @@ final class SettingsView: NSView {
 
         addBlacklistButton.target = self
         addBlacklistButton.action = #selector(showAddBlacklistSheet(_:))
+
+        axPermissionButton.target = self
+        axPermissionButton.action = #selector(requestAccessibilityPermission(_:))
+
+        screenRecordingButton.target = self
+        screenRecordingButton.action = #selector(requestScreenRecordingPermission(_:))
+
+        calendarButton.target = self
+        calendarButton.action = #selector(requestCalendarPermission(_:))
     }
 
     private func bindSettings() {
+        permissionsManager.$isAccessibilityGranted
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] granted in
+                self?.axPermissionStatusLabel.stringValue = granted ? "Granted" : "Not Granted"
+                self?.axPermissionStatusLabel.textColor = granted ? .systemGreen : .systemRed
+                self?.axPermissionButton.title = granted ? "Open Settings" : "Request Access"
+            }
+            .store(in: &cancellables)
+
+        thumbnailService.$isScreenRecordingGranted
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] granted in
+                self?.screenRecordingStatusLabel.stringValue = granted ? "Granted" : "Not Granted"
+                self?.screenRecordingStatusLabel.textColor = granted ? .systemGreen : .systemRed
+                self?.screenRecordingButton.title = granted ? "Open Settings" : "Request Access"
+            }
+            .store(in: &cancellables)
+
+        CalendarEventService.shared.$isAuthorized
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] granted in
+                self?.calendarStatusLabel.stringValue = granted ? "Granted" : "Not Granted"
+                self?.calendarStatusLabel.textColor = granted ? .systemGreen : .systemRed
+                self?.calendarButton.title = granted ? "Open Settings" : "Request Access"
+            }
+            .store(in: &cancellables)
+
         settings.$startAtLogin
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
@@ -822,6 +877,53 @@ final class SettingsView: NSView {
             .store(in: &cancellables)
 
         reloadBlacklistEntries()
+    }
+
+    private func makeSectionHeader(title: String) -> NSView {
+        let container = NSView()
+        let label = NSTextField(labelWithString: title)
+        label.font = .systemFont(ofSize: 14, weight: .semibold)
+        label.textColor = .secondaryLabelColor
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        let separator = NSBox()
+        separator.boxType = .separator
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        
+        container.addSubview(label)
+        container.addSubview(separator)
+        
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4),
+            
+            separator.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 8),
+            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            separator.centerYAnchor.constraint(equalTo: label.centerYAnchor)
+        ])
+        return container
+    }
+
+    private func makePermissionRow(label: String, statusLabel: NSTextField, button: NSButton) -> NSView {
+        let rightStack = NSStackView(views: [statusLabel, button])
+        rightStack.orientation = .horizontal
+        rightStack.spacing = 12
+        rightStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        rightStack.translatesAutoresizingMaskIntoConstraints = false
+        rightStack.widthAnchor.constraint(equalToConstant: 220).isActive = true
+
+        let textLabel = NSTextField(labelWithString: label)
+        textLabel.alignment = .left
+        textLabel.translatesAutoresizingMaskIntoConstraints = false
+        textLabel.widthAnchor.constraint(equalToConstant: 160).isActive = true
+
+        let row = NSStackView(views: [textLabel, rightStack])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.distribution = .fill
+        row.spacing = 12
+        return row
     }
 
     private func makeFormView(rows: [NSView]) -> NSView {
@@ -1548,6 +1650,24 @@ final class SettingsView: NSView {
         }
 
         showRunningAppsSelection(entries: entries)
+    }
+
+    @objc
+    private func requestAccessibilityPermission(_ sender: NSButton) {
+        permissionsManager.requestAccessibilityPermission()
+    }
+
+    @objc
+    private func requestScreenRecordingPermission(_ sender: NSButton) {
+        if !thumbnailService.requestScreenRecordingPermission() {
+            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+        }
+    }
+
+    @objc
+    private func requestCalendarPermission(_ sender: NSButton) {
+        CalendarEventService.shared.checkPermission()
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
     }
 }
 
