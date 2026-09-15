@@ -7,6 +7,10 @@
 </p>
 
 <p align="center">
+  <img src="assets/screenshot.png" alt="DockBar Screenshot" style="max-width: 100%; border-radius: 8px; margin: 16px 0;"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/macOS-14%2B-blue?style=flat-square" />
   <img src="https://img.shields.io/badge/Swift-5.10-orange?style=flat-square" />
   <img src="https://img.shields.io/badge/AppKit-native-purple?style=flat-square" />
