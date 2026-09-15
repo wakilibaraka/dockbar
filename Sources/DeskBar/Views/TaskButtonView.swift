@@ -327,7 +327,9 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     deinit {
-        cancelHoverPreview()
+        hoverWorkItem?.cancel()
+        thumbnailRequestTask?.cancel()
+        closePopoverWorkItem?.cancel()
 
         if TaskButtonView.activeHoverView === self {
             TaskButtonView.activeHoverView = nil
