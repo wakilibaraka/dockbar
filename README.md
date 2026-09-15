@@ -70,7 +70,7 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 ## Install
 
 ### Download (Recommended)
-Download the latest **DockBar-v1.x.x.dmg** from [Releases](https://github.com/wakilibaraka/dockbar/releases), open it, and drag `DockBar.app` to your `/Applications` folder.
+Download the latest **DockBar.dmg** or **DockBar.zip** from [Releases](https://github.com/wakilibaraka/dockbar/releases), open the DMG, and drag `DockBar.app` into your `/Applications` folder.
 
 ### Build from Source
 ```bash
@@ -86,15 +86,47 @@ No Xcode required — only the Swift toolchain (`xcode-select --install`).
 
 ---
 
-## First Launch
+## First Launch & Permissions
 
-1. **Accessibility permission** — a banner will appear. Click it → System Settings → Privacy & Security → Accessibility → add DockBar. Required for window detection.
-2. **Screen Recording** (optional) — for hover thumbnails and the window switcher overlay. System Settings → Privacy & Security → Screen Recording → add DockBar.
+1. **Accessibility permission** — required for window detection and switching.
+   - Go to **System Settings** → **Privacy & Security** → **Accessibility** → enable **DockBar**.
+2. **Screen Recording permission** (optional) — required for live hover thumbnails and window switcher previews.
+   - Go to **System Settings** → **Privacy & Security** → **Screen Recording** → enable **DockBar**.
 
-If you rebuild, you may need to re-grant:
-```bash
-tccutil reset Accessibility com.deskbar.app
-```
+---
+
+## Clean Uninstall & Reset Permissions
+
+If you want to completely remove DockBar or perform a fresh reinstall (e.g. using [Pearcleaner](https://github.com/alienator88/Pearcleaner)):
+
+1. **Quit the App**:
+   ```bash
+   killall DockBar 2>/dev/null || true
+   killall DeskBar 2>/dev/null || true
+   ```
+
+2. **Remove Application**:
+   ```bash
+   rm -rf /Applications/DockBar.app /Applications/DeskBar.app
+   ```
+
+3. **Reset System Permissions**:
+   ```bash
+   tccutil reset Accessibility com.deskbar.app
+   tccutil reset ScreenCapture com.deskbar.app
+   ```
+
+4. **Delete Application Support & Preferences**:
+   ```bash
+   defaults delete com.deskbar.app 2>/dev/null || true
+   rm -rf ~/Library/Application\ Support/DockBar
+   rm -rf ~/Library/Application\ Support/DeskBar
+   rm -rf ~/Library/Application\ Support/com.deskbar.app
+   rm -rf ~/Library/Preferences/com.deskbar.app.plist
+   rm -rf ~/Library/Caches/com.deskbar.app
+   rm -rf ~/Library/LaunchAgents/com.deskbar.app.plist
+   rm -rf ~/Library/LaunchAgents/com.deskbar.dock-watchdog.plist
+   ```
 
 ---
 
