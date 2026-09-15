@@ -38,7 +38,9 @@ final class QuickSettingsTileView: NSView {
         titleLabel.font = .systemFont(ofSize: 10, weight: .medium)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .left
-        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.maximumNumberOfLines = 2
+        titleLabel.cell?.usesSingleLineMode = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
         addSubview(iconView)

@@ -246,7 +246,7 @@ struct EventRow: View {
                 Text(event.title)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 
                 Text((showDate ? "\(dateString) • " : "") + (event.isAllDay ? "All Day" : timeString))
                     .font(.system(size: 10))

@@ -32,9 +32,9 @@ final class SettingsView: NSView {
     private let taskbarHeightSlider = NSSlider(value: 40, minValue: 32, maxValue: 60, target: nil, action: nil)
     private let layoutModePopupButton = NSPopUpButton()
     private let titleFontSizeSlider = NSSlider(value: 12, minValue: 8, maxValue: 18, target: nil, action: nil)
-    private let maxTaskWidthSlider = NSSlider(value: 200, minValue: 100, maxValue: 400, target: nil, action: nil)
+    private let maxTaskWidthSlider = NSSlider(value: 200, minValue: 100, maxValue: 800, target: nil, action: nil)
     private let showTitlesCheckbox = NSButton(checkboxWithTitle: "Show titles", target: nil, action: nil)
-    private let thumbnailSizeSlider = NSSlider(value: 200, minValue: 100, maxValue: 400, target: nil, action: nil)
+    private let thumbnailSizeSlider = NSSlider(value: 200, minValue: 100, maxValue: 800, target: nil, action: nil)
     private let resetAppearanceSlidersButton = NSButton(title: "Reset Sliders to Defaults", target: nil, action: nil)
 
     private let hoverDelaySlider = NSSlider(value: 400, minValue: 100, maxValue: 1000, target: nil, action: nil)

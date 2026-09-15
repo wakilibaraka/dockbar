@@ -215,7 +215,8 @@ private final class ClickableThumbnailView: NSView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 11, weight: .medium)
         titleLabel.textColor = .labelColor
-        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.maximumNumberOfLines = 2
         titleLabel.alignment = .center
         
         let imageView = NSImageView()

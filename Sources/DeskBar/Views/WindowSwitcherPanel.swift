@@ -523,12 +523,14 @@ private final class WindowSwitcherCardView: NSView {
         addSubview(iconBadgeView)
 
         titleField.font = .systemFont(ofSize: 13, weight: .semibold)
-        titleField.lineBreakMode = .byTruncatingTail
+        titleField.lineBreakMode = .byWordWrapping
+        titleField.maximumNumberOfLines = 2
         titleField.textColor = .labelColor
         addSubview(titleField)
 
         appField.font = .systemFont(ofSize: 11, weight: .medium)
-        appField.lineBreakMode = .byTruncatingTail
+        appField.lineBreakMode = .byWordWrapping
+        appField.maximumNumberOfLines = 2
         appField.textColor = .secondaryLabelColor
         addSubview(appField)
     }
