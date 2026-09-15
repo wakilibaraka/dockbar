@@ -6,6 +6,7 @@ struct WindowThumbnailItem {
     let thumbnail: NSImage
     let title: String
     let activationHandler: () -> Void
+    let peekHandler: () -> Void
 }
 
 final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
@@ -80,6 +81,12 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
 
         let eventMask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         let keyboardEventMask: NSEvent.EventTypeMask = [.keyDown, .flagsChanged]
+
+        // If the workspace change was caused by a peek, don't close.
+        // However, we don't know easily. Let's just remove the workspaceActivateObserver and appResignActiveObserver
+        // because we WANT to stay open until mouse click or mouse out.
+        // Actually, if we just check if the mouse is still inside the popover bounds?
+        // Let's just rely on global/local mouse down and keyboard to close it!
 
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: eventMask) { [weak self] event in
             self?.closeUnlessEventTargetsPopover(event)
@@ -169,6 +176,8 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
             let container = ClickableThumbnailView(item: item, size: thumbnailSize, action: { [weak self] in
                 item.activationHandler()
                 self?.dismissHandler?()
+            }, peekAction: {
+                item.peekHandler()
             })
             stackView.addArrangedSubview(container)
             
@@ -190,10 +199,13 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
 
 private final class ClickableThumbnailView: NSView {
     private let action: () -> Void
+    private let peekAction: () -> Void
     private var isHovered = false
+    private var peekWorkItem: DispatchWorkItem?
     
-    init(item: WindowThumbnailItem, size: CGFloat, action: @escaping () -> Void) {
+    init(item: WindowThumbnailItem, size: CGFloat, action: @escaping () -> Void, peekAction: @escaping () -> Void) {
         self.action = action
+        self.peekAction = peekAction
         super.init(frame: .zero)
         
         wantsLayer = true
@@ -242,11 +254,20 @@ private final class ClickableThumbnailView: NSView {
     override func mouseEntered(with event: NSEvent) {
         isHovered = true
         layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.peekAction()
+        }
+        peekWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
     }
     
     override func mouseExited(with event: NSEvent) {
         isHovered = false
         layer?.backgroundColor = .clear
+        
+        peekWorkItem?.cancel()
+        peekWorkItem = nil
     }
     
     override func mouseDown(with event: NSEvent) {

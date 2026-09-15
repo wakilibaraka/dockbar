@@ -2465,6 +2465,9 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
                         title: title,
                         activationHandler: { [weak self] in
                             self?.windowActivationHandler(window)
+                        },
+                        peekHandler: { [weak self] in
+                            self?.windowActivationHandler(window)
                         }
                     ))
                 }
