@@ -79,22 +79,41 @@ struct CalendarView: View {
             
             HStack {
                 if selectedEvents.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "calendar.badge.clock")
-                                .foregroundStyle(.secondary)
-                            Text("No events")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "calendar.badge.clock")
+                                    .foregroundStyle(.secondary)
+                                Text("No events")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            let nextDate = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: state.selectedDay)!)
+                            let upcoming = eventService.events
+                                .filter { $0.startDate >= nextDate }
+                                .sorted { $0.startDate < $1.startDate }
+                                .prefix(2)
+                            
+                            if !upcoming.isEmpty {
+                                Text("Upcoming")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
+                                    .padding(.top, 4)
+                                
+                                ForEach(Array(upcoming)) { ev in
+                                    EventRow(event: ev, showDate: true)
+                                }
+                            }
                         }
-                        Spacer()
+                        .padding(.trailing, 8)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 6) {
                             ForEach(selectedEvents) { ev in
-                                EventRow(event: ev)
+                                EventRow(event: ev, showDate: false)
                             }
                         }
                         .padding(.trailing, 8)
@@ -200,11 +219,18 @@ struct DayCell: View {
 
 struct EventRow: View {
     let event: CalendarEvent
+    var showDate: Bool = false
     
     var timeString: String {
         let f = DateFormatter()
         f.timeStyle = .short
         return "\(f.string(from: event.startDate)) - \(f.string(from: event.endDate))"
+    }
+    
+    var dateString: String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f.string(from: event.startDate)
     }
     
     var body: some View {
@@ -220,7 +246,7 @@ struct EventRow: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 
-                Text(event.isAllDay ? "All Day" : timeString)
+                Text((showDate ? "\(dateString) • " : "") + (event.isAllDay ? "All Day" : timeString))
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
