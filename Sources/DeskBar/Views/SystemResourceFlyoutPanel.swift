@@ -10,7 +10,7 @@ final class SystemResourceFlyoutPanel: NSPanel {
     init(monitor: SystemResourceMonitor) {
         self.monitor = monitor
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 260, height: 320),
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false

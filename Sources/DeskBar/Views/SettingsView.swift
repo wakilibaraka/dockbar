@@ -46,7 +46,8 @@ final class SettingsView: NSView {
     private let flashAttentionIndicatorsCheckbox = NSButton(checkboxWithTitle: "Flash apps that want attention", target: nil, action: nil)
     private let showProgressIndicatorsCheckbox = NSButton(checkboxWithTitle: "Show app progress indicators", target: nil, action: nil)
     private let enableActivityModeCheckbox = NSButton(checkboxWithTitle: "Activity mode (hold Control for CPU/RAM)", target: nil, action: nil)
-    private let showSystemResourceWidgetCheckbox = NSButton(checkboxWithTitle: "Show system resource widget", target: nil, action: nil)
+    private let showSystemResourceWidgetCheckbox = NSButton(checkboxWithTitle: "Show System Stats (Battery & RAM)", target: nil, action: nil)
+    private let trackBluetoothDevicesCheckbox = NSButton(checkboxWithTitle: "Track Bluetooth device batteries", target: nil, action: nil)
     private let showSystemResourceMemoryMetricCheckbox = NSButton(checkboxWithTitle: "Memory pressure", target: nil, action: nil)
     private let showSystemResourceCPUMetricCheckbox = NSButton(checkboxWithTitle: "CPU usage", target: nil, action: nil)
     private let showSystemResourceGPUMetricCheckbox = NSButton(checkboxWithTitle: "GPU usage", target: nil, action: nil)
@@ -124,6 +125,7 @@ final class SettingsView: NSView {
         generalTab.label = "General"
         generalTab.view = makeFormView(rows: [
             makeCheckboxRow(startAtLoginCheckbox),
+            makeCheckboxRow(trackBluetoothDevicesCheckbox),
             makeLabeledControlRow(label: "Dock mode", control: dockModePopupButton)
         ])
 
@@ -358,6 +360,9 @@ final class SettingsView: NSView {
         enableActivityModeCheckbox.target = self
         enableActivityModeCheckbox.action = #selector(enableActivityModeChanged(_:))
 
+        trackBluetoothDevicesCheckbox.target = self
+        trackBluetoothDevicesCheckbox.action = #selector(trackBluetoothDevicesToggled(_:))
+        
         showSystemResourceWidgetCheckbox.target = self
         showSystemResourceWidgetCheckbox.action = #selector(showSystemResourceWidgetChanged(_:))
 
@@ -576,6 +581,13 @@ final class SettingsView: NSView {
             .sink { [weak self] value in
                 self?.showSystemResourceWidgetCheckbox.state = value ? .on : .off
                 self?.updateWidgetControlsState()
+            }
+            .store(in: &cancellables)
+
+        settings.$trackBluetoothDevices
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.trackBluetoothDevicesCheckbox.state = value ? .on : .off
             }
             .store(in: &cancellables)
 
@@ -1312,6 +1324,10 @@ final class SettingsView: NSView {
     @objc
     private func showSystemResourceMemoryMetricChanged(_ sender: NSButton) {
         settings.showSystemResourceMemoryMetric = sender.state == .on
+    }
+    
+    @objc private func trackBluetoothDevicesToggled(_ sender: NSButton) {
+        settings.trackBluetoothDevices = sender.state == .on
     }
 
     @objc
