@@ -28,6 +28,11 @@ enum AppsLauncherShortcut: String, CaseIterable {
     case optionSpace
 }
 
+enum LauncherStyle: String, CaseIterable {
+    case anchored
+    case floating
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -165,6 +170,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(appsLauncherShortcut.rawValue, forKey: "appsLauncherShortcut") }
     }
 
+    @Published var launcherStyle: LauncherStyle {
+        didSet { defaults.set(launcherStyle.rawValue, forKey: "launcherStyle") }
+    }
+
     @Published var enableSessionManagerPlugin: Bool {
         didSet { defaults.set(enableSessionManagerPlugin, forKey: "enableSessionManagerPlugin") }
     }
@@ -235,6 +244,7 @@ class TaskbarSettings: ObservableObject {
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap
+        launcherStyle = LauncherStyle(rawValue: defaults.string(forKey: "launcherStyle") ?? "") ?? .anchored
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true

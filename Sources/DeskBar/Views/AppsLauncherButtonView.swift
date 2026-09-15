@@ -91,7 +91,7 @@ final class AppsLauncherButtonView: NSView {
     }
 
     private func openAppsLauncher() {
-        AppsLauncher.open()
+        AppsLauncher.open(relativeTo: self)
     }
 
     private func launcherIcon() -> NSImage? {

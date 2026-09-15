@@ -5,8 +5,8 @@ enum AppsLauncher {
     private static let appsPath = "/System/Applications/Apps.app"
     private static let legacyLaunchpadPath = "/System/Applications/Launchpad.app"
 
-    static func open() {
-        LaunchpickManager.shared.toggle()
+    static func open(relativeTo view: NSView? = nil) {
+        LaunchpickManager.shared.toggle(relativeTo: view)
     }
 
     static func applicationURL() -> URL? {

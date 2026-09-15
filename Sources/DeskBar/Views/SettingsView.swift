@@ -56,6 +56,7 @@ final class SettingsView: NSView {
     private let enableWindowSwitcherCheckbox = NSButton(checkboxWithTitle: "Enable Alt-Tab / Option-Tab window switcher", target: nil, action: nil)
     private let enableBareCommandLauncherCheckbox = NSButton(checkboxWithTitle: "Enable Apps launcher shortcut", target: nil, action: nil)
     private let appsLauncherShortcutPopupButton = NSPopUpButton()
+    private let launcherStylePopupButton = NSPopUpButton()
     private let enableSessionManagerPluginCheckbox = NSButton(checkboxWithTitle: "Enable Session Manager plugin", target: nil, action: nil)
     private let showSessionManagerAgentTitlesCheckbox = NSButton(checkboxWithTitle: "Use SM friendly names for agent tasks", target: nil, action: nil)
     private let showSessionManagerActivityIndicatorsCheckbox = NSButton(checkboxWithTitle: "Show SM activity indicators", target: nil, action: nil)
@@ -113,6 +114,7 @@ final class SettingsView: NSView {
         dockModePopupButton.addItems(withTitles: ["Independent", "Auto-Hide Dock", "Hide Dock"])
         layoutModePopupButton.addItems(withTitles: ["Full Width", "Full Width Glass", "Compact Centered", "Compact Glass"])
         appsLauncherShortcutPopupButton.addItems(withTitles: ["Control-Option-Return", "Option-Space", "Control-Option-Space", "Tap Command", "Tap Right Command"])
+        launcherStylePopupButton.addItems(withTitles: ["Anchored to Taskbar", "Floating Center"])
         configureWidgetDisplayPopupButton()
         configureSessionManagerWidgetDisplayPopupButton()
         configureLauncherTableView()
@@ -153,7 +155,8 @@ final class SettingsView: NSView {
             makeCheckboxRow(showOnAllMonitorsCheckbox),
             makeCheckboxRow(enableWindowSwitcherCheckbox),
             makeCheckboxRow(enableBareCommandLauncherCheckbox),
-            makeLabeledControlRow(label: "Apps launcher shortcut", control: appsLauncherShortcutPopupButton)
+            makeLabeledControlRow(label: "Apps launcher shortcut", control: appsLauncherShortcutPopupButton),
+            makeLabeledControlRow(label: "Launcher style", control: launcherStylePopupButton)
         ])
 
         let widgetsTab = NSTabViewItem(identifier: "widgets")
@@ -384,6 +387,9 @@ final class SettingsView: NSView {
 
         appsLauncherShortcutPopupButton.target = self
         appsLauncherShortcutPopupButton.action = #selector(appsLauncherShortcutChanged(_:))
+
+        launcherStylePopupButton.target = self
+        launcherStylePopupButton.action = #selector(launcherStyleChanged(_:))
 
         enableSessionManagerPluginCheckbox.target = self
         enableSessionManagerPluginCheckbox.action = #selector(enableSessionManagerPluginChanged(_:))
@@ -659,6 +665,18 @@ final class SettingsView: NSView {
                 }
 
                 self?.appsLauncherShortcutPopupButton.selectItem(at: index)
+            }
+            .store(in: &cancellables)
+
+        settings.$launcherStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                switch value {
+                case .anchored:
+                    self?.launcherStylePopupButton.selectItem(at: 0)
+                case .floating:
+                    self?.launcherStylePopupButton.selectItem(at: 1)
+                }
             }
             .store(in: &cancellables)
 
@@ -1354,6 +1372,16 @@ final class SettingsView: NSView {
             settings.appsLauncherShortcut = .optionSpace
         default:
             settings.appsLauncherShortcut = .controlOptionReturn
+        }
+    }
+
+    @objc
+    private func launcherStyleChanged(_ sender: NSPopUpButton) {
+        switch sender.indexOfSelectedItem {
+        case 1:
+            settings.launcherStyle = .floating
+        default:
+            settings.launcherStyle = .anchored
         }
     }
 

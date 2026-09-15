@@ -11,15 +11,15 @@ final class LaunchpickManager {
     
     private init() {}
     
-    func toggle() {
+    func toggle(relativeTo view: NSView? = nil) {
         if let panel = panel, panel.isVisible {
             hide()
         } else {
-            show()
+            show(relativeTo: view)
         }
     }
     
-    func show() {
+    func show(relativeTo view: NSView? = nil) {
         if panel == nil {
             let newState = LaunchpickState()
             
@@ -58,7 +58,30 @@ final class LaunchpickManager {
         state.searchText = ""
         state.focusTrigger.toggle()
         
-        panel.center()
+        let launcherStyleRaw = UserDefaults.standard.string(forKey: "launcherStyle") ?? ""
+        let style = LauncherStyle(rawValue: launcherStyleRaw) ?? .anchored
+        
+        if style == .anchored, let view = view, let window = view.window {
+            let buttonRect = view.convert(view.bounds, to: nil)
+            let screenRect = window.convertToScreen(buttonRect)
+            
+            // Wait, we need the panel's size to position it properly.
+            // Since the panel might not be layouted yet, let's force layout or just use frame.
+            panel.layoutIfNeeded()
+            let panelSize = panel.frame.size
+            let margin: CGFloat = 8
+            
+            // Position above the button, aligned to its left edge.
+            // But wait, the button might be on the left or right of the screen?
+            // If the panel is 300px wide, and button is on the far left, minX is good.
+            // If it exceeds the screen right edge, we'd need to clamp it, but for now minX is fine.
+            let x = max(8, screenRect.minX)
+            let y = screenRect.maxY + margin
+            
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            panel.center()
+        }
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         setupMonitors()
