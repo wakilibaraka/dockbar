@@ -150,15 +150,6 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
     }
 
-    @Published var showStatsWidget: Bool {
-        didSet { defaults.set(showStatsWidget, forKey: "showStatsWidget") }
-    }
-
-
-    @Published var trackBluetoothDevices: Bool {
-        didSet { defaults.set(trackBluetoothDevices, forKey: "trackBluetoothDevices") }
-    }
-
     @Published var showOnAllMonitors: Bool {
         didSet { defaults.set(showOnAllMonitors, forKey: "showOnAllMonitors") }
     }
@@ -236,8 +227,6 @@ class TaskbarSettings: ObservableObject {
         showSystemResourceCPUMetric = defaults.object(forKey: "showSystemResourceCPUMetric") as? Bool ?? true
         showSystemResourceGPUMetric = defaults.object(forKey: "showSystemResourceGPUMetric") as? Bool ?? true
         systemResourceWidgetCollapsed = defaults.object(forKey: "systemResourceWidgetCollapsed") as? Bool ?? false
-        showStatsWidget = defaults.object(forKey: "showStatsWidget") as? Bool ?? true
-        trackBluetoothDevices = defaults.object(forKey: "trackBluetoothDevices") as? Bool ?? true
         if let pinnedDisplayID = defaults.object(forKey: "systemResourceWidgetPinnedDisplayID") as? NSNumber {
             systemResourceWidgetPinnedDisplayID = CGDirectDisplayID(pinnedDisplayID.uint32Value)
         } else {
