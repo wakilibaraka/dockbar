@@ -18,6 +18,7 @@ final class TaskbarContentView: NSView {
     private let sessionManagerWidgetView: SessionManagerWidgetView?
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let runningAppTrayView: RunningAppTrayView
+    private let statsWidgetHostingView = StatsWidgetHostingView()
     private let connectivityTrayView: ConnectivityTrayView
     
     private let axGetWindow: AXUIElementGetWindowFunc?
@@ -441,7 +442,22 @@ final class TaskbarContentView: NSView {
             trayDivider.heightAnchor.constraint(equalToConstant: 20)
         ])
         zonesStackView.addArrangedSubview(trayDivider)
+        zonesStackView.addArrangedSubview(statsWidgetHostingView)
         zonesStackView.addArrangedSubview(connectivityTrayView)
+        
+        statsWidgetHostingView.action = { [weak self] in
+            guard let self else { return }
+            if let panel = NSApp.windows.first(where: { $0 is StatsFlyoutPanel }) as? StatsFlyoutPanel {
+                if panel.isVisible {
+                    panel.hide()
+                } else {
+                    panel.show(relativeTo: self.statsWidgetHostingView)
+                }
+            } else {
+                let panel = StatsFlyoutPanel()
+                panel.show(relativeTo: self.statsWidgetHostingView)
+            }
+        }
     }
 
     private func bindState() {
@@ -616,6 +632,14 @@ final class TaskbarContentView: NSView {
         settings.$showTitles
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$showStatsWidget
+            .receive(on: RunLoop.main)
+            .sink { [weak self] show in
+                self?.statsWidgetHostingView.isHidden = !show
                 self?.schedulePreferredWidthNotification()
             }
             .store(in: &cancellables)
