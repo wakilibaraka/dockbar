@@ -19,6 +19,7 @@ final class TaskbarContentView: NSView {
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let runningAppTrayView: RunningAppTrayView
     private let connectivityTrayView: ConnectivityTrayView
+    
     private let axGetWindow: AXUIElementGetWindowFunc?
     private let accessibilityService = AccessibilityService()
 
@@ -128,12 +129,14 @@ final class TaskbarContentView: NSView {
             systemResourceMonitor: systemResourceMonitor,
             displayID: displayID
         )
+        self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+        
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
         } else {
             axGetWindow = nil
         }
-        self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+        
         super.init(frame: .zero)
         wantsLayer = true
         autoresizingMask = [.width, .height]
@@ -301,6 +304,7 @@ final class TaskbarContentView: NSView {
             sessionManagerWidgetView,
             systemResourceWidgetView,
             runningAppTrayView,
+            connectivityTrayView,
             leftTaskZoneSeparatorView,
             rightTaskZoneSeparatorView
         ].compactMap { $0 } + Array(taskItemViews.values)
