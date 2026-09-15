@@ -2323,6 +2323,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     private let thumbnailProvider: (CGWindowID) async -> NSImage?
     private let popover: GroupThumbnailPopover
     private var hoverWorkItem: DispatchWorkItem?
+    private var closePopoverWorkItem: DispatchWorkItem?
     private var thumbnailRequestTask: Task<Void, Never>?
     private let iconView = NSImageView()
     private let statusIndicatorView = NSView()
@@ -2442,6 +2443,9 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
 
     private func showHoverPreview() {
         guard !appGroup.windows.isEmpty else { return }
+        
+        closePopoverWorkItem?.cancel()
+        closePopoverWorkItem = nil
 
         thumbnailRequestTask?.cancel()
         thumbnailRequestTask = Task { @MainActor [weak self] in
@@ -2484,7 +2488,42 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         hoverWorkItem = nil
         thumbnailRequestTask?.cancel()
         thumbnailRequestTask = nil
-        popover.close()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            if let popoverWindow = self.popover.contentViewController?.view.window,
+               NSMouseInRect(NSEvent.mouseLocation, popoverWindow.frame, false) {
+                // Mouse moved into the popover, keep it open and start monitoring!
+                self.monitorMouseLeavingPopover()
+            } else {
+                self.popover.close()
+            }
+        }
+        closePopoverWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+    }
+
+    private func monitorMouseLeavingPopover() {
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            guard self.popover.isShown else { return }
+            
+            if let popoverWindow = self.popover.contentViewController?.view.window {
+                let mouseLoc = NSEvent.mouseLocation
+                let buttonScreenRect = self.window?.convertToScreen(self.convert(self.bounds, to: nil)) ?? .zero
+                
+                let inPopover = NSMouseInRect(mouseLoc, popoverWindow.frame, false)
+                let inButton = NSMouseInRect(mouseLoc, buttonScreenRect, false)
+                
+                if !inPopover && !inButton {
+                    self.popover.close()
+                } else {
+                    self.monitorMouseLeavingPopover()
+                }
+            }
+        }
+        closePopoverWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
 
     override func mouseDown(with event: NSEvent) {
