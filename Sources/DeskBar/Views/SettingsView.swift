@@ -34,6 +34,9 @@ final class SettingsView: NSView {
     private let titleFontSizeSlider = NSSlider(value: 12, minValue: 8, maxValue: 18, target: nil, action: nil)
     private let maxTaskWidthSlider = NSSlider(value: 200, minValue: 100, maxValue: 800, target: nil, action: nil)
     private let showTitlesCheckbox = NSButton(checkboxWithTitle: "Show titles", target: nil, action: nil)
+    private let taskTitleSourcePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let taskTruncationStylePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let iconOnlySizeSlider = NSSlider(value: 24, minValue: 16, maxValue: 64, target: nil, action: nil)
     private let thumbnailSizeSlider = NSSlider(value: 200, minValue: 100, maxValue: 800, target: nil, action: nil)
     private let resetAppearanceSlidersButton = NSButton(title: "Reset Sliders to Defaults", target: nil, action: nil)
 
@@ -131,15 +134,23 @@ final class SettingsView: NSView {
 
         let appearanceTab = NSTabViewItem(identifier: "appearance")
         appearanceTab.label = "Appearance"
+        
+        taskTitleSourcePopup.addItems(withTitles: ["App Name", "Window Title"])
+        taskTruncationStylePopup.addItems(withTitles: ["Truncate End", "Truncate Middle", "Truncate Start"])
+        
         appearanceTab.view = makeFormView(rows: [
             makeLabeledControlRow(label: "DeskBar layout", control: layoutModePopupButton),
             makeLabeledControlRow(label: "Taskbar height", control: taskbarHeightSlider),
             makeLabeledControlRow(label: "Title font size", control: titleFontSizeSlider),
             makeLabeledControlRow(label: "Max task width", control: maxTaskWidthSlider),
             makeCheckboxRow(showTitlesCheckbox),
+            makeLabeledControlRow(label: "Title display", control: taskTitleSourcePopup),
+            makeLabeledControlRow(label: "Truncation", control: taskTruncationStylePopup),
+            makeLabeledControlRow(label: "Icon-only size", control: iconOnlySizeSlider),
             makeLabeledControlRow(label: "Thumbnail size", control: thumbnailSizeSlider),
             makeButtonRow(resetAppearanceSlidersButton)
         ])
+
 
         groupingModePopupButton.addItems(withTitles: ["Never", "Automatic", "Always"])
 
@@ -327,6 +338,15 @@ final class SettingsView: NSView {
         showTitlesCheckbox.target = self
         showTitlesCheckbox.action = #selector(showTitlesChanged(_:))
 
+        taskTitleSourcePopup.target = self
+        taskTitleSourcePopup.action = #selector(taskTitleSourceChanged(_:))
+
+        taskTruncationStylePopup.target = self
+        taskTruncationStylePopup.action = #selector(taskTruncationStyleChanged(_:))
+
+        iconOnlySizeSlider.target = self
+        iconOnlySizeSlider.action = #selector(iconOnlySizeChanged(_:))
+
         thumbnailSizeSlider.target = self
         thumbnailSizeSlider.action = #selector(thumbnailSizeChanged(_:))
 
@@ -493,6 +513,39 @@ final class SettingsView: NSView {
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
                 self?.showTitlesCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$taskTitleSource
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                switch value {
+                case .appName:
+                    self?.taskTitleSourcePopup.selectItem(withTitle: "App Name")
+                case .windowTitle:
+                    self?.taskTitleSourcePopup.selectItem(withTitle: "Window Title")
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$taskTruncationStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                switch value {
+                case .tail:
+                    self?.taskTruncationStylePopup.selectItem(withTitle: "Truncate End")
+                case .middle:
+                    self?.taskTruncationStylePopup.selectItem(withTitle: "Truncate Middle")
+                case .ellipsisHead:
+                    self?.taskTruncationStylePopup.selectItem(withTitle: "Truncate Start")
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$iconOnlySize
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.iconOnlySizeSlider.doubleValue = value
             }
             .store(in: &cancellables)
 
@@ -1252,6 +1305,39 @@ final class SettingsView: NSView {
     @objc
     private func showTitlesChanged(_ sender: NSButton) {
         settings.showTitles = sender.state == .on
+    }
+
+    @objc
+    private func taskTitleSourceChanged(_ sender: NSPopUpButton) {
+        guard let item = sender.selectedItem else { return }
+        switch item.title {
+        case "App Name":
+            settings.taskTitleSource = .appName
+        case "Window Title":
+            settings.taskTitleSource = .windowTitle
+        default:
+            break
+        }
+    }
+
+    @objc
+    private func taskTruncationStyleChanged(_ sender: NSPopUpButton) {
+        guard let item = sender.selectedItem else { return }
+        switch item.title {
+        case "Truncate End":
+            settings.taskTruncationStyle = .tail
+        case "Truncate Middle":
+            settings.taskTruncationStyle = .middle
+        case "Truncate Start":
+            settings.taskTruncationStyle = .ellipsisHead
+        default:
+            break
+        }
+    }
+
+    @objc
+    private func iconOnlySizeChanged(_ sender: NSSlider) {
+        settings.iconOnlySize = sender.doubleValue
     }
 
     @objc

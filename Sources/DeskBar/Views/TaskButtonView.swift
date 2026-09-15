@@ -133,6 +133,8 @@ final class TaskButtonView: NSView, NSDraggingSource {
     private var iconDefaultLeadingConstraint: NSLayoutConstraint?
     private var iconSMLeadingConstraint: NSLayoutConstraint?
     private var iconCenterXConstraint: NSLayoutConstraint?
+    private var iconWidthConstraint: NSLayoutConstraint?
+    private var iconHeightConstraint: NSLayoutConstraint?
     private var titleLeadingConstraint: NSLayoutConstraint?
     private var titleTrailingConstraint: NSLayoutConstraint?
     private var progressWidthConstraint: NSLayoutConstraint?
@@ -177,7 +179,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
 
     private var fullTaskWidth: CGFloat {
         if !settings.showTitles {
-            return settings.taskbarHeight + 8
+            return settings.iconOnlySize + 8
         }
         
         guard agentAnnotation != nil else {
@@ -469,9 +471,9 @@ final class TaskButtonView: NSView, NSDraggingSource {
         titleLabel.isEditable = false
         titleLabel.isBordered = false
         titleLabel.drawsBackground = false
-        titleLabel.lineBreakMode = .byTruncatingMiddle
         titleLabel.usesSingleLineMode = true
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        applyTruncationStyle(settings.taskTruncationStyle)
 
         statusIndicatorView.translatesAutoresizingMaskIntoConstraints = false
         statusIndicatorView.wantsLayer = true
@@ -541,6 +543,11 @@ final class TaskButtonView: NSView, NSDraggingSource {
         self.dropIndicatorLeadingConstraint = dropIndicatorLeadingConstraint
         self.dropIndicatorTrailingConstraint = dropIndicatorTrailingConstraint
 
+        let iconWidthConstraint = iconView.widthAnchor.constraint(equalToConstant: 24)
+        let iconHeightConstraint = iconView.heightAnchor.constraint(equalToConstant: 24)
+        self.iconWidthConstraint = iconWidthConstraint
+        self.iconHeightConstraint = iconHeightConstraint
+
         NSLayoutConstraint.activate([
             maxWidthConstraint,
 
@@ -556,8 +563,8 @@ final class TaskButtonView: NSView, NSDraggingSource {
 
             iconDefaultLeadingConstraint,
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: 24),
-            iconView.heightAnchor.constraint(equalToConstant: 24),
+            iconWidthConstraint,
+            iconHeightConstraint,
 
             titleLeadingConstraint,
             titleTrailingConstraint,
@@ -608,6 +615,28 @@ final class TaskButtonView: NSView, NSDraggingSource {
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
                 _ = value
+                self?.updateWidthConstraint()
+            }
+            .store(in: &cancellables)
+
+        settings.$taskTitleSource
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateAppearance()
+                self?.updateWidthConstraint()
+            }
+            .store(in: &cancellables)
+
+        settings.$taskTruncationStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] style in
+                self?.applyTruncationStyle(style)
+            }
+            .store(in: &cancellables)
+
+        settings.$iconOnlySize
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
                 self?.updateWidthConstraint()
             }
             .store(in: &cancellables)
@@ -669,9 +698,14 @@ final class TaskButtonView: NSView, NSDraggingSource {
             }
         }
 
-        let windowTitle = windowInfo.title
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return windowTitle.isEmpty ? windowInfo.appName : windowTitle
+        // Respect user preference: app name or full window title
+        switch settings.taskTitleSource {
+        case .appName:
+            return windowInfo.appName
+        case .windowTitle:
+            let windowTitle = windowInfo.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            return windowTitle.isEmpty ? windowInfo.appName : windowTitle
+        }
     }
 
     private func displayTitle() -> String {
@@ -1012,6 +1046,18 @@ final class TaskButtonView: NSView, NSDraggingSource {
         invalidateIntrinsicContentSize()
     }
 
+    private func applyTruncationStyle(_ style: TaskTruncationStyle) {
+        switch style {
+        case .tail:
+            titleLabel.lineBreakMode = .byTruncatingTail
+        case .middle:
+            titleLabel.lineBreakMode = .byTruncatingMiddle
+        case .ellipsisHead:
+            titleLabel.lineBreakMode = .byTruncatingHead
+        }
+    }
+
+
     private func updateTaskButtonPluginActionButton() {
         let shouldShowInlinePluginActionButton = showsInlinePluginActionButton
         pluginActionButton.isHidden = !shouldShowInlinePluginActionButton
@@ -1063,6 +1109,9 @@ final class TaskButtonView: NSView, NSDraggingSource {
 
     private func updateWidthConstraint() {
         maxWidthConstraint?.constant = effectiveTaskWidth
+        let iconSize = settings.showTitles ? 24.0 : settings.iconOnlySize
+        iconWidthConstraint?.constant = iconSize
+        iconHeightConstraint?.constant = iconSize
         updateTaskButtonPluginActionButton()
         updateTitleVisibility()
         invalidateIntrinsicContentSize()

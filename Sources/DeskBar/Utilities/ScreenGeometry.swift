@@ -205,23 +205,7 @@ struct ScreenGeometry {
         topInset: CGFloat = menuBarInset,
         taskbarHeight: CGFloat
     ) -> TaskbarWindowZone {
-        guard resemblesSideFillWindow(
-            frame: frame,
-            onDisplay: displayBounds,
-            topInset: topInset,
-            taskbarHeight: taskbarHeight
-        ) else {
-            return .neutral
-        }
-
-        if nearlyEqual(frame.minX, displayBounds.minX, tolerance: systemFillTolerance) {
-            return .left
-        }
-
-        if nearlyEqual(frame.maxX, displayBounds.maxX, tolerance: systemFillTolerance) {
-            return .right
-        }
-
+        // Always return neutral — all tasks appear in a single unified row
         return .neutral
     }
 

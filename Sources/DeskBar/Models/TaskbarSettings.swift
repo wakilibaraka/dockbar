@@ -33,6 +33,17 @@ enum LauncherStyle: String, CaseIterable {
     case floating
 }
 
+enum TaskTitleSource: String, CaseIterable {
+    case appName        // Show the app name (e.g. "Chrome")
+    case windowTitle    // Show the window title (e.g. "GitHub — Google Chrome")
+}
+
+enum TaskTruncationStyle: String, CaseIterable {
+    case tail           // "My Very Long Titl..."
+    case middle         // "My Very...g Title"
+    case ellipsisHead   // "...Very Long Title"
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -60,6 +71,18 @@ class TaskbarSettings: ObservableObject {
 
     @Published var showTitles: Bool {
         didSet { defaults.set(showTitles, forKey: "showTitles") }
+    }
+
+    @Published var taskTitleSource: TaskTitleSource {
+        didSet { defaults.set(taskTitleSource.rawValue, forKey: "taskTitleSource") }
+    }
+
+    @Published var taskTruncationStyle: TaskTruncationStyle {
+        didSet { defaults.set(taskTruncationStyle.rawValue, forKey: "taskTruncationStyle") }
+    }
+
+    @Published var iconOnlySize: CGFloat {
+        didSet { defaults.set(iconOnlySize, forKey: "iconOnlySize") }
     }
 
     @Published var groupingMode: WindowGroupingMode {
@@ -209,6 +232,9 @@ class TaskbarSettings: ObservableObject {
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
         showTitles = defaults.object(forKey: "showTitles") as? Bool ?? false
+        taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .appName
+        taskTruncationStyle = TaskTruncationStyle(rawValue: defaults.string(forKey: "taskTruncationStyle") ?? "") ?? .tail
+        iconOnlySize = defaults.object(forKey: "iconOnlySize") as? CGFloat ?? 24
         if let rawValue = defaults.string(forKey: "groupingMode"),
            let groupingMode = WindowGroupingMode(rawValue: rawValue) {
             self.groupingMode = groupingMode
