@@ -30,7 +30,7 @@ final class SystemResourceWidgetView: NSView {
     
     func preferredContentWidth() -> CGFloat {
         if isHidden { return 0 }
-        return settings.showRingCharts ? 44.0 : 56.0
+        return 56.0
     }
     
     override var intrinsicContentSize: NSSize {
@@ -59,22 +59,6 @@ final class SystemResourceWidgetView: NSView {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _, _ in
                 self?.updateVisibility()
-            }
-            .store(in: &cancellables)
-            
-        settings.$showRingCharts
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.invalidateIntrinsicContentSize()
-                self?.preferredWidthDidChange?()
-            }
-            .store(in: &cancellables)
-            
-        SystemStatsService.shared.$batteryStats
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.invalidateIntrinsicContentSize()
-                self?.preferredWidthDidChange?()
             }
             .store(in: &cancellables)
     }
