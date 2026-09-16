@@ -6,7 +6,8 @@ final class SystemResourceWidgetView: NSView {
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
     
-    private var hostingView: NSHostingView<UnifiedSystemResourceWidgetView>?
+    private let containerView = NSView()
+    private let textLabel = NSTextField(labelWithString: "")
     
     private var popover: NSPopover?
     private var cancellables = Set<AnyCancellable>()
@@ -20,8 +21,10 @@ final class SystemResourceWidgetView: NSView {
         self.monitor = monitor
         self.isCollapsedInstance = isCollapsedInstance
         super.init(frame: .zero)
+        
         setContentHuggingPriority(.required, for: .horizontal)
         setContentCompressionResistancePriority(.required, for: .horizontal)
+        
         setupUI()
         bindState()
         updateVisibility()
@@ -31,8 +34,8 @@ final class SystemResourceWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
     
     func preferredContentWidth() -> CGFloat {
-        if isHidden { return 0 }
-        return 56.0
+        // Fixed width to prevent layout glitches
+        return isHidden ? 0 : 56
     }
     
     override var intrinsicContentSize: NSSize {
@@ -42,20 +45,40 @@ final class SystemResourceWidgetView: NSView {
     private func setupUI() {
         wantsLayer = true
         
-        let hv = NSHostingView(rootView: UnifiedSystemResourceWidgetView(settings: settings, monitor: monitor))
-        hv.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(hv)
-        self.hostingView = hv
+        containerView.wantsLayer = true
+        containerView.layer?.cornerRadius = 6
+        containerView.layer?.cornerCurve = .continuous
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(containerView)
+        
+        textLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .bold)
+        textLabel.alignment = .center
+        textLabel.isBordered = false
+        textLabel.isEditable = false
+        textLabel.isSelectable = false
+        textLabel.drawsBackground = false
+        textLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(textLabel)
         
         NSLayoutConstraint.activate([
-            hv.centerYAnchor.constraint(equalTo: centerYAnchor),
-            hv.centerXAnchor.constraint(equalTo: centerXAnchor),
-            hv.widthAnchor.constraint(equalTo: widthAnchor),
-            hv.heightAnchor.constraint(equalTo: heightAnchor)
+            containerView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            containerView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            containerView.widthAnchor.constraint(equalToConstant: 44),
+            containerView.heightAnchor.constraint(equalToConstant: 22),
+            
+            textLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor)
         ])
     }
     
     private func bindState() {
+        monitor.$snapshot
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] snapshot in
+                self?.update(with: snapshot)
+            }
+            .store(in: &cancellables)
+            
         settings.$showSystemResourceWidget
             .combineLatest(settings.$systemResourceWidgetCollapsed)
             .receive(on: DispatchQueue.main)
@@ -74,6 +97,23 @@ final class SystemResourceWidgetView: NSView {
             invalidateIntrinsicContentSize()
             preferredWidthDidChange?()
         }
+    }
+    
+    private func update(with snapshot: SystemResourceSnapshot) {
+        let percent = snapshot.memoryUsedPercent ?? 0
+        textLabel.stringValue = String(format: "%.0f%%", percent)
+        
+        let color: NSColor
+        if percent > 80 {
+            color = NSColor.systemRed
+        } else if percent > 60 {
+            color = NSColor.systemOrange
+        } else {
+            color = NSColor.systemGreen
+        }
+        
+        textLabel.textColor = color
+        containerView.layer?.backgroundColor = color.withAlphaComponent(0.15).cgColor
     }
     
     // MARK: - Interaction
@@ -97,5 +137,30 @@ final class SystemResourceWidgetView: NSView {
         newPopover.show(relativeTo: anchorRect, of: self, preferredEdge: .maxY)
         self.popover = newPopover
     }
+    
+    override func mouseEntered(with event: NSEvent) {
+        layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    private var trackingArea: NSTrackingArea?
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let ta = trackingArea { removeTrackingArea(ta) }
+        
+        let newTA = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(newTA)
+        trackingArea = newTA
+    }
 }
+
 typealias CollapsedSystemResourceWidgetView = SystemResourceWidgetView
