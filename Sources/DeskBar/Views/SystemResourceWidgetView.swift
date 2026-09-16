@@ -126,12 +126,20 @@ final class SystemResourceWidgetView: NSView {
             return
         }
         
-        guard let window = self.window else { return }
+        guard let window = self.window, let screen = window.screen else { return }
         let screenRect = window.convertToScreen(self.convert(self.bounds, to: nil))
         let panelSize = flyoutPanel.frame.size
         
         let margin: CGFloat = 8
-        let originX = max(8, screenRect.midX - (panelSize.width / 2))
+        
+        var originX = screenRect.midX - (panelSize.width / 2)
+        let maxAllowedX = screen.frame.maxX - margin
+        
+        if originX + panelSize.width > maxAllowedX {
+            originX = maxAllowedX - panelSize.width
+        }
+        originX = max(screen.frame.minX + margin, originX)
+        
         let originY = screenRect.maxY + margin
         
         flyoutPanel.setFrameOrigin(NSPoint(x: originX, y: originY))
