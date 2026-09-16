@@ -7,7 +7,8 @@ final class ConnectivityTrayView: NSStackView {
     )
     private let settings: TaskbarSettings
     private let manager = QuickSettingsManager.shared
-    private lazy var quickSettingsPanel = QuickSettingsFlyoutPanel(settings: settings, manager: manager)
+    
+    private var popover: NSPopover?
 
     init(settings: TaskbarSettings) {
         self.settings = settings
@@ -34,24 +35,16 @@ final class ConnectivityTrayView: NSStackView {
     }
 
     @objc private func toggleQuickSettings() {
-        if quickSettingsPanel.isVisible {
-            quickSettingsPanel.close()
+        if let popover = popover, popover.isShown {
+            popover.performClose(nil)
+            self.popover = nil
             return
         }
-        guard let window = quickSettingsButton.window else { return }
-        let btnScreenRect = window.convertToScreen(
-            quickSettingsButton.convert(quickSettingsButton.bounds, to: nil)
-        )
-        let panelSize = quickSettingsPanel.frame.size
-        let screen = window.screen ?? NSScreen.main ?? NSScreen.screens[0]
-        let visibleFrame = screen.visibleFrame
-
-        var originX = btnScreenRect.maxX - panelSize.width
-        let originY = btnScreenRect.maxY + 8
-        originX = max(visibleFrame.minX + 8, min(originX, visibleFrame.maxX - panelSize.width - 8))
-
-        quickSettingsPanel.setFrameOrigin(NSPoint(x: originX, y: originY))
-        quickSettingsPanel.refreshOnOpen()
-        quickSettingsPanel.makeKeyAndOrderFront(nil)
+        
+        let newPopover = NSPopover()
+        newPopover.behavior = .transient
+        newPopover.contentViewController = QuickSettingsViewController(settings: settings, manager: manager)
+        newPopover.show(relativeTo: quickSettingsButton.bounds, of: quickSettingsButton, preferredEdge: .maxY)
+        self.popover = newPopover
     }
 }

@@ -5,6 +5,7 @@ final class LaunchpickManager {
     static let shared = LaunchpickManager()
     
     private var panel: LaunchpickPanel?
+    private var popover: NSPopover?
     private var state: LaunchpickState?
     private var localMonitor: Any?
     private var globalMonitor: Any?
@@ -12,7 +13,7 @@ final class LaunchpickManager {
     private init() {}
     
     func toggle(relativeTo view: NSView? = nil) {
-        if let panel = panel, panel.isVisible {
+        if (panel?.isVisible == true) || (popover?.isShown == true) {
             hide()
         } else {
             show(relativeTo: view)
@@ -20,7 +21,7 @@ final class LaunchpickManager {
     }
     
     func show(relativeTo view: NSView? = nil) {
-        if panel == nil {
+        if state == nil {
             let newState = LaunchpickState()
             
             // Load config
@@ -43,17 +44,10 @@ final class LaunchpickManager {
                 self?.hide()
             }
             
-            let contentView = ContentView(state: newState)
-            let hostingView = NSHostingView(rootView: contentView)
-            
-            let newPanel = LaunchpickPanel()
-            newPanel.contentView = hostingView
-            
             self.state = newState
-            self.panel = newPanel
         }
         
-        guard let panel = panel, let state = state else { return }
+        guard let state = state else { return }
         
         state.searchText = ""
         state.focusTrigger.toggle()
@@ -61,34 +55,45 @@ final class LaunchpickManager {
         let launcherStyleRaw = UserDefaults.standard.string(forKey: "launcherStyle") ?? ""
         let style = LauncherStyle(rawValue: launcherStyleRaw) ?? .anchored
         
-        if style == .anchored, let view = view, let window = view.window {
-            let buttonRect = view.convert(view.bounds, to: nil)
-            let screenRect = window.convertToScreen(buttonRect)
+        let contentView = ContentView(state: state)
+        let hostingView = NSHostingView(rootView: contentView)
+        
+        if style == .anchored, let view = view {
+            // Use Popover
+            panel?.orderOut(nil)
+            panel = nil
             
-            // Wait, we need the panel's size to position it properly.
-            // Since the panel might not be layouted yet, let's force layout or just use frame.
-            panel.layoutIfNeeded()
-            let panelSize = panel.frame.size
-            let margin: CGFloat = 8
+            if popover == nil {
+                let newPopover = NSPopover()
+                newPopover.behavior = .transient
+                let vc = NSViewController()
+                vc.view = hostingView
+                newPopover.contentViewController = vc
+                self.popover = newPopover
+            }
             
-            // Position above the button, aligned to its left edge.
-            // But wait, the button might be on the left or right of the screen?
-            // If the panel is 300px wide, and button is on the far left, minX is good.
-            // If it exceeds the screen right edge, we'd need to clamp it, but for now minX is fine.
-            let x = max(8, screenRect.minX)
-            let y = screenRect.maxY + margin
-            
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
+            popover?.show(relativeTo: view.bounds, of: view, preferredEdge: .maxY)
         } else {
-            panel.center()
+            // Use Panel
+            popover?.performClose(nil)
+            popover = nil
+            
+            if panel == nil {
+                let newPanel = LaunchpickPanel()
+                newPanel.contentView = hostingView
+                self.panel = newPanel
+            }
+            
+            panel?.center()
+            panel?.makeKeyAndOrderFront(nil)
+            setupMonitors()
         }
-        panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        setupMonitors()
     }
     
     func hide() {
         panel?.orderOut(nil)
+        popover?.performClose(nil)
         removeMonitors()
     }
     

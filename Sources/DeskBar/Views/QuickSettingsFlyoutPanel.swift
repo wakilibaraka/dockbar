@@ -2,94 +2,28 @@ import AppKit
 import SwiftUI
 import CoreAudio
 
-final class QuickSettingsFlyoutPanel: NSPanel {
+final class QuickSettingsViewController: NSViewController {
     private let settings: TaskbarSettings
     private let manager: QuickSettingsManager
-    private let blurView = NSVisualEffectView()
+    private let blurView = NSView() // Popover provides its own background/blur
     private var tileViews: [QuickSettingsTileView] = []
     private var volSlider: NSSlider?
-    private var globalMonitor: Any?
-    private var localMonitor: Any?
 
     init(settings: TaskbarSettings, manager: QuickSettingsManager) {
         self.settings = settings
         self.manager = manager
-        super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        isFloatingPanel = true
-        level = .popUpMenu
-        backgroundColor = .clear
-        isOpaque = false
-        hasShadow = true
-        collectionBehavior = [.canJoinAllSpaces, .transient]
-
-        setupUI()
-
-        // Close on Escape or click outside
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { self?.close(); return nil }
-            return event
-        }
+        super.init(nibName: nil, bundle: nil)
     }
 
-    // MARK: - Lifecycle
-    
-    @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    override func makeKeyAndOrderFront(_ sender: Any?) {
-        super.makeKeyAndOrderFront(sender)
-        setupMonitors()
-    }
-    
-    override func close() {
-        super.close()
-        removeMonitors()
-    }
-    
-    private func setupMonitors() {
-        guard localMonitor == nil else { return }
-        
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self = self, self.isVisible else { return event }
-            let location = event.locationInWindow
-            if self.contentView?.frame.contains(location) == false {
-                self.close()
-            }
-            return event
-        }
-        
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.close()
-        }
-    }
-    
-    private func removeMonitors() {
-        if let local = localMonitor {
-            NSEvent.removeMonitor(local)
-            localMonitor = nil
-        }
-        if let global = globalMonitor {
-            NSEvent.removeMonitor(global)
-            globalMonitor = nil
-        }
+    override func loadView() {
+        self.view = blurView
     }
 
-    // MARK: - UI Setup
-
-    private func setupUI() {
-        blurView.material = .hudWindow
-        blurView.blendingMode = .behindWindow
-        blurView.state = .active
-        blurView.wantsLayer = true
-        blurView.layer?.cornerRadius = 14
-        blurView.layer?.cornerCurve = .continuous
-        blurView.layer?.masksToBounds = true
-        contentView = blurView
+    override func viewWillAppear() {
+        super.viewWillAppear()
+        refreshOnOpen()
     }
 
     func refreshOnOpen() {
@@ -136,7 +70,6 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         for setting in enabledSettings {
             let tile = QuickSettingsTileView(setting: setting)
             tile.onToggle = { [weak self] in
-                // refresh all tiles after any toggle for inter-dependent states
                 self?.tileViews.forEach { $0.refresh() }
             }
             tileViews.append(tile)
@@ -188,23 +121,11 @@ final class QuickSettingsFlyoutPanel: NSPanel {
             outer.trailingAnchor.constraint(equalTo: blurView.trailingAnchor, constant: -14),
         ])
 
-        // Compute size then clamp to screen
         outer.layoutSubtreeIfNeeded()
         let fit = outer.fittingSize
-        let panelW = fit.width + 28
-        let panelH = fit.height + 28
-
-        // keep current origin but clamp
-        let origin = self.frame.origin
-        var newFrame = NSRect(x: origin.x, y: origin.y, width: panelW, height: panelH)
-        if let screen = self.screen ?? NSScreen.main {
-            let vis = screen.visibleFrame
-            if newFrame.maxX > vis.maxX - 8 { newFrame.origin.x = vis.maxX - newFrame.width - 8 }
-            if newFrame.minX < vis.minX + 8  { newFrame.origin.x = vis.minX + 8 }
-            if newFrame.maxY > vis.maxY - 8  { newFrame.origin.y = vis.maxY - newFrame.height - 8 }
-            if newFrame.minY < vis.minY + 8  { newFrame.origin.y = vis.minY + 8 }
-        }
-        setFrame(newFrame, display: false)
+        let popoverW = fit.width + 28
+        let popoverH = fit.height + 28
+        self.preferredContentSize = NSSize(width: popoverW, height: popoverH)
     }
 
     // MARK: - Helpers
@@ -238,8 +159,6 @@ final class QuickSettingsFlyoutPanel: NSPanel {
         volSlider = slider
         return slider
     }
-
-    // MARK: - Volume via CoreAudio
 
     private func defaultOutputDeviceID() -> AudioObjectID {
         var devID = AudioObjectID(kAudioObjectUnknown)
