@@ -15,6 +15,7 @@ final class LauncherButtonView: NSView {
     private let accessibilityService: AccessibilityService
 
     private let iconView = NSImageView()
+    private let dotIndicatorView = NSView()
 
     private var state: State {
         if !isRunning {
@@ -90,7 +91,14 @@ final class LauncherButtonView: NSView {
         iconView.wantsLayer = true
         iconView.imageScaling = .scaleProportionallyUpOrDown
 
+        dotIndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        dotIndicatorView.wantsLayer = true
+        dotIndicatorView.layer?.cornerRadius = 2
+        dotIndicatorView.layer?.backgroundColor = NSColor.labelColor.cgColor
+        dotIndicatorView.isHidden = true
+
         addSubview(iconView)
+        addSubview(dotIndicatorView)
 
         NSLayoutConstraint.activate([
             widthAnchor.constraint(equalToConstant: 36),
@@ -98,7 +106,12 @@ final class LauncherButtonView: NSView {
             iconView.centerXAnchor.constraint(equalTo: centerXAnchor),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
             iconView.widthAnchor.constraint(equalToConstant: 28),
-            iconView.heightAnchor.constraint(equalToConstant: 28)
+            iconView.heightAnchor.constraint(equalToConstant: 28),
+            
+            dotIndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            dotIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            dotIndicatorView.widthAnchor.constraint(equalToConstant: 4),
+            dotIndicatorView.heightAnchor.constraint(equalToConstant: 4)
         ])
     }
 
@@ -109,6 +122,8 @@ final class LauncherButtonView: NSView {
         layer?.backgroundColor = state == .notRunning
             ? NSColor.labelColor.withAlphaComponent(0.05).cgColor
             : NSColor.clear.cgColor
+        
+        dotIndicatorView.isHidden = (state != .runningWithoutVisibleWindows)
     }
 
     private func displayIcon() -> NSImage? {
@@ -315,6 +330,26 @@ final class LauncherButtonView: NSView {
         unpinItem.target = self
         menu.addItem(unpinItem)
 
+        if isRunning {
+            menu.addItem(.separator())
+            
+            let hideItem = NSMenuItem(
+                title: "Hide",
+                action: #selector(hideApplication(_:)),
+                keyEquivalent: ""
+            )
+            hideItem.target = self
+            menu.addItem(hideItem)
+            
+            let quitItem = NSMenuItem(
+                title: "Quit",
+                action: #selector(quitApplication(_:)),
+                keyEquivalent: ""
+            )
+            quitItem.target = self
+            menu.addItem(quitItem)
+        }
+
         return menu
     }
 
@@ -339,6 +374,16 @@ final class LauncherButtonView: NSView {
         }
 
         activateApplication()
+    }
+
+    @objc
+    private func hideApplication(_ sender: Any?) {
+        runningApplication?.hide()
+    }
+
+    @objc
+    private func quitApplication(_ sender: Any?) {
+        runningApplication?.terminate()
     }
 
     @objc
