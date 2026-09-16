@@ -335,6 +335,17 @@ final class AccessibilityService {
         _ = AXUIElementPerformAction(closeButton, kAXPressAction as CFString)
     }
 
+    func zoom(element: AXUIElement) {
+        guard let zoomButton = copyAXUIElementAttribute(
+            for: element,
+            attribute: kAXZoomButtonAttribute as String
+        ) else {
+            return
+        }
+
+        _ = AXUIElementPerformAction(zoomButton, kAXPressAction as CFString)
+    }
+
     func windowTitle(for element: AXUIElement) -> String? {
         copyAttributeValue(for: element, attribute: kAXTitleAttribute as String) as? String
     }
@@ -436,6 +447,15 @@ final class AccessibilityService {
         }
 
         return false
+    }
+
+    func toggleFullScreen(element: AXUIElement) {
+        let current = isFullScreen(element: element)
+        _ = AXUIElementSetAttributeValue(
+            element,
+            "AXFullScreen" as CFString,
+            (current ? kCFBooleanFalse : kCFBooleanTrue) as CFTypeRef
+        )
     }
 
     @discardableResult

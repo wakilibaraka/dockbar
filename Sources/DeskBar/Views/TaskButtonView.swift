@@ -962,7 +962,17 @@ final class TaskButtonView: NSView, NSDraggingSource {
             }
         }
 
+        // Window actions
+        menu.addItem(makeMenuItem(title: "New Window", action: #selector(openNewWindow(_:))))
+        menu.addItem(.separator())
+        menu.addItem(makeMenuItem(title: "Minimize", action: #selector(minimizeWindow(_:))))
+        menu.addItem(makeMenuItem(title: "Zoom", action: #selector(zoomWindow(_:))))
+        menu.addItem(makeMenuItem(title: "Toggle Full Screen", action: #selector(toggleFullScreen(_:))))
+        menu.addItem(makeMenuItem(title: "Close Window", action: #selector(closeWindow(_:))))
+        menu.addItem(.separator())
+
         // App actions
+        menu.addItem(makeMenuItem(title: "Cycle Windows", action: #selector(cycleWindows(_:))))
         menu.addItem(makeMenuItem(title: "Show All Windows", action: #selector(showAllWindows(_:))))
         menu.addItem(makeMenuItem(title: "Hide", action: #selector(hideApplication(_:))))
 
@@ -1167,6 +1177,54 @@ final class TaskButtonView: NSView, NSDraggingSource {
         }
 
         accessibilityService.minimize(element: windowElement)
+    }
+
+    @objc
+    private func zoomWindow(_ sender: Any?) {
+        guard let windowElement else {
+            return
+        }
+        accessibilityService.zoom(element: windowElement)
+    }
+
+    @objc
+    private func toggleFullScreen(_ sender: Any?) {
+        guard let windowElement else {
+            return
+        }
+        accessibilityService.toggleFullScreen(element: windowElement)
+    }
+
+    @objc
+    private func openNewWindow(_ sender: Any?) {
+        guard let owningApplication else { return }
+        // Open application with `createsNewApplicationInstance = false` 
+        // Many apps respond to this by opening a new window if one isn't open, 
+        // but to force it, we can activate the app and send Cmd+N
+        owningApplication.activate(options: .activateIgnoringOtherApps)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            let source = CGEventSource(stateID: .hidSystemState)
+            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x2D, keyDown: true) // 0x2D is 'N'
+            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x2D, keyDown: false)
+            keyDown?.flags = .maskCommand
+            keyUp?.flags = .maskCommand
+            keyDown?.post(tap: .cghidEventTap)
+            keyUp?.post(tap: .cghidEventTap)
+        }
+    }
+
+    @objc
+    private func cycleWindows(_ sender: Any?) {
+        guard let app = owningApplication else { return }
+        let windows = accessibilityService.enumerateWindows(for: app)
+        guard windows.count > 1 else { return }
+        
+        if let currentWindow = windowElement,
+           let currentIndex = windows.firstIndex(of: currentWindow) {
+            let nextIndex = (currentIndex + 1) % windows.count
+            let nextWindow = windows[nextIndex]
+            accessibilityService.raiseAndActivate(element: nextWindow, app: app)
+        }
     }
 
     @objc
