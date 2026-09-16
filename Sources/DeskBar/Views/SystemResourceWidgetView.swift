@@ -29,7 +29,10 @@ final class SystemResourceWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
     
     func preferredContentWidth() -> CGFloat {
-        return isHidden ? 0 : (settings.showRingCharts ? 44 : 56)
+        if isHidden { return 0 }
+        let hasBattery = SystemStatsService.shared.batteryStats != nil
+        let base = settings.showRingCharts ? 44.0 : 56.0
+        return base + (hasBattery ? 28.0 : 0.0)
     }
     
     private func setupUI() {
@@ -56,6 +59,13 @@ final class SystemResourceWidgetView: NSView {
             .store(in: &cancellables)
             
         settings.$showRingCharts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.preferredWidthDidChange?()
+            }
+            .store(in: &cancellables)
+            
+        SystemStatsService.shared.$batteryStats
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.preferredWidthDidChange?()

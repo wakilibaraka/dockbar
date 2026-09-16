@@ -1341,11 +1341,11 @@ final class TaskButtonView: NSView, NSDraggingSource {
         activeIndicatorView.isHidden = !isActive
 
         if isActive {
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
+            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.12).cgColor
         } else if runtimeState.needsAttention {
             layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
         } else if isHovered {
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
+            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.06).cgColor
         } else {
             layer?.backgroundColor = NSColor.clear.cgColor
         }
@@ -1652,7 +1652,7 @@ private final class TaskButtonPluginActionButton: NSButton {
     private func updateLayerStyle() {
         layer?.backgroundColor = isHovered
             ? activityColor.withAlphaComponent(0.18).cgColor
-            : NSColor.white.withAlphaComponent(0.06).cgColor
+            : NSColor.labelColor.withAlphaComponent(0.06).cgColor
         layer?.borderWidth = isHovered ? 1 : 0
         layer?.borderColor = activityColor.withAlphaComponent(0.45).cgColor
     }

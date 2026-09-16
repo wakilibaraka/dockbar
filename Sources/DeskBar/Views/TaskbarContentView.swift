@@ -2717,7 +2717,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         } else if runtimeState.needsAttention {
             layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
         } else if isHovered {
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
+            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
         } else {
             layer?.backgroundColor = NSColor.clear.cgColor
         }

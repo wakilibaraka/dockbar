@@ -4,20 +4,24 @@ import Combine
 struct UnifiedSystemResourceWidgetView: View {
     @ObservedObject var settings: TaskbarSettings
     @ObservedObject var monitor: SystemResourceMonitor
+    @ObservedObject var systemStats = SystemStatsService.shared
     
-    // CPU: outer ring, Memory: inner ring
     var body: some View {
         let cpuPercent = monitor.snapshot.cpuPercent ?? 0
         let memPercent = monitor.snapshot.memoryUsedPercent ?? 0
         
         let cpuColor = color(for: cpuPercent)
-        let memColor = color(for: memPercent)
+        let memColor = Color(NSColor.systemBlue)
+        let pressureColor = color(for: memPercent)
+        
+        let hasBattery = systemStats.batteryStats != nil
+        let backgroundWidth: CGFloat = (settings.showRingCharts ? 44 : 56) + (hasBattery ? 28 : 0)
         
         ZStack {
             // Background
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-                .frame(width: settings.showRingCharts ? 44 : 56, height: 24)
+                .fill(Color.primary.opacity(0.06))
+                .frame(width: backgroundWidth, height: 24)
             
             HStack(spacing: settings.showRingCharts ? 6 : 4) {
                 if settings.showRingCharts {
@@ -51,11 +55,28 @@ struct UnifiedSystemResourceWidgetView: View {
                     }
                 }
                 
-                // Agent badge
+                // Memory Pressure Dot
                 Circle()
-                    .fill(Color(red: 1.0, green: 0.28, blue: 0.0)) // Ember color
+                    .fill(pressureColor)
                     .frame(width: 4, height: 4)
-                    .shadow(color: Color(red: 1.0, green: 0.28, blue: 0.0), radius: 2)
+                    .shadow(color: pressureColor.opacity(0.5), radius: 2)
+                    
+                if let battery = systemStats.batteryStats {
+                    HStack(spacing: 2) {
+                        Divider().frame(height: 12).background(Color.primary.opacity(0.2))
+                        ZStack {
+                            Image(systemName: "battery.100")
+                                .font(.system(size: 11))
+                                .opacity(0.4)
+                            if battery.isCharging {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+                    .padding(.leading, 2)
+                }
             }
         }
         .frame(height: 32)

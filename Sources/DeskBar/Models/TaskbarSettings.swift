@@ -257,7 +257,7 @@ class TaskbarSettings: ObservableObject {
         showProgressIndicators = defaults.object(forKey: "showProgressIndicators") as? Bool ?? true
         enableActivityMode = defaults.object(forKey: "enableActivityMode") as? Bool ?? true
         showSystemResourceWidget = defaults.object(forKey: "showSystemResourceWidget") as? Bool ?? true
-        showRingCharts = defaults.object(forKey: "showRingCharts") as? Bool ?? true
+        showRingCharts = defaults.object(forKey: "showRingCharts") as? Bool ?? false
         showSystemResourceMemoryMetric = defaults.object(forKey: "showSystemResourceMemoryMetric") as? Bool ?? true
         showSystemResourceCPUMetric = defaults.object(forKey: "showSystemResourceCPUMetric") as? Bool ?? true
         showSystemResourceGPUMetric = defaults.object(forKey: "showSystemResourceGPUMetric") as? Bool ?? true
