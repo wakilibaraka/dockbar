@@ -199,7 +199,7 @@ final class TaskbarContentView: NSView {
             fullMeasurement.preferredWidth +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+            0 +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
 
@@ -410,7 +410,7 @@ final class TaskbarContentView: NSView {
             zonesStackView.addArrangedSubview(sessionManagerWidgetView)
         }
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
-        zonesStackView.addArrangedSubview(runningAppTrayView)
+        // zonesStackView.addArrangedSubview(runningAppTrayView)
 
         // Vertical divider between running apps and system tray
         let trayDivider = NSView()
@@ -1574,7 +1574,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.minimumOverflowContentWidth() + 1 +
+            0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1591,7 +1591,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) + 1 +
+            0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1625,21 +1625,17 @@ final class TaskbarContentView: NSView {
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
-            trayVisibleApplicationCapacity = runningAppTrayView.visibleApplicationCapacity(
-                fitting: availableTrayWidth
-            )
+            trayVisibleApplicationCapacity = 0
             effectiveFixedZoneWidth =
                 nonTrayFixedWidth +
-                runningAppTrayView.plannedContentWidth(
-                    visibleApplicationCapacity: trayVisibleApplicationCapacity
-                )
+                0
         } else {
             trayVisibleApplicationCapacity = nil
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-                runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) + 1 +
+                0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

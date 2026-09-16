@@ -198,6 +198,20 @@ struct SystemResourceDashboardView: View {
                 .frame(height: 6)
             }
             
+
+            Divider()
+            
+            // Accessory Apps Section
+            HStack {
+                Text("Background Processes")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            .padding(.top, 4)
+            
+            AccessoryAppsListView()
+
             // GPU Section
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -265,5 +279,82 @@ struct StatTile: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+
+
+class AccessoryAppsViewModel: ObservableObject {
+    @Published var apps: [NSRunningApplication] = []
+    
+    init() {
+        refreshApps()
+    }
+    
+    func refreshApps() {
+        self.apps = NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .accessory || $0.activationPolicy == .prohibited }
+            .filter { $0.localizedName != nil && !$0.localizedName!.isEmpty }
+            .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
+    }
+}
+
+struct AccessoryAppsListView: View {
+    @StateObject private var viewModel = AccessoryAppsViewModel()
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                if viewModel.apps.isEmpty {
+                    Text("No background processes found.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 8)
+                } else {
+                    ForEach(viewModel.apps, id: \.processIdentifier) { app in
+                        HStack {
+                            if let icon = app.icon {
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                            } else {
+                                Image(systemName: "gearshape.fill")
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Text(app.localizedName ?? "Unknown")
+                                .font(.system(size: 12))
+                                .lineLimit(1)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                app.terminate()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    viewModel.refreshApps()
+                                }
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .onHover { hovering in
+                                if hovering {
+                                    NSCursor.pointingHand.push()
+                                } else {
+                                    NSCursor.pop()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 120)
+        .onAppear {
+            viewModel.refreshApps()
+        }
     }
 }

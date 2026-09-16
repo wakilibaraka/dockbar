@@ -128,7 +128,7 @@ final class SystemResourceWidgetView: NSView {
         let newPopover = NSPopover()
         newPopover.behavior = .transient
         let controller = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor))
-        controller.preferredContentSize = NSSize(width: 320, height: 380)
+        controller.preferredContentSize = NSSize(width: 320, height: 480)
         newPopover.contentViewController = controller
         
         var anchorRect = self.bounds
