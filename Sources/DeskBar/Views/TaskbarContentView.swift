@@ -16,7 +16,6 @@ final class TaskbarContentView: NSView {
     private let displayID: CGDirectDisplayID
     private let launcherZoneView: LauncherZoneView
     private let systemResourceWidgetView: SystemResourceWidgetView
-    private let runningAppTrayView: RunningAppTrayView
     private let connectivityTrayView: ConnectivityTrayView
     
     private let axGetWindow: AXUIElementGetWindowFunc?
@@ -112,14 +111,6 @@ final class TaskbarContentView: NSView {
             smPluginService: smPluginService,
             displayID: displayID
         )
-
-        runningAppTrayView = RunningAppTrayView(
-            windowManager: windowManager,
-            pinnedAppManager: pinnedAppManager,
-            settings: settings,
-            systemResourceMonitor: systemResourceMonitor,
-            displayID: displayID
-        )
         self.connectivityTrayView = ConnectivityTrayView(settings: settings)
         
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
@@ -138,10 +129,6 @@ final class TaskbarContentView: NSView {
         installModifierMonitors()
         observePinRequests()
         systemResourceWidgetView.preferredWidthDidChange = { [weak self] in
-            self?.schedulePreferredWidthNotification()
-            self?.applyResponsiveWidthCapsNowOrSchedule()
-        }
-        runningAppTrayView.preferredWidthDidChange = { [weak self] in
             self?.schedulePreferredWidthNotification()
             self?.applyResponsiveWidthCapsNowOrSchedule()
         }
@@ -174,7 +161,6 @@ final class TaskbarContentView: NSView {
 
     func handleAccessibilityPermissionChange() {
         launcherZoneView.refresh()
-        runningAppTrayView.refresh()
         rebuildTaskZone()
     }
 
@@ -289,7 +275,6 @@ final class TaskbarContentView: NSView {
         let occupiedViews: [NSView] = [
             launcherZoneView,
             systemResourceWidgetView,
-            runningAppTrayView,
             connectivityTrayView,
             leftTaskZoneSeparatorView,
             rightTaskZoneSeparatorView
@@ -392,10 +377,10 @@ final class TaskbarContentView: NSView {
 
         zonesStackView.addArrangedSubview(launcherZoneView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
-        zonesStackView.addArrangedSubview(systemResourceWidgetView)
-        // zonesStackView.addArrangedSubview(runningAppTrayView)
+        
+        zonesStackView.addArrangedSubview(connectivityTrayView)
 
-        // Vertical divider between running apps and system tray
+        // Vertical divider
         let trayDivider = NSView()
         trayDivider.wantsLayer = true
         trayDivider.layer?.backgroundColor = NSColor.separatorColor.cgColor
@@ -405,7 +390,8 @@ final class TaskbarContentView: NSView {
             trayDivider.heightAnchor.constraint(equalToConstant: 20)
         ])
         zonesStackView.addArrangedSubview(trayDivider)
-        zonesStackView.addArrangedSubview(connectivityTrayView)
+        
+        zonesStackView.addArrangedSubview(systemResourceWidgetView)
     }
 
     private func bindState() {
@@ -585,13 +571,6 @@ final class TaskbarContentView: NSView {
             .store(in: &cancellables)
 
         settings.$showSystemResourceWidget
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.schedulePreferredWidthNotification()
-            }
-            .store(in: &cancellables)
-
-        settings.$systemResourceWidgetCollapsed
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.schedulePreferredWidthNotification()
@@ -1596,7 +1575,6 @@ final class TaskbarContentView: NSView {
         let taskMinimumWidth = measurement.fixedWidth + measurement.taskButtonItems.reduce(0) {
             $0 + $1.minimumWidth
         }
-        let trayVisibleApplicationCapacity: Int?
         let effectiveFixedZoneWidth: CGFloat
 
         if usesAdaptiveTaskLayout {
@@ -1605,12 +1583,10 @@ final class TaskbarContentView: NSView {
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
-            trayVisibleApplicationCapacity = 0
             effectiveFixedZoneWidth =
                 nonTrayFixedWidth +
                 0
         } else {
-            trayVisibleApplicationCapacity = nil
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
@@ -1629,7 +1605,6 @@ final class TaskbarContentView: NSView {
         )
 
         let preferredWidthAffectingStateChanged =
-            lastAppliedTrayVisibleApplicationCapacity != trayVisibleApplicationCapacity ||
             lastAppliedUsesCompactOuterInsets != usesCompactOuterInsets
         let layoutStateChanged =
             lastAppliedUsesAdaptiveTaskLayout != usesAdaptiveTaskLayout ||
@@ -1643,7 +1618,6 @@ final class TaskbarContentView: NSView {
 
         lastAppliedUsesAdaptiveTaskLayout = usesAdaptiveTaskLayout
         lastAppliedTaskWidthCap = widthCap
-        lastAppliedTrayVisibleApplicationCapacity = trayVisibleApplicationCapacity
         lastAppliedUsesCompactOuterInsets = usesCompactOuterInsets
         lastAppliedTaskZoneContainerWidth = taskZoneContainerWidth
 
@@ -1652,10 +1626,6 @@ final class TaskbarContentView: NSView {
             context.allowsImplicitAnimation = false
             taskZoneContainerWidthConstraint?.constant = taskZoneContainerWidth
             zonesStackView.edgeInsets = zoneEdgeInsets(usesCompactOuterInsets: usesCompactOuterInsets)
-            runningAppTrayView.setVisibleApplicationCapacity(
-                trayVisibleApplicationCapacity,
-                notifiesPreferredWidthChange: false
-            )
             setTaskZoneEdgeSpacersVisible(usesTaskZoneEdgeSpacers)
             taskButtonViews().forEach {
                 $0.setWidthMode(usesAdaptiveWidth: usesAdaptiveTaskLayout, widthCap: widthCap)

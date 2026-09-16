@@ -145,10 +145,6 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showSystemResourceGPUMetric, forKey: "showSystemResourceGPUMetric") }
     }
 
-    @Published var systemResourceWidgetCollapsed: Bool {
-        didSet { defaults.set(systemResourceWidgetCollapsed, forKey: "systemResourceWidgetCollapsed") }
-    }
-
     @Published var systemResourceWidgetPinnedDisplayID: CGDirectDisplayID? {
         didSet {
             if let systemResourceWidgetPinnedDisplayID {
@@ -247,7 +243,6 @@ class TaskbarSettings: ObservableObject {
         showSystemResourceMemoryMetric = defaults.object(forKey: "showSystemResourceMemoryMetric") as? Bool ?? true
         showSystemResourceCPUMetric = defaults.object(forKey: "showSystemResourceCPUMetric") as? Bool ?? true
         showSystemResourceGPUMetric = defaults.object(forKey: "showSystemResourceGPUMetric") as? Bool ?? true
-        systemResourceWidgetCollapsed = defaults.object(forKey: "systemResourceWidgetCollapsed") as? Bool ?? false
         trackBluetoothDevices = defaults.object(forKey: "trackBluetoothDevices") as? Bool ?? true
         if let pinnedDisplayID = defaults.object(forKey: "systemResourceWidgetPinnedDisplayID") as? NSNumber {
             systemResourceWidgetPinnedDisplayID = CGDirectDisplayID(pinnedDisplayID.uint32Value)
