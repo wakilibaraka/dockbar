@@ -113,8 +113,6 @@ struct ContentView: View {
                 .padding(.bottom, 16)
             }
         }
-        .background(VisualEffectBackground())
-        .clipShape(RoundedRectangle(cornerRadius: 12))
         .onChange(of: state.searchText) { _ in
             state.selectedIndex = 0
         }

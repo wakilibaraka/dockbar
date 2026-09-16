@@ -80,7 +80,9 @@ final class LaunchpickManager {
             
             if panel == nil {
                 let newPanel = LaunchpickPanel()
-                newPanel.contentView = hostingView
+                hostingView.frame = newPanel.contentView!.bounds
+                hostingView.autoresizingMask = [.width, .height]
+                newPanel.contentView?.addSubview(hostingView)
                 self.panel = newPanel
             }
             

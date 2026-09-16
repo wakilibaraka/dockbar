@@ -12,7 +12,7 @@ struct SystemResourceDashboardView: View {
                 // Battery Gauge
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(NSColor.controlBackgroundColor))
+                        .fill(Color.primary.opacity(0.05))
                     
                     VStack(spacing: 4) {
                         ZStack {
@@ -47,7 +47,7 @@ struct SystemResourceDashboardView: View {
                 // Bluetooth List
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(NSColor.controlBackgroundColor))
+                        .fill(Color.primary.opacity(0.05))
                     
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Connected Devices")
@@ -263,7 +263,7 @@ struct StatTile: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }

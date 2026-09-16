@@ -16,6 +16,16 @@ class LaunchpickPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
+        
+        let blurView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 720, height: 400))
+        blurView.material = .popover
+        blurView.state = .active
+        blurView.blendingMode = .behindWindow
+        blurView.wantsLayer = true
+        blurView.layer?.cornerRadius = 12
+        blurView.layer?.masksToBounds = true
+        blurView.autoresizingMask = [.width, .height]
+        self.contentView = blurView
     }
 
     override var canBecomeKey: Bool { true }

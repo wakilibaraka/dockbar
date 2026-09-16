@@ -32,7 +32,7 @@ final class SystemResourceWidgetView: NSView {
         if isHidden { return 0 }
         let hasBattery = SystemStatsService.shared.batteryStats != nil
         let base = settings.showRingCharts ? 44.0 : 56.0
-        return base + (hasBattery ? 28.0 : 0.0)
+        return base + (hasBattery ? 34.0 : 0.0)
     }
     
     private func setupUI() {
