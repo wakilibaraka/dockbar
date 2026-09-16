@@ -1,3 +1,5 @@
+#!/bin/bash
+cat << 'SWIFT' > Sources/DeskBar/Views/SystemResourceWidgetView.swift
 import AppKit
 import Combine
 import SwiftUI
@@ -5,7 +7,6 @@ import SwiftUI
 final class SystemResourceWidgetView: NSView {
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
-    private let smPluginService: SMPluginService?
     
     private let containerView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
@@ -17,10 +18,9 @@ final class SystemResourceWidgetView: NSView {
     
     private let isCollapsedInstance: Bool
     
-    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, smPluginService: SMPluginService? = nil, displayID: CGDirectDisplayID? = nil, isCollapsedInstance: Bool = false) {
+    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, displayID: CGDirectDisplayID? = nil, isCollapsedInstance: Bool = false) {
         self.settings = settings
         self.monitor = monitor
-        self.smPluginService = smPluginService
         self.isCollapsedInstance = isCollapsedInstance
         super.init(frame: .zero)
         
@@ -129,8 +129,8 @@ final class SystemResourceWidgetView: NSView {
         
         let newPopover = NSPopover()
         newPopover.behavior = .transient
-        let controller = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
-        controller.preferredContentSize = NSSize(width: 320, height: 480)
+        let controller = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor))
+        controller.preferredContentSize = NSSize(width: 320, height: 380)
         newPopover.contentViewController = controller
         
         var anchorRect = self.bounds
@@ -166,3 +166,5 @@ final class SystemResourceWidgetView: NSView {
 }
 
 typealias CollapsedSystemResourceWidgetView = SystemResourceWidgetView
+SWIFT
+rm Sources/DeskBar/Views/UnifiedSystemResourceWidgetView.swift

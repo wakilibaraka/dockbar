@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>DockBar</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.deskbar.app</string>
+    <key>CFBundleName</key>
+    <string>DeskBar</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>DeskBar uses Terminal window metadata to show Session Manager agent names and activity on terminal task buttons.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>DeskBar integrates with your calendar to display upcoming events and holidays in the Quick Settings menu.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>

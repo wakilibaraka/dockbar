@@ -26,8 +26,6 @@ struct TaskbarSettingsTests {
         #expect(settings.showSystemResourceGPUMetric)
         #expect(settings.systemResourceWidgetCollapsed == false)
         #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
-        #expect(settings.showSessionManagerWidget)
-        #expect(settings.sessionManagerWidgetPinnedDisplayID == nil)
         #expect(settings.layoutMode == .fullWidth)
         #expect(settings.enableWindowSwitcher == false)
         #expect(settings.enableBareCommandLauncher == false)
@@ -72,7 +70,6 @@ struct TaskbarSettingsTests {
         settings.showSystemResourceGPUMetric = true
         settings.systemResourceWidgetCollapsed = true
         settings.systemResourceWidgetPinnedDisplayID = 12345
-        settings.showSessionManagerWidget = false
         settings.sessionManagerWidgetPinnedDisplayID = 67890
 
         settings = TaskbarSettings(defaults: defaults)
@@ -87,7 +84,6 @@ struct TaskbarSettingsTests {
         #expect(settings.showSystemResourceGPUMetric)
         #expect(settings.systemResourceWidgetCollapsed)
         #expect(settings.systemResourceWidgetPinnedDisplayID == 12345)
-        #expect(settings.showSessionManagerWidget == false)
         #expect(settings.sessionManagerWidgetPinnedDisplayID == 67890)
 
         settings.systemResourceWidgetPinnedDisplayID = nil
@@ -95,7 +91,6 @@ struct TaskbarSettingsTests {
         settings = TaskbarSettings(defaults: defaults)
 
         #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
-        #expect(settings.sessionManagerWidgetPinnedDisplayID == nil)
     }
 
     @Test
