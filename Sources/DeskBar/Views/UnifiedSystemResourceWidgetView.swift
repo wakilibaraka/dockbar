@@ -10,7 +10,7 @@ struct UnifiedSystemResourceWidgetView: View {
         let memPercent = monitor.snapshot.memoryUsedPercent ?? 0
         
         let cpuColor = color(for: cpuPercent)
-        let memColor = Color(NSColor.systemBlue)
+        let memColor = color(for: memPercent) // Dynamic colors for RAM based on memory pressure
         let pressureColor = color(for: memPercent)
         
         let baseWidth: CGFloat = 56

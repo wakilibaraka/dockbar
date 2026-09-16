@@ -20,6 +20,8 @@ final class SystemResourceWidgetView: NSView {
         self.monitor = monitor
         self.isCollapsedInstance = isCollapsedInstance
         super.init(frame: .zero)
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
         setupUI()
         bindState()
         updateVisibility()
