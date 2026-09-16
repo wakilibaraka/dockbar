@@ -1,4 +1,6 @@
-import SwiftUI
+import re
+
+content = """import SwiftUI
 
 struct SystemResourceDashboardView: View {
     @ObservedObject var monitor: SystemResourceMonitor
@@ -79,7 +81,7 @@ struct BatteryAndDevicesSection: View {
                             .stroke(Color.green, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                             .rotationEffect(.degrees(-90))
                         
-                        Text("\(Int(percentage))%")
+                        Text("\\(Int(percentage))%")
                             .font(.system(size: 10, weight: .bold))
                     }
                     .frame(width: 32, height: 32)
@@ -87,8 +89,8 @@ struct BatteryAndDevicesSection: View {
                 
                 VStack(alignment: .leading, spacing: 8) {
                     PowerMetric(icon: "bolt.fill", title: "Draw", value: String(format: "%.1f W", systemStats.batteryStats?.wattage ?? 0))
-                    PowerMetric(icon: "arrow.2.circlepath", title: "Cycles", value: "\(systemStats.batteryStats?.cycleCount ?? 0)")
-                    PowerMetric(icon: "heart.fill", title: "Health", value: "\(systemStats.batteryStats?.healthPercentage ?? 100)%")
+                    PowerMetric(icon: "arrow.2.circlepath", title: "Cycles", value: "\\(systemStats.batteryStats?.cycleCount ?? 0)")
+                    PowerMetric(icon: "heart.fill", title: "Health", value: "\\(systemStats.batteryStats?.healthPercentage ?? 100)%")
                 }
             }
             .padding(14)
@@ -120,7 +122,7 @@ struct BatteryAndDevicesSection: View {
                                         .lineLimit(1)
                                     Spacer(minLength: 4)
                                     if let level = device.batteryLevel {
-                                        Text("\(level)%")
+                                        Text("\\(level)%")
                                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                                     }
                                 }
@@ -196,7 +198,7 @@ struct AgentBadge: View {
             Text(title)
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundColor(value > 0 ? color : Color.secondary.opacity(0.5))
-            Text("\(value)")
+            Text("\\(value)")
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundColor(value > 0 ? .primary : Color.secondary.opacity(0.5))
         }
@@ -393,7 +395,7 @@ class AccessoryAppsViewModel: ObservableObject {
             var memMap: [pid_t: Int] = [:]
             if let data = try? pipe.fileHandleForReading.readToEnd(),
                let output = String(data: data, encoding: .utf8) {
-                let lines = output.split(separator: "\n")
+                let lines = output.split(separator: "\\n")
                 for line in lines.dropFirst() {
                     let parts = line.split(separator: " ", omittingEmptySubsequences: true)
                     if parts.count >= 2, let pid = Int32(parts[0]), let rss = Int(parts[1]) {
@@ -429,3 +431,7 @@ class AccessoryAppsViewModel: ObservableObject {
         }
     }
 }
+"""
+
+with open('Sources/DeskBar/Views/SystemResourceDashboardView.swift', 'w') as f:
+    f.write(content)
