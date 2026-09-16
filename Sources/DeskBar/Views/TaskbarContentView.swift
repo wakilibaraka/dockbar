@@ -192,12 +192,14 @@ final class TaskbarContentView: NSView {
 
     func preferredCompactWidth() -> CGFloat {
         layoutSubtreeIfNeeded()
+        
+        let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let contentWidth =
             launcherZoneView.preferredContentWidth() +
-            preferredTaskZoneWidth() +
+            fullMeasurement.preferredWidth +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.preferredContentWidth() +
+            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
 
