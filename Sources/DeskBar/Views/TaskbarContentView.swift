@@ -2299,6 +2299,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     private let dragConfiguration: TaskButtonDragConfiguration?
     private let windowActivationHandler: (WindowInfo) -> Void
     private let thumbnailProvider: (CGWindowID) async -> NSImage?
+    private let accessibilityService = AccessibilityService()
     private let popover: GroupThumbnailPopover
     private var hoverWorkItem: DispatchWorkItem?
     private var closePopoverWorkItem: DispatchWorkItem?
@@ -2450,6 +2451,24 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
                         },
                         peekHandler: { [weak self] in
                             self?.windowActivationHandler(window)
+                        },
+                        closeHandler: { [weak self] in
+                            guard let self = self,
+                                  let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == window.pid }),
+                                  let elem = TaskButtonView.resolveWindowElement(for: window, application: app, accessibilityService: self.accessibilityService) else { return }
+                            self.accessibilityService.close(element: elem)
+                        },
+                        minimizeHandler: { [weak self] in
+                            guard let self = self,
+                                  let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == window.pid }),
+                                  let elem = TaskButtonView.resolveWindowElement(for: window, application: app, accessibilityService: self.accessibilityService) else { return }
+                            self.accessibilityService.minimize(element: elem)
+                        },
+                        zoomHandler: { [weak self] in
+                            guard let self = self,
+                                  let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == window.pid }),
+                                  let elem = TaskButtonView.resolveWindowElement(for: window, application: app, accessibilityService: self.accessibilityService) else { return }
+                            self.accessibilityService.toggleFullScreen(element: elem)
                         }
                     ))
                 }

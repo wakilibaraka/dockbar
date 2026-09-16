@@ -822,6 +822,18 @@ final class TaskButtonView: NSView, NSDraggingSource {
                     peekHandler: { [weak self] in
                         guard let self = self else { return }
                         self.activationHandler(self.windowInfo)
+                    },
+                    closeHandler: { [weak self] in
+                        guard let self = self, let elem = self.windowElement else { return }
+                        self.accessibilityService.close(element: elem)
+                    },
+                    minimizeHandler: { [weak self] in
+                        guard let self = self, let elem = self.windowElement else { return }
+                        self.accessibilityService.minimize(element: elem)
+                    },
+                    zoomHandler: { [weak self] in
+                        guard let self = self, let elem = self.windowElement else { return }
+                        self.accessibilityService.toggleFullScreen(element: elem)
                     }
                 )
                 self.popover.show(items: [item], relativeTo: self)
@@ -1443,7 +1455,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
         return image
     }
 
-    private static func resolveWindowElement(
+    internal static func resolveWindowElement(
         for windowInfo: WindowInfo,
         application: NSRunningApplication?,
         accessibilityService: AccessibilityService

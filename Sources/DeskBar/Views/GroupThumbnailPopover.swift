@@ -7,6 +7,9 @@ struct WindowThumbnailItem {
     let title: String
     let activationHandler: () -> Void
     let peekHandler: () -> Void
+    let closeHandler: () -> Void
+    let minimizeHandler: () -> Void
+    let zoomHandler: () -> Void
 }
 
 final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
@@ -173,12 +176,11 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
         var maxHeight: CGFloat = 0
         
         for item in items {
-            let container = ClickableThumbnailView(item: item, size: thumbnailSize, action: { [weak self] in
-                item.activationHandler()
-                self?.dismissHandler?()
-            }, peekAction: {
-                item.peekHandler()
-            })
+            let container = ClickableThumbnailView(
+                item: item,
+                size: thumbnailSize,
+                dismissHandler: { [weak self] in self?.dismissHandler?() }
+            )
             stackView.addArrangedSubview(container)
             
             totalWidth += container.fittingSize.width
@@ -198,14 +200,16 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
 }
 
 private final class ClickableThumbnailView: NSView {
-    private let action: () -> Void
-    private let peekAction: () -> Void
+    private let item: WindowThumbnailItem
+    private let dismissHandler: () -> Void
     private var isHovered = false
     private var peekWorkItem: DispatchWorkItem?
     
-    init(item: WindowThumbnailItem, size: CGFloat, action: @escaping () -> Void, peekAction: @escaping () -> Void) {
-        self.action = action
-        self.peekAction = peekAction
+    private let actionBar = NSVisualEffectView()
+    
+    init(item: WindowThumbnailItem, size: CGFloat, dismissHandler: @escaping () -> Void) {
+        self.item = item
+        self.dismissHandler = dismissHandler
         super.init(frame: .zero)
         
         wantsLayer = true
@@ -227,8 +231,36 @@ private final class ClickableThumbnailView: NSView {
         
         let resolvedSize = resolvedSize(for: item.thumbnail, boundingSize: size)
         
+        actionBar.material = .popover
+        actionBar.blendingMode = .withinWindow
+        actionBar.state = .active
+        actionBar.wantsLayer = true
+        actionBar.layer?.cornerRadius = 6
+        actionBar.translatesAutoresizingMaskIntoConstraints = false
+        actionBar.alphaValue = 0
+        
+        let closeButton = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)!, target: self, action: #selector(handleClose))
+        closeButton.isBordered = false
+        closeButton.toolTip = "Close"
+        
+        let minimizeButton = NSButton(image: NSImage(systemSymbolName: "minus", accessibilityDescription: nil)!, target: self, action: #selector(handleMinimize))
+        minimizeButton.isBordered = false
+        minimizeButton.toolTip = "Minimize"
+        
+        let zoomButton = NSButton(image: NSImage(systemSymbolName: "plus", accessibilityDescription: nil)!, target: self, action: #selector(handleZoom))
+        zoomButton.isBordered = false
+        zoomButton.toolTip = "Zoom"
+        
+        let actionStack = NSStackView(views: [closeButton, minimizeButton, zoomButton])
+        actionStack.orientation = .horizontal
+        actionStack.spacing = 8
+        actionStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        actionBar.addSubview(actionStack)
+        
         addSubview(titleLabel)
         addSubview(imageView)
+        addSubview(actionBar)
         
         NSLayoutConstraint.activate([
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
@@ -242,7 +274,15 @@ private final class ClickableThumbnailView: NSView {
             
             imageView.widthAnchor.constraint(equalToConstant: resolvedSize.width),
             imageView.heightAnchor.constraint(equalToConstant: resolvedSize.height),
-            widthAnchor.constraint(equalToConstant: max(resolvedSize.width + 8, 80))
+            widthAnchor.constraint(equalToConstant: max(resolvedSize.width + 8, 100)),
+            
+            actionStack.centerXAnchor.constraint(equalTo: actionBar.centerXAnchor),
+            actionStack.centerYAnchor.constraint(equalTo: actionBar.centerYAnchor),
+            
+            actionBar.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
+            actionBar.bottomAnchor.constraint(equalTo: imageView.bottomAnchor, constant: -8),
+            actionBar.widthAnchor.constraint(equalToConstant: 100),
+            actionBar.heightAnchor.constraint(equalToConstant: 28)
         ])
         
         let trackingArea = NSTrackingArea(rect: NSRect(origin: .zero, size: NSSize(width: 1000, height: 1000)), options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
@@ -255,9 +295,10 @@ private final class ClickableThumbnailView: NSView {
     override func mouseEntered(with event: NSEvent) {
         isHovered = true
         layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
+        NSAnimationContext.runAnimationGroup { $0.duration = 0.15; actionBar.animator().alphaValue = 1 }
         
         let workItem = DispatchWorkItem { [weak self] in
-            self?.peekAction()
+            self?.item.peekHandler()
         }
         peekWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
@@ -266,13 +307,30 @@ private final class ClickableThumbnailView: NSView {
     override func mouseExited(with event: NSEvent) {
         isHovered = false
         layer?.backgroundColor = .clear
+        NSAnimationContext.runAnimationGroup { $0.duration = 0.15; actionBar.animator().alphaValue = 0 }
         
         peekWorkItem?.cancel()
         peekWorkItem = nil
     }
     
     override func mouseDown(with event: NSEvent) {
-        action()
+        item.activationHandler()
+        dismissHandler()
+    }
+    
+    @objc private func handleClose() {
+        item.closeHandler()
+        dismissHandler()
+    }
+    
+    @objc private func handleMinimize() {
+        item.minimizeHandler()
+        dismissHandler()
+    }
+    
+    @objc private func handleZoom() {
+        item.zoomHandler()
+        dismissHandler()
     }
     
     private func resolvedSize(for image: NSImage, boundingSize: CGFloat) -> NSSize {
