@@ -14,7 +14,6 @@ struct UnifiedSystemResourceWidgetView: View {
         let memColor = Color(NSColor.systemBlue)
         let pressureColor = color(for: memPercent)
         
-        let hasBattery = systemStats.batteryStats != nil
         let baseWidth: CGFloat = settings.showRingCharts ? 44 : 56
         
         HStack(spacing: 6) {
@@ -61,26 +60,6 @@ struct UnifiedSystemResourceWidgetView: View {
                         .fill(pressureColor)
                         .frame(width: 4, height: 4)
                         .shadow(color: pressureColor.opacity(0.5), radius: 2)
-                }
-            }
-            
-            // Pill 2: Battery
-            if let battery = systemStats.batteryStats {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.primary.opacity(0.06))
-                        .frame(width: 28, height: 24)
-                    
-                    ZStack {
-                        Image(systemName: "battery.100")
-                            .font(.system(size: 11))
-                            .opacity(0.4)
-                        if battery.isCharging {
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 8))
-                                .foregroundColor(.orange)
-                        }
-                    }
                 }
             }
         }

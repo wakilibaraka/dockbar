@@ -30,9 +30,11 @@ final class SystemResourceWidgetView: NSView {
     
     func preferredContentWidth() -> CGFloat {
         if isHidden { return 0 }
-        let hasBattery = SystemStatsService.shared.batteryStats != nil
-        let base = settings.showRingCharts ? 44.0 : 56.0
-        return base + (hasBattery ? 34.0 : 0.0)
+        return settings.showRingCharts ? 44.0 : 56.0
+    }
+    
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: preferredContentWidth(), height: NSView.noIntrinsicMetric)
     }
     
     private func setupUI() {
@@ -46,6 +48,8 @@ final class SystemResourceWidgetView: NSView {
         NSLayoutConstraint.activate([
             hv.centerYAnchor.constraint(equalTo: centerYAnchor),
             hv.centerXAnchor.constraint(equalTo: centerXAnchor),
+            hv.widthAnchor.constraint(equalTo: widthAnchor),
+            hv.heightAnchor.constraint(equalTo: heightAnchor)
         ])
     }
     
@@ -61,6 +65,7 @@ final class SystemResourceWidgetView: NSView {
         settings.$showRingCharts
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.invalidateIntrinsicContentSize()
                 self?.preferredWidthDidChange?()
             }
             .store(in: &cancellables)
@@ -68,6 +73,7 @@ final class SystemResourceWidgetView: NSView {
         SystemStatsService.shared.$batteryStats
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.invalidateIntrinsicContentSize()
                 self?.preferredWidthDidChange?()
             }
             .store(in: &cancellables)
@@ -79,6 +85,7 @@ final class SystemResourceWidgetView: NSView {
         let shouldShow = settings.showSystemResourceWidget && !settings.systemResourceWidgetCollapsed
         if isHidden != !shouldShow {
             isHidden = !shouldShow
+            invalidateIntrinsicContentSize()
             preferredWidthDidChange?()
         }
     }
