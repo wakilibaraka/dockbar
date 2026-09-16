@@ -12,7 +12,7 @@ final class SystemResourceFlyoutPanel: NSPanel {
         self.smPluginService = smPluginService
         self.monitor = monitor
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 440),
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 420),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
