@@ -1,3 +1,4 @@
+import QuartzCore
 import AppKit
 import Combine
 
@@ -64,7 +65,8 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
         }
         
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.15
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
             self.contentViewController?.view.alphaValue = 0
             show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
             self.contentViewController?.view.animator().alphaValue = 1

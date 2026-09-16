@@ -232,9 +232,9 @@ final class TaskbarPanel: NSPanel {
         chromeShadowView.layer?.cornerRadius = cornerRadius
         chromeShadowView.layer?.masksToBounds = false
         chromeShadowView.layer?.shadowColor = NSColor.black.cgColor
-        chromeShadowView.layer?.shadowOpacity = usesGlassChrome ? 0.28 : 0
-        chromeShadowView.layer?.shadowRadius = usesGlassChrome ? 14 : 0
-        chromeShadowView.layer?.shadowOffset = NSSize(width: 0, height: 2)
+        chromeShadowView.layer?.shadowOpacity = usesGlassChrome ? 0.35 : 0
+        chromeShadowView.layer?.shadowRadius = usesGlassChrome ? 12 : 0
+        chromeShadowView.layer?.shadowOffset = NSSize(width: 0, height: -4)
         chromeShadowView.layer?.shadowPath = usesGlassChrome
             ? CGPath(roundedRect: chromeShadowView.bounds, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
             : nil
@@ -242,6 +242,8 @@ final class TaskbarPanel: NSPanel {
         visualEffectView.layer?.cornerRadius = cornerRadius
         visualEffectView.layer?.cornerCurve = .continuous
         visualEffectView.layer?.masksToBounds = usesGlassChrome
+        visualEffectView.layer?.borderWidth = usesGlassChrome ? 1 : 0
+        visualEffectView.layer?.borderColor = usesGlassChrome ? NSColor.white.withAlphaComponent(0.12).cgColor : NSColor.clear.cgColor
     }
 
     private func scheduleFrameNormalization(to frame: NSRect) {

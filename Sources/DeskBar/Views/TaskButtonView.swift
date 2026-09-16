@@ -107,6 +107,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     private let iconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
     private let statusIndicatorView = NSView()
+    private let activeIndicatorView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
     private let progressTrackView = NSView()
@@ -481,6 +482,17 @@ final class TaskButtonView: NSView, NSDraggingSource {
         statusIndicatorView.wantsLayer = true
         statusIndicatorView.layer?.cornerRadius = 1.5
         statusIndicatorView.isHidden = true
+        
+        activeIndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        activeIndicatorView.wantsLayer = true
+        activeIndicatorView.layer?.cornerRadius = 1
+        let emberColor = NSColor(red: 1.0, green: 0.28, blue: 0.0, alpha: 1.0).cgColor
+        activeIndicatorView.layer?.backgroundColor = emberColor
+        activeIndicatorView.layer?.shadowColor = emberColor
+        activeIndicatorView.layer?.shadowRadius = 4
+        activeIndicatorView.layer?.shadowOpacity = 0.8
+        activeIndicatorView.layer?.shadowOffset = .zero
+        activeIndicatorView.isHidden = true
 
         activityBadgeView.translatesAutoresizingMaskIntoConstraints = false
         activityBadgeView.material = .toolTip
@@ -513,6 +525,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
         dropIndicatorView.isHidden = true
 
         addSubview(statusIndicatorView)
+        addSubview(activeIndicatorView)
         addSubview(pluginActionButton)
         addSubview(iconView)
         addSubview(titleLabel)
@@ -557,6 +570,11 @@ final class TaskButtonView: NSView, NSDraggingSource {
             statusIndicatorView.topAnchor.constraint(equalTo: topAnchor, constant: 6),
             statusIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
             statusIndicatorView.widthAnchor.constraint(equalToConstant: 3),
+            
+            activeIndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            activeIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            activeIndicatorView.widthAnchor.constraint(equalToConstant: 16),
+            activeIndicatorView.heightAnchor.constraint(equalToConstant: 2),
 
             pluginActionButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             pluginActionButton.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -1336,12 +1354,14 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private func updateBackgroundColor() {
+        activeIndicatorView.isHidden = !isActive
+
         if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
+            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
         } else if runtimeState.needsAttention {
             layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
         } else if isHovered {
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
+            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
         } else {
             layer?.backgroundColor = NSColor.clear.cgColor
         }

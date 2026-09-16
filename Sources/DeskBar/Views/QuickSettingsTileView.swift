@@ -18,8 +18,10 @@ final class QuickSettingsTileView: NSView {
     
     private func setupUI() {
         wantsLayer = true
-        layer?.cornerRadius = 10
+        layer?.cornerRadius = 6
         layer?.cornerCurve = .continuous
+        layer?.borderWidth = 1
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
         
         // Icon
         let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
@@ -69,15 +71,16 @@ final class QuickSettingsTileView: NSView {
     func refresh() {
         let on = setting.isOn
         let isAction = setting.isAction
+        let emberColor = NSColor(red: 1.0, green: 0.28, blue: 0.0, alpha: 1.0)
         
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         if isAction {
-            layer?.backgroundColor = NSColor.controlTextColor.withAlphaComponent(0.08).cgColor
+            layer?.backgroundColor = NSColor(white: 0.1, alpha: 0.5).cgColor
         } else {
             layer?.backgroundColor = on
-                ? NSColor.controlAccentColor.cgColor
-                : NSColor.controlTextColor.withAlphaComponent(0.08).cgColor
+                ? emberColor.cgColor
+                : NSColor(white: 0.1, alpha: 0.5).cgColor
         }
         CATransaction.commit()
         

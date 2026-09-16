@@ -237,15 +237,15 @@ struct EventRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            RoundedRectangle(cornerRadius: 1.5)
+            RoundedRectangle(cornerRadius: 0)
                 .fill(event.color)
                 .frame(width: 3)
-                .padding(.vertical, 2)
+                .padding(.vertical, 4)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(event.title)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.primary)
                     .lineLimit(2)
                 
                 Text((showDate ? "\(dateString) • " : "") + (event.isAllDay ? "All Day" : timeString))
