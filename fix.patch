@@ -1,0 +1,13 @@
+--- Sources/DeskBar/Models/TaskbarSettings.swift
++++ Sources/DeskBar/Models/TaskbarSettings.swift
+@@ -58,10 +58,6 @@
+         didSet { defaults.set(useAppIconAsLauncherButton, forKey: "useAppIconAsLauncherButton") }
+     }
+ 
+-    @Published var showRingCharts: Bool {
+-        didSet { defaults.set(showRingCharts, forKey: "showRingCharts") }
+-    }
+-
+     @Published var taskbarHeight: CGFloat {
+         didSet { defaults.set(taskbarHeight, forKey: "taskbarHeight") }
+     }

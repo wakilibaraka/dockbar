@@ -35,7 +35,7 @@ final class SystemResourceWidgetView: NSView {
     private func setupUI() {
         wantsLayer = true
         
-        let hv = NSHostingView(rootView: UnifiedSystemResourceWidgetView(monitor: monitor))
+        let hv = NSHostingView(rootView: UnifiedSystemResourceWidgetView(settings: settings, monitor: monitor))
         hv.translatesAutoresizingMaskIntoConstraints = false
         addSubview(hv)
         self.hostingView = hv

@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 struct UnifiedSystemResourceWidgetView: View {
+    @ObservedObject var settings: TaskbarSettings
     @ObservedObject var monitor: SystemResourceMonitor
     
     // CPU: outer ring, Memory: inner ring
@@ -16,30 +17,38 @@ struct UnifiedSystemResourceWidgetView: View {
             // Background
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.white.opacity(0.06))
-                .frame(width: 44, height: 24)
+                .frame(width: settings.showRingCharts ? 44 : 56, height: 24)
             
-            HStack(spacing: 6) {
-                // Outer ring CPU, Inner ring Memory
-                ZStack {
-                    // CPU Background
-                    Circle().stroke(cpuColor.opacity(0.15), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .frame(width: 16, height: 16)
-                    // CPU Foreground
-                    Circle().trim(from: 0, to: CGFloat(min(cpuPercent / 100.0, 1.0)))
-                        .stroke(cpuColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 16, height: 16)
-                        .animation(.linear(duration: 1.0), value: cpuPercent)
-                    
-                    // Memory Background
-                    Circle().stroke(memColor.opacity(0.15), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .frame(width: 9, height: 9)
-                    // Memory Foreground
-                    Circle().trim(from: 0, to: CGFloat(min(memPercent / 100.0, 1.0)))
-                        .stroke(memColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: 9, height: 9)
-                        .animation(.linear(duration: 1.0), value: memPercent)
+            HStack(spacing: settings.showRingCharts ? 6 : 4) {
+                if settings.showRingCharts {
+                    // Ring Charts
+                    ZStack {
+                        Circle().stroke(cpuColor.opacity(0.15), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .frame(width: 16, height: 16)
+                        Circle().trim(from: 0, to: CGFloat(min(cpuPercent / 100.0, 1.0)))
+                            .stroke(cpuColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 16, height: 16)
+                            .animation(.linear(duration: 1.0), value: cpuPercent)
+                        
+                        Circle().stroke(memColor.opacity(0.15), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .frame(width: 9, height: 9)
+                        Circle().trim(from: 0, to: CGFloat(min(memPercent / 100.0, 1.0)))
+                            .stroke(memColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 9, height: 9)
+                            .animation(.linear(duration: 1.0), value: memPercent)
+                    }
+                } else {
+                    // Text metrics
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("CPU \(Int(cpuPercent))%")
+                            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                            .foregroundColor(cpuColor)
+                        Text("RAM \(Int(memPercent))%")
+                            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                            .foregroundColor(memColor)
+                    }
                 }
                 
                 // Agent badge

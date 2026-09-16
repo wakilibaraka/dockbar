@@ -60,6 +60,7 @@ final class SettingsView: NSView {
     private let showProgressIndicatorsCheckbox = NSButton(checkboxWithTitle: "Show app progress indicators", target: nil, action: nil)
     private let enableActivityModeCheckbox = NSButton(checkboxWithTitle: "Activity mode (hold Control for CPU/RAM)", target: nil, action: nil)
     private let showSystemResourceWidgetCheckbox = NSButton(checkboxWithTitle: "Show System Stats (Battery & RAM)", target: nil, action: nil)
+    private let showRingChartsCheckbox = NSButton(checkboxWithTitle: "Use Ring Charts (instead of text)", target: nil, action: nil)
     private let trackBluetoothDevicesCheckbox = NSButton(checkboxWithTitle: "Track Bluetooth device batteries", target: nil, action: nil)
     private let showSystemResourceMemoryMetricCheckbox = NSButton(checkboxWithTitle: "Memory pressure", target: nil, action: nil)
     private let showSystemResourceCPUMetricCheckbox = NSButton(checkboxWithTitle: "CPU usage", target: nil, action: nil)
@@ -195,6 +196,7 @@ final class SettingsView: NSView {
         widgetsTab.label = "Widgets"
         widgetsTab.view = makeFormView(rows: [
             makeCheckboxRow(showSystemResourceWidgetCheckbox),
+            makeCheckboxRow(showRingChartsCheckbox),
             makeLabeledControlRow(label: "Show on", control: systemResourceWidgetDisplayPopupButton),
             makeCheckboxRow(showSystemResourceMemoryMetricCheckbox),
             makeCheckboxRow(showSystemResourceCPUMetricCheckbox),
@@ -402,6 +404,9 @@ final class SettingsView: NSView {
         trackBluetoothDevicesCheckbox.target = self
         trackBluetoothDevicesCheckbox.action = #selector(trackBluetoothDevicesToggled(_:))
         
+        showRingChartsCheckbox.target = self
+        showRingChartsCheckbox.action = #selector(showRingChartsChanged(_:))
+
         showSystemResourceWidgetCheckbox.target = self
         showSystemResourceWidgetCheckbox.action = #selector(showSystemResourceWidgetChanged(_:))
 
@@ -681,6 +686,13 @@ final class SettingsView: NSView {
             .receive(on: RunLoop.main)
             .sink { [weak self] value in
                 self?.enableActivityModeCheckbox.state = value ? .on : .off
+            }
+            .store(in: &cancellables)
+
+        settings.$showRingCharts
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.showRingChartsCheckbox.state = value ? .on : .off
             }
             .store(in: &cancellables)
 
@@ -1502,6 +1514,11 @@ final class SettingsView: NSView {
     @objc
     private func enableActivityModeChanged(_ sender: NSButton) {
         settings.enableActivityMode = sender.state == .on
+    }
+
+    @objc
+    private func showRingChartsChanged(_ sender: NSButton) {
+        settings.showRingCharts = sender.state == .on
     }
 
     @objc

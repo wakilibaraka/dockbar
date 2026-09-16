@@ -207,7 +207,7 @@ private final class ClickableThumbnailView: NSView {
     private var isHovered = false
     private var peekWorkItem: DispatchWorkItem?
     
-    private let actionBar = NSVisualEffectView()
+    private let actionBar = NSView()
     
     init(item: WindowThumbnailItem, size: CGFloat, dismissHandler: @escaping () -> Void) {
         self.item = item
@@ -233,31 +233,43 @@ private final class ClickableThumbnailView: NSView {
         
         let resolvedSize = resolvedSize(for: item.thumbnail, boundingSize: size)
         
-        actionBar.material = .popover
-        actionBar.blendingMode = .withinWindow
-        actionBar.state = .active
-        actionBar.wantsLayer = true
-        actionBar.layer?.cornerRadius = 6
         actionBar.translatesAutoresizingMaskIntoConstraints = false
+        actionBar.wantsLayer = true
         actionBar.alphaValue = 0
         
-        let closeButton = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)!, target: self, action: #selector(handleClose))
-        closeButton.isBordered = false
-        closeButton.toolTip = "Close"
+        func makeTrafficLight(color: NSColor, icon: String, action: Selector) -> NSButton {
+            let btn = NSButton(title: "", target: self, action: action)
+            btn.isBordered = false
+            btn.wantsLayer = true
+            btn.layer?.cornerRadius = 6
+            btn.layer?.backgroundColor = color.cgColor
+            
+            let config = NSImage.SymbolConfiguration(pointSize: 7, weight: .bold)
+            if let img = NSImage(systemSymbolName: icon, accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                // We'll just set it directly to show the dark icon over the color
+                let tintImg = NSImage(size: img.size)
+                tintImg.lockFocus()
+                img.draw(at: .zero, from: .zero, operation: .sourceOver, fraction: 0.5)
+                tintImg.unlockFocus()
+                btn.image = tintImg
+            }
+            btn.imagePosition = .imageOnly
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                btn.widthAnchor.constraint(equalToConstant: 12),
+                btn.heightAnchor.constraint(equalToConstant: 12)
+            ])
+            return btn
+        }
         
-        let minimizeButton = NSButton(image: NSImage(systemSymbolName: "minus", accessibilityDescription: nil)!, target: self, action: #selector(handleMinimize))
-        minimizeButton.isBordered = false
-        minimizeButton.toolTip = "Minimize"
-        
-        let zoomButton = NSButton(image: NSImage(systemSymbolName: "plus", accessibilityDescription: nil)!, target: self, action: #selector(handleZoom))
-        zoomButton.isBordered = false
-        zoomButton.toolTip = "Zoom"
+        let closeButton = makeTrafficLight(color: NSColor(red: 1.0, green: 0.37, blue: 0.34, alpha: 1.0), icon: "xmark", action: #selector(handleClose))
+        let minimizeButton = makeTrafficLight(color: NSColor(red: 1.0, green: 0.78, blue: 0.2, alpha: 1.0), icon: "minus", action: #selector(handleMinimize))
+        let zoomButton = makeTrafficLight(color: NSColor(red: 0.15, green: 0.79, blue: 0.31, alpha: 1.0), icon: "plus", action: #selector(handleZoom))
         
         let actionStack = NSStackView(views: [closeButton, minimizeButton, zoomButton])
         actionStack.orientation = .horizontal
         actionStack.spacing = 8
         actionStack.translatesAutoresizingMaskIntoConstraints = false
-        
         actionBar.addSubview(actionStack)
         
         addSubview(titleLabel)
@@ -278,13 +290,13 @@ private final class ClickableThumbnailView: NSView {
             imageView.heightAnchor.constraint(equalToConstant: resolvedSize.height),
             widthAnchor.constraint(equalToConstant: max(resolvedSize.width + 8, 100)),
             
-            actionStack.centerXAnchor.constraint(equalTo: actionBar.centerXAnchor),
-            actionStack.centerYAnchor.constraint(equalTo: actionBar.centerYAnchor),
+            actionStack.leadingAnchor.constraint(equalTo: actionBar.leadingAnchor),
+            actionStack.topAnchor.constraint(equalTo: actionBar.topAnchor),
+            actionStack.bottomAnchor.constraint(equalTo: actionBar.bottomAnchor),
+            actionStack.trailingAnchor.constraint(equalTo: actionBar.trailingAnchor),
             
-            actionBar.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
-            actionBar.bottomAnchor.constraint(equalTo: imageView.bottomAnchor, constant: -8),
-            actionBar.widthAnchor.constraint(equalToConstant: 100),
-            actionBar.heightAnchor.constraint(equalToConstant: 28)
+            actionBar.leadingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: 8),
+            actionBar.topAnchor.constraint(equalTo: imageView.topAnchor, constant: 8)
         ])
         
         let trackingArea = NSTrackingArea(rect: NSRect(origin: .zero, size: NSSize(width: 1000, height: 1000)), options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
