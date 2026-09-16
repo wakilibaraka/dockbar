@@ -94,7 +94,7 @@ final class SystemResourceWidgetView: NSView {
         
         let newPopover = NSPopover()
         newPopover.behavior = .transient
-        newPopover.contentViewController = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor))
+        newPopover.contentViewController = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor).fixedSize())
         newPopover.show(relativeTo: self.bounds, of: self, preferredEdge: .maxY)
         self.popover = newPopover
     }
