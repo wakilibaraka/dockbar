@@ -3,11 +3,13 @@ import SwiftUI
 
 final class SystemResourceFlyoutPanel: NSPanel {
     private let monitor: SystemResourceMonitor
+    private let smPluginService: SMPluginService?
     private let blurView = NSVisualEffectView()
     private var localMonitor: Any?
     private var globalMonitor: Any?
 
-    init(monitor: SystemResourceMonitor) {
+    init(monitor: SystemResourceMonitor, smPluginService: SMPluginService? = nil) {
+        self.smPluginService = smPluginService
         self.monitor = monitor
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 320, height: 440),
@@ -38,7 +40,7 @@ final class SystemResourceFlyoutPanel: NSPanel {
         blurView.layer?.masksToBounds = true
         contentView = blurView
         
-        let hostingView = NSHostingView(rootView: SystemResourceDashboardView(monitor: monitor))
+        let hostingView = NSHostingView(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         blurView.addSubview(hostingView)
         

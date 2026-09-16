@@ -371,7 +371,7 @@ struct SMStatsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Session Manager")
+                Text("Antigravity Activity")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()

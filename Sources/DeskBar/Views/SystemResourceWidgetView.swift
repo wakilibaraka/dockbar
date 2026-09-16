@@ -9,8 +9,6 @@ final class SystemResourceWidgetView: NSView {
     
     private let containerView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
-    
-    private var popover: NSPopover?
     private var cancellables = Set<AnyCancellable>()
     
     var preferredWidthDidChange: (() -> Void)?
@@ -118,27 +116,28 @@ final class SystemResourceWidgetView: NSView {
     }
     
     // MARK: - Interaction
-    
+    private lazy var flyoutPanel: SystemResourceFlyoutPanel = {
+        SystemResourceFlyoutPanel(monitor: monitor, smPluginService: smPluginService)
+    }()
+
     override func mouseDown(with event: NSEvent) {
-        if let popover = popover, popover.isShown {
-            popover.performClose(nil)
-            self.popover = nil
+        if flyoutPanel.isVisible {
+            flyoutPanel.close()
             return
         }
         
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        let controller = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
-        controller.preferredContentSize = NSSize(width: 320, height: 480)
-        newPopover.contentViewController = controller
+        guard let window = self.window else { return }
+        let screenRect = window.convertToScreen(self.convert(self.bounds, to: nil))
+        let panelSize = flyoutPanel.frame.size
         
-        var anchorRect = self.bounds
-        anchorRect.size.width = min(self.bounds.width, 44)
+        let margin: CGFloat = 8
+        let originX = max(8, screenRect.midX - (panelSize.width / 2))
+        let originY = screenRect.maxY + margin
         
-        newPopover.show(relativeTo: anchorRect, of: self, preferredEdge: .maxY)
-        self.popover = newPopover
+        flyoutPanel.setFrameOrigin(NSPoint(x: originX, y: originY))
+        flyoutPanel.makeKeyAndOrderFront(nil)
     }
-    
+
     override func mouseEntered(with event: NSEvent) {
         layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
     }
