@@ -1,4 +1,6 @@
-import SwiftUI
+import re
+
+content = """import SwiftUI
 
 struct SystemResourceDashboardView: View {
     @ObservedObject var monitor: SystemResourceMonitor
@@ -212,8 +214,8 @@ struct SystemResourcesSectionView: View {
             VStack(spacing: 12) {
                 ResourceRow(
                     title: "Memory",
-                    valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
-                    percent: monitor.snapshot.memoryPressurePercent ?? 0,
+                    valueText: formatBytes(monitor.snapshot.memoryUsed ?? 0),
+                    percent: monitor.snapshot.memoryUsedPercent ?? 0,
                     color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)) // Muted Blue
                 )
                 
@@ -353,3 +355,7 @@ class AccessoryAppsViewModel: ObservableObject {
             .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
     }
 }
+"""
+
+with open('Sources/DeskBar/Views/SystemResourceDashboardView.swift', 'w') as f:
+    f.write(content)
