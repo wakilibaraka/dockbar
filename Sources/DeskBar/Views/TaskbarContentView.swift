@@ -1572,7 +1572,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.minimumOverflowContentWidth() +
+            runningAppTrayView.minimumOverflowContentWidth() + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1589,7 +1589,7 @@ final class TaskbarContentView: NSView {
             launcherZoneView.preferredContentWidth() +
             (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
             systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+            runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1621,7 +1621,7 @@ final class TaskbarContentView: NSView {
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-                zoneEdgeInsetsWidth(compactZoneEdgeInsets)
+                zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             trayVisibleApplicationCapacity = runningAppTrayView.visibleApplicationCapacity(
                 fitting: availableTrayWidth
@@ -1637,7 +1637,7 @@ final class TaskbarContentView: NSView {
                 launcherZoneView.preferredContentWidth() +
                 (sessionManagerWidgetView?.preferredContentWidth() ?? 0) +
                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
-                runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) +
+                runningAppTrayView.plannedContentWidth(visibleApplicationCapacity: nil) + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

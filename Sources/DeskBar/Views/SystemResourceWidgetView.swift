@@ -29,7 +29,7 @@ final class SystemResourceWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
     
     func preferredContentWidth() -> CGFloat {
-        return isHidden ? 0 : 56
+        return isHidden ? 0 : (settings.showRingCharts ? 44 : 56)
     }
     
     private func setupUI() {
@@ -52,6 +52,13 @@ final class SystemResourceWidgetView: NSView {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _, _ in
                 self?.updateVisibility()
+            }
+            .store(in: &cancellables)
+            
+        settings.$showRingCharts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.preferredWidthDidChange?()
             }
             .store(in: &cancellables)
     }

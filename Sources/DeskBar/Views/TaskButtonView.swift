@@ -179,23 +179,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
     }
 
     private var fullTaskWidth: CGFloat {
-        if !settings.showTitles {
-            return settings.iconOnlySize + 8
-        }
-        
-        guard agentAnnotation != nil else {
-            return maxWidth
-        }
-
-        let friendlyName = resolvedTitle().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !friendlyName.isEmpty else {
-            return maxWidth
-        }
-
-        let font = titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize)
-        let textWidth = Self.measuredTextWidth(friendlyName, font: font)
-        let extraWidth: CGFloat = showsPluginActionButton ? 106 : 76
-        return min(max(maxWidth, ceil(textWidth + extraWidth)), 340)
+        return adaptiveTaskWidth
     }
 
     private var adaptiveTaskWidth: CGFloat {
