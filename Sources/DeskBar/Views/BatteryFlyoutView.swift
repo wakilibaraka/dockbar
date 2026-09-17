@@ -80,7 +80,7 @@ struct BatteryFlyoutView: View {
             .padding(14)
             
         }
-        .frame(width: 440, height: 260)
+        .frame(width: 440, height: 280)
         .onAppear {
             bluetoothStats.startMonitoring()
             systemStats.updateBatteryStats()
@@ -90,11 +90,7 @@ struct BatteryFlyoutView: View {
 
 struct BatteryHeroView: View {
     let stats: MacBatteryStats?
-    
-    // Animation states
-    @State private var boltOpacity: Double = 0.5
-    @State private var boltScale: CGFloat = 0.9
-    
+
     private var ringColor: [Color] {
         guard let stats = stats else { return [.gray] }
         let pct = stats.percentage
@@ -133,14 +129,6 @@ struct BatteryHeroView: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.yellow)
                             .shadow(color: Color.yellow.opacity(0.4), radius: 3, x: 0, y: 0)
-                            .scaleEffect(boltScale)
-                            .opacity(boltOpacity)
-                            .onAppear {
-                                withAnimation(Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                                    boltOpacity = 1.0
-                                    boltScale = 1.1
-                                }
-                            }
                     }
                 }
             }

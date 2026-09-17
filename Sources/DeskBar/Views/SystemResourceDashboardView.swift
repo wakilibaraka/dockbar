@@ -3,8 +3,7 @@ import SwiftUI
 struct SystemResourceDashboardView: View {
     @ObservedObject var monitor: SystemResourceMonitor
     var smPluginService: SMPluginService?
-    @ObservedObject var systemStats = SystemStatsService.shared
-    @ObservedObject var bluetoothStats = BluetoothStatsService.shared
+
     
     // Theme Colors
     private let bgCard = Color.black.opacity(0.15)
