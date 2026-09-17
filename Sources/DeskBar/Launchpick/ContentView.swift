@@ -188,6 +188,9 @@ struct ContentView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
+            
+            // Phase 3 Footer
+            LauncherFooterView()
         }
         .onChange(of: state.searchText) { _, _ in
             state.selectedIndex = 0

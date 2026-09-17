@@ -1,0 +1,123 @@
+Building for production...
+[1 / 1]
+[2 / 5] DockBar-product
+[3 / 58]
+[9 / 58]
+[10 / 58]
+[11 / 58]
+[16 / 58]
+[17 / 58]
+[18 / 58]
+[20 / 58]
+[21 / 58]
+[22 / 58]
+[23 / 58]
+[32 / 58]
+[34 / 58]
+[35 / 58]
+[39 / 58]
+[40 / 58]
+[43 / 58]
+[46 / 58]
+[47 / 58]
+[50 / 58]
+[51 / 58]
+[52 / 58]
+[54 / 58]
+/Users/baraka/dockbar/Sources/DeskBar/QuickSettings/MuteAudioQuickSetting.swift:49:13: [1;33mwarning: [1;39mvariable 'muteSize' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m47 |[0;0m             mElement: kAudioObjectPropertyElementMain
+[0;36m48 |[0;0m         )
+[0;36m49 |[0;0m         var muteSize = UInt32(MemoryLayout<UInt32>.size)
+   [0;36m|[0;0m             `- [1;33mwarning: [1;39mvariable 'muteSize' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m50 |[0;0m         var newMuted: UInt32 = isOn ? 0 : 1
+[0;36m51 |[0;0m         AudioObjectSetPropertyData(defaultDeviceID, &muteAddr, 0, nil, muteSize, &newMuted)
+
+/Users/baraka/dockbar/Sources/DeskBar/QuickSettings/MuteMicQuickSetting.swift:46:13: [1;33mwarning: [1;39mvariable 'size' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m44 |[0;0m             mElement: kAudioObjectPropertyElementMain
+[0;36m45 |[0;0m         )
+[0;36m46 |[0;0m         var size = UInt32(MemoryLayout<UInt32>.size)
+   [0;36m|[0;0m             `- [1;33mwarning: [1;39mvariable 'size' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m47 |[0;0m         var newMuted: UInt32 = isOn ? 0 : 1
+[0;36m48 |[0;0m         AudioObjectSetPropertyData(deviceID, &muteAddr, 0, nil, size, &newMuted)
+
+/Users/baraka/dockbar/Sources/DeskBar/Services/BatteryMonitor.swift:19:28: [1;33mwarning: [1;39mmain actor-isolated property 'tick5s' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode[0;0m
+[0;36m17 |[0;0m     private init() {
+[0;36m18 |[0;0m         updateBatteryState()
+[0;36m19 |[0;0m         SharedTimer.shared.tick5s
+   [0;36m|[0;0m                            `- [1;33mwarning: [1;39mmain actor-isolated property 'tick5s' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode[0;0m
+[0;36m20 |[0;0m             .sink { [weak self] _ in
+[0;36m21 |[0;0m                 self?.updateBatteryState()
+
+/Users/baraka/dockbar/Sources/DeskBar/Services/SharedTimer.swift:9:9: [1;39mnote: [1;39mproperty declared here[0;0m
+ [0;36m7 |[0;0m     
+ [0;36m8 |[0;0m     let tick2s = PassthroughSubject<Void, Never>()
+ [0;36m9 |[0;0m     let tick5s = PassthroughSubject<Void, Never>()
+   [0;36m|[0;0m         `- [1;39mnote: [1;39mproperty declared here[0;0m
+[0;36m10 |[0;0m     
+[0;36m11 |[0;0m     private var timer: DispatchSourceTimer?
+
+/Users/baraka/dockbar/Sources/DeskBar/Services/BatteryMonitor.swift:19:21: [1;33mwarning: [1;39mmain actor-isolated static property 'shared' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode[0;0m
+[0;36m17 |[0;0m     private init() {
+[0;36m18 |[0;0m         updateBatteryState()
+[0;36m19 |[0;0m         SharedTimer.shared.tick5s
+   [0;36m|[0;0m                     `- [1;33mwarning: [1;39mmain actor-isolated static property 'shared' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode[0;0m
+[0;36m20 |[0;0m             .sink { [weak self] _ in
+[0;36m21 |[0;0m                 self?.updateBatteryState()
+
+/Users/baraka/dockbar/Sources/DeskBar/Services/SharedTimer.swift:6:16: [1;39mnote: [1;39mstatic property declared here[0;0m
+ [0;36m4 |[0;0m @MainActor
+ [0;36m5 |[0;0m final class SharedTimer {
+ [0;36m6 |[0;0m     static let shared = SharedTimer()
+   [0;36m|[0;0m                `- [1;39mnote: [1;39mstatic property declared here[0;0m
+ [0;36m7 |[0;0m     
+ [0;36m8 |[0;0m     let tick2s = PassthroughSubject<Void, Never>()
+
+/Users/baraka/dockbar/Sources/DeskBar/Services/CalendarEventService.swift:28:48: [1;33mwarning: [1;39m'authorized' was deprecated in macOS 14.0: Check for full access or write only access[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+ [0;36m26 |[0;0m     func checkPermission() {
+ [0;36m27 |[0;0m         let status = EKEventStore.authorizationStatus(for: .event)
+ [0;36m28 |[0;0m         if status == .fullAccess || status == .authorized {
+    [0;36m|[0;0m                                                `- [1;33mwarning: [1;39m'authorized' was deprecated in macOS 14.0: Check for full access or write only access[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+ [0;36m29 |[0;0m             isAuthorized = true
+ [0;36m30 |[0;0m             fetchEvents()
+
+/Users/baraka/dockbar/Sources/DeskBar/Views/BatteryFlyoutView.swift:133:48: [1;33mwarning: [1;39muse '#selector' instead of explicitly constructing a 'Selector'[0;0m
+[0;36m131 |[0;0m                     title: "Restore Windows From Last Sleep",
+[0;36m132 |[0;0m                     icon: "uiwindow.split.2x1",
+[0;36m133 |[0;0m                     action: { NSApp.sendAction(Selector(("restoreWindowsFromLastSleep:")), to: nil, from: nil) }
+    [0;36m|[0;0m                                                `- [1;33mwarning: [1;39muse '#selector' instead of explicitly constructing a 'Selector'[0;0m
+[0;36m134 |[0;0m                 )
+[0;36m135 |[0;0m                 Divider().opacity(0.4).padding(.horizontal, 8)
+
+/Users/baraka/dockbar/Sources/DeskBar/Views/BatteryFlyoutView.swift:139:48: [1;33mwarning: [1;39muse '#selector' instead of explicitly constructing a 'Selector'[0;0m
+[0;36m137 |[0;0m                     title: "Settings...",
+[0;36m138 |[0;0m                     icon: "gearshape.fill",
+[0;36m139 |[0;0m                     action: { NSApp.sendAction(Selector(("openSettings:")), to: nil, from: nil) }
+    [0;36m|[0;0m                                                `- [1;33mwarning: [1;39muse '#selector' instead of explicitly constructing a 'Selector'[0;0m
+[0;36m140 |[0;0m                 )
+[0;36m141 |[0;0m                 Divider().opacity(0.4).padding(.horizontal, 8)
+
+/Users/baraka/dockbar/Sources/DeskBar/Views/TaskbarContentView.swift:1594:17: [1;33mwarning: [1;39minitialization of immutable value 'availableTrayWidth' was never used; consider replacing with assignment to '_' or removing it[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1592 |[0;0m                 systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+[0;36m1593 |[0;0m                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
+[0;36m1594 |[0;0m             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
+     [0;36m|[0;0m                 `- [1;33mwarning: [1;39minitialization of immutable value 'availableTrayWidth' was never used; consider replacing with assignment to '_' or removing it[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1595 |[0;0m             effectiveFixedZoneWidth =
+[0;36m1596 |[0;0m                 nonTrayFixedWidth +
+
+/Users/baraka/dockbar/Sources/DeskBar/Views/TaskbarContentView.swift:2434:17: [1;33mwarning: [1;39minitialization of immutable value 'thumbnailSize' was never used; consider replacing with assignment to '_' or removing it[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m2432 |[0;0m             guard !Task.isCancelled else { return }
+[0;36m2433 |[0;0m 
+[0;36m2434 |[0;0m             let thumbnailSize = self.settings.thumbnailSize
+     [0;36m|[0;0m                 `- [1;33mwarning: [1;39minitialization of immutable value 'thumbnailSize' was never used; consider replacing with assignment to '_' or removing it[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m2435 |[0;0m             let windows = self.appGroup.windows
+[0;36m2436 |[0;0m 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+[#VariableNeverMutated]: <https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated>
+[55 / 58] DockBar-product
+/Users/baraka/dockbar/Package.swift: DockBar-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/baraka/dockbar/Package.swift: DockBar-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[57 / 58] DockBar-product
+[58 / 58] DockBar-product
+Build complete! (126.90 sec)
