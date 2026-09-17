@@ -38,6 +38,22 @@ enum AppsLauncherShortcut: String, CaseIterable {
     case optionSpace
 }
 
+
+enum AppTheme: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+}
+
 enum LauncherStyle: String, CaseIterable {
     case anchored
     case floating
@@ -186,6 +202,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(appsLauncherShortcut.rawValue, forKey: "appsLauncherShortcut") }
     }
 
+        @Published var appTheme: AppTheme {
+        didSet { defaults.set(appTheme.rawValue, forKey: "appTheme") }
+    }
+
     @Published var launcherStyle: LauncherStyle {
         didSet { defaults.set(launcherStyle.rawValue, forKey: "launcherStyle") }
     }
@@ -256,6 +276,7 @@ class TaskbarSettings: ObservableObject {
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap
+        appTheme = AppTheme(rawValue: defaults.string(forKey: "appTheme") ?? "") ?? .system
         launcherStyle = LauncherStyle(rawValue: defaults.string(forKey: "launcherStyle") ?? "") ?? .anchored
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true

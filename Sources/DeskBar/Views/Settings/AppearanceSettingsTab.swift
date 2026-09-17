@@ -6,6 +6,13 @@ struct AppearanceSettingsTab: View {
     var body: some View {
         Form {
             Section(header: Text("Taskbar").font(.headline)) {
+                Picker("Theme", selection: $settings.appTheme) {
+                    ForEach(AppTheme.allCases) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 HStack {
                     Text("Taskbar height:")
                     Slider(value: $settings.taskbarHeight, in: 32...64, step: 1)

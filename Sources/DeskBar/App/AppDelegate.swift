@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Combine
 import Darwin
 
@@ -376,6 +377,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.updateRestoreWindowsMenuItem()
+            }
+            .store(in: &cancellables)
+
+        settings.$appTheme
+            .receive(on: RunLoop.main)
+            .sink { theme in
+                switch theme {
+                case .light: NSApp.appearance = NSAppearance(named: .aqua)
+                case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
+                case .system: NSApp.appearance = nil
+                }
             }
             .store(in: &cancellables)
 
