@@ -2569,6 +2569,20 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         dotsStackView.orientation = .horizontal
         dotsStackView.spacing = 2
         dotsStackView.alignment = .centerY
+        
+        for _ in 0..<3 {
+            let dot = NSView()
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.wantsLayer = true
+            dot.layer?.backgroundColor = NSColor.labelColor.cgColor
+            dot.layer?.cornerRadius = 2
+            dot.isHidden = true
+            NSLayoutConstraint.activate([
+                dot.widthAnchor.constraint(equalToConstant: 4),
+                dot.heightAnchor.constraint(equalToConstant: 4)
+            ])
+            dotsStackView.addArrangedSubview(dot)
+        }
 
         let progressWidthConstraint = progressFillView.widthAnchor.constraint(equalToConstant: 0)
         self.progressWidthConstraint = progressWidthConstraint
@@ -2849,19 +2863,9 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     }
     
     private func updateDots() {
-        dotsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let count = min(appGroup.windowCount, 3)
-        for _ in 0..<count {
-            let dot = NSView()
-            dot.translatesAutoresizingMaskIntoConstraints = false
-            dot.wantsLayer = true
-            dot.layer?.backgroundColor = NSColor.labelColor.cgColor
-            dot.layer?.cornerRadius = 2
-            NSLayoutConstraint.activate([
-                dot.widthAnchor.constraint(equalToConstant: 4),
-                dot.heightAnchor.constraint(equalToConstant: 4)
-            ])
-            dotsStackView.addArrangedSubview(dot)
+        for (index, dot) in dotsStackView.arrangedSubviews.enumerated() {
+            dot.isHidden = index >= count
         }
     }
 
