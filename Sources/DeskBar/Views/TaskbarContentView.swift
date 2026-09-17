@@ -2051,11 +2051,23 @@ final class TaskbarContentView: NSView {
             return
         }
 
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let frontmostWindowID = currentFrontmostWindowID(in: scopedVisibleWindows())
+        let isActive = isWindowActive(windowInfo, frontmostPID: frontmostPID, frontmostWindowID: frontmostWindowID)
+
         if let windowElement = matchingWindowElement(for: windowInfo, application: application) {
-            accessibilityService.raiseAndActivate(element: windowElement, app: application)
+            if isActive {
+                accessibilityService.minimize(element: windowElement)
+            } else {
+                accessibilityService.raiseAndActivate(element: windowElement, app: application)
+            }
         } else {
-            // Fallback: no AX element found, activate all windows
-            application.activate(options: .activateAllWindows)
+            // Fallback: no AX element found
+            if isActive {
+                application.hide()
+            } else {
+                application.activate(options: .activateAllWindows)
+            }
         }
     }
 
