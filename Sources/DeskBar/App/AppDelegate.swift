@@ -26,9 +26,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindowController: OnboardingWindowController?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
-    private var batteryPopover: NSPopover?
-    private var popoverEventMonitor: Any?
-    
     private var restoreWindowsMenuItem: NSMenuItem?
     private let singleInstanceLock = SingleInstanceLock()
     private var cancellables = Set<AnyCancellable>()
@@ -232,9 +229,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         if let button = statusItem.button {
             // Synchronously ensure non-zero width so macOS notch collapsing doesn't hide it
-            button.image = BatteryStatusRenderer.renderImage(for: BatteryState(percentage: 100, isCharging: false))
-            button.title = ""
-            button.imagePosition = .imageOnly
+            button.image = BatteryStatusRenderer.renderImage(for: BatteryState(percentage: 100, isCharging: false, isACPowered: false))
+            button.title = " 100%"
+            button.imagePosition = .imageLeft
+            button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         }
         
         BatteryMonitor.shared.$state
@@ -242,6 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak statusItem] state in
                 if let button = statusItem?.button {
                     button.image = BatteryStatusRenderer.renderImage(for: state)
+                    button.title = " \(state.percentage)%"
                 }
             }
             .store(in: &cancellables)
@@ -307,58 +306,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quitItem.target = self
         menu.addItem(quitItem)
 
-        // Instead of setting statusItem.menu, store it to present manually on right-click
+        // Attach menu for native left-click / right-click behavior
         self.statusMenu = menu
         self.statusItem = statusItem
+        statusItem.menu = menu
         updateRestoreWindowsMenuItem()
-        
-        // Setup popover for left-clicks
-        let popover = NSPopover()
-        popover.contentSize = NSSize(width: 440, height: 260)
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: BatteryFlyoutView())
-        self.batteryPopover = popover
-        
-        if let button = statusItem.button {
-            button.action = #selector(handleStatusItemClick(_:))
-            button.target = self
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        }
     }
     
-    @objc private func handleStatusItemClick(_ sender: Any?) {
-        guard let button = statusItem?.button else { return }
-        let event = NSApp.currentEvent
-        let isRightClick = event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true
-        
-        if isRightClick {
-            if let menu = statusMenu {
-                menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 5), in: button)
-            }
-        } else {
-            // Left click toggles the battery popover
-            if let popover = batteryPopover {
-                if popover.isShown {
-                    closePopover(nil)
-                } else {
-                    popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                    NSApp.activate(ignoringOtherApps: true)
-                    
-                    popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-                        self?.closePopover(nil)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func closePopover(_ sender: Any?) {
-        batteryPopover?.performClose(sender)
-        if let monitor = popoverEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            popoverEventMonitor = nil
-        }
-    }
+
 
     private func configureObservers(
         windowManager: WindowManager,

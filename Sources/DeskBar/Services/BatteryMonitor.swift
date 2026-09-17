@@ -5,12 +5,13 @@ import Combine
 struct BatteryState {
     var percentage: Int
     var isCharging: Bool
+    var isACPowered: Bool
 }
 
 final class BatteryMonitor: ObservableObject {
     static let shared = BatteryMonitor()
     
-    @Published var state = BatteryState(percentage: 100, isCharging: false)
+    @Published var state = BatteryState(percentage: 100, isCharging: false, isACPowered: false)
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
@@ -29,6 +30,7 @@ final class BatteryMonitor: ObservableObject {
         var totalCurrentCapacity = 0
         var totalMaxCapacity = 0
         var isCharging = false
+        var isACPowered = false
         var foundBattery = false
         
         for source in sources {
@@ -42,6 +44,7 @@ final class BatteryMonitor: ObservableObject {
                     }
                     if let state = desc[kIOPSPowerSourceStateKey] as? String {
                         if state == kIOPSACPowerValue {
+                            isACPowered = true
                             if let charging = desc[kIOPSIsChargingKey] as? Bool {
                                 isCharging = charging || isCharging
                             }
@@ -53,8 +56,8 @@ final class BatteryMonitor: ObservableObject {
         
         if foundBattery && totalMaxCapacity > 0 {
             let percentage = Int((Double(totalCurrentCapacity) / Double(totalMaxCapacity)) * 100.0)
-            let newState = BatteryState(percentage: min(100, max(0, percentage)), isCharging: isCharging)
-            if self.state.percentage != newState.percentage || self.state.isCharging != newState.isCharging {
+            let newState = BatteryState(percentage: min(100, max(0, percentage)), isCharging: isCharging, isACPowered: isACPowered)
+            if self.state.percentage != newState.percentage || self.state.isCharging != newState.isCharging || self.state.isACPowered != newState.isACPowered {
                 self.state = newState
             }
         }
