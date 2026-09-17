@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 class SettingsWindowController: NSWindowController {
     convenience init(
@@ -16,15 +17,15 @@ class SettingsWindowController: NSWindowController {
         )
         window.title = "DeskBar Settings"
         window.center()
-        self.init(window: window)
-
-        let settingsView = SettingsView(
+        
+        let settingsView = ModernSettingsView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,
             blacklistManager: blacklistManager,
-            permissionsManager: permissionsManager,
-            thumbnailService: thumbnailService
+            permissionsManager: permissionsManager
         )
-        window.contentView = settingsView
+        
+        window.contentView = NSHostingView(rootView: settingsView)
+        self.init(window: window)
     }
 }

@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowLayoutSnapshotManager: WindowLayoutSnapshotManager?
     private var windowSwitcherService: WindowSwitcherService?
     private var settingsWindowController: SettingsWindowController?
+    private var onboardingWindowController: OnboardingWindowController?
     private var statusItem: NSStatusItem?
     private var restoreWindowsMenuItem: NSMenuItem?
     private let singleInstanceLock = SingleInstanceLock()
@@ -86,6 +87,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.windowSwitcherService = windowSwitcherService
 
+        if !settings.hasCompletedOnboarding {
+            onboardingWindowController = OnboardingWindowController(settings: settings, permissionsManager: permissions) { [weak self] in
+                self?.completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
+            }
+            onboardingWindowController?.showWindow(nil)
+            onboardingWindowController?.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
+        }
+    }
+
+    private func completeLaunch(
+        wm: WindowManager,
+        permissions: PermissionsManager,
+        settings: TaskbarSettings,
+        blacklistManager: BlacklistManager,
+        pinnedAppManager: PinnedAppManager,
+        thumbnailService: ThumbnailService,
+        smPluginService: SMPluginService
+    ) {
         configureObservers(
             windowManager: wm,
             permissionsManager: permissions,
