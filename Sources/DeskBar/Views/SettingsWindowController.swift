@@ -22,7 +22,8 @@ class SettingsWindowController: NSWindowController {
             settings: settings,
             pinnedAppManager: pinnedAppManager,
             blacklistManager: blacklistManager,
-            permissionsManager: permissionsManager
+            permissionsManager: permissionsManager,
+            thumbnailService: thumbnailService
         )
         
         window.contentView = NSHostingView(rootView: settingsView)

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 final class OnboardingWindowController: NSWindowController {
-    convenience init(settings: TaskbarSettings, permissionsManager: PermissionsManager, completion: @escaping () -> Void) {
+    convenience init(settings: TaskbarSettings, permissionsManager: PermissionsManager, thumbnailService: ThumbnailService, completion: @escaping () -> Void) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
             styleMask: [.titled, .closable, .fullSizeContentView],
@@ -23,7 +23,7 @@ final class OnboardingWindowController: NSWindowController {
         
         self.init(window: window)
         
-        let onboardingView = OnboardingView(settings: settings, permissionsManager: permissionsManager, completion: { [weak self] in
+        let onboardingView = OnboardingView(settings: settings, permissionsManager: permissionsManager, thumbnailService: thumbnailService, completion: { [weak self] in
             settings.hasCompletedOnboarding = true
             completion()
             self?.close()

@@ -88,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.windowSwitcherService = windowSwitcherService
 
         if !settings.hasCompletedOnboarding {
-            onboardingWindowController = OnboardingWindowController(settings: settings, permissionsManager: permissions) { [weak self] in
+            onboardingWindowController = OnboardingWindowController(settings: settings, permissionsManager: permissions, thumbnailService: thumbnailService) { [weak self] in
                 self?.completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
             }
             onboardingWindowController?.showWindow(nil)

@@ -5,10 +5,11 @@ struct ModernSettingsView: View {
     @ObservedObject var pinnedAppManager: PinnedAppManager
     @ObservedObject var blacklistManager: BlacklistManager
     @ObservedObject var permissionsManager: PermissionsManager
+    @ObservedObject var thumbnailService: ThumbnailService
     
     var body: some View {
         TabView {
-            GeneralSettingsTab(settings: settings, permissionsManager: permissionsManager)
+            GeneralSettingsTab(settings: settings, permissionsManager: permissionsManager, thumbnailService: thumbnailService)
                 .tabItem {
                     Label("General", systemImage: "gearshape")
                 }

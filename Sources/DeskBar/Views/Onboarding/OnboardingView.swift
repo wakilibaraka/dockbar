@@ -4,6 +4,8 @@ import AppKit
 struct OnboardingView: View {
     @ObservedObject var settings: TaskbarSettings
     @ObservedObject var permissionsManager: PermissionsManager
+    @ObservedObject var thumbnailService: ThumbnailService
+    @ObservedObject var calendarService = CalendarEventService.shared
     let completion: () -> Void
     
     class ViewState: ObservableObject { @Published var step = 0 }
@@ -55,12 +57,30 @@ struct OnboardingView: View {
                         
                         VStack(spacing: 12) {
                             PermissionRow(
-                                title: "Accessibility",
+                                title: "Device Control and Data Access",
                                 description: "Required to interact with windows and switch apps.",
                                 isGranted: permissionsManager.isAccessibilityGranted,
                                 action: { permissionsManager.requestAccessibilityPermission() }
                             )
-                            
+                            PermissionRow(
+                                title: "Screen Recording",
+                                description: "Required for window thumbnails.",
+                                isGranted: thumbnailService.isScreenRecordingGranted,
+                                action: {
+                                    if !thumbnailService.requestScreenRecordingPermission() {
+                                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                                    }
+                                }
+                            )
+                            PermissionRow(
+                                title: "Calendar",
+                                description: "Required to show upcoming events in the widget.",
+                                isGranted: calendarService.isAuthorized,
+                                action: {
+                                    CalendarEventService.shared.checkPermission()
+                                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
+                                }
+                            )
                         }
                         .padding(.horizontal, 40)
                     }
@@ -118,7 +138,7 @@ struct OnboardingView: View {
             }
             .padding(.top, 30)
         }
-        .frame(width: 800, height: 500)
+        .frame(width: 800, height: 600)
     }
 }
 
