@@ -39,7 +39,7 @@ struct BatteryStatusRenderer {
             } else if state.percentage <= 20 {
                 fillColor = NSColor.systemOrange
             } else {
-                fillColor = NSColor.systemGreen
+                fillColor = NSColor.systemGreen // or whatever normal is
             }
             
             // To prevent blurry lines in CoreGraphics, coordinates for 1.0pt strokes should snap to x.5
@@ -81,7 +81,7 @@ struct BatteryStatusRenderer {
                 }
                 
                 if showTextInside {
-                    drawTextInside(percentage: state.percentage, cx: bodyRect.midX, cy: canvasHeight / 2.0, fillWidth: fillWidth, isHorizontal: true, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
+                    drawInsideContent(state: state, cx: bodyRect.midX, cy: canvasHeight / 2.0, fillWidth: fillWidth, isHorizontal: true, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
                 } else {
                     drawCenterIcon(state: state, cx: bodyRect.midX, cy: canvasHeight / 2.0, fillWidth: fillWidth, isHorizontal: true, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
                 }
@@ -122,7 +122,7 @@ struct BatteryStatusRenderer {
                     }
                     
                     if showTextInside {
-                        drawTextInside(percentage: state.percentage, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillWidth: fillHeight, isHorizontal: false, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
+                        drawInsideContent(state: state, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillWidth: fillHeight, isHorizontal: false, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
                     } else {
                         drawCenterIcon(state: state, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillWidth: fillHeight, isHorizontal: false, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale)
                     }
@@ -144,8 +144,7 @@ struct BatteryStatusRenderer {
                     }
                     
                     if showTextInside {
-                        // Apply identical masking logic for verticalBars so text overlapping green is white, and text over empty space is labelColor
-                        drawTextInside(percentage: state.percentage, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillWidth: maxFillHeight * (CGFloat(barsToDraw)/CGFloat(barCount)), isHorizontal: false, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale, isDiscreteBars: true, barsToDraw: barsToDraw, barHeight: barHeight, spacing: spacing)
+                        drawInsideContent(state: state, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillWidth: maxFillHeight * (CGFloat(barsToDraw)/CGFloat(barCount)), isHorizontal: false, context: context, bodyRect: bodyRect, padding: padding, fillColor: fillColor, scale: scale, isDiscreteBars: true, barsToDraw: barsToDraw, barHeight: barHeight, spacing: spacing)
                     } else if state.isCharging || state.isACPowered {
                         drawCenterIconSimple(state: state, cx: canvasWidth / 2.0, cy: bodyRect.midY, fillColor: fillColor, scale: scale)
                     }
@@ -160,15 +159,15 @@ struct BatteryStatusRenderer {
         return image
     }
     
-    private static func drawTextInside(percentage: Int, cx: CGFloat, cy: CGFloat, fillWidth: CGFloat, isHorizontal: Bool, context: CGContext, bodyRect: NSRect, padding: CGFloat, fillColor: NSColor, scale: CGFloat, isDiscreteBars: Bool = false, barsToDraw: Int = 0, barHeight: CGFloat = 0, spacing: CGFloat = 0) {
+    private static func drawInsideContent(state: BatteryState, cx: CGFloat, cy: CGFloat, fillWidth: CGFloat, isHorizontal: Bool, context: CGContext, bodyRect: NSRect, padding: CGFloat, fillColor: NSColor, scale: CGFloat, isDiscreteBars: Bool = false, barsToDraw: Int = 0, barHeight: CGFloat = 0, spacing: CGFloat = 0) {
         
         let maxFill = isHorizontal ? (bodyRect.width - (padding * 2)) : (bodyRect.height - (padding * 2))
         
-        let drawText = { (isInsideFill: Bool) in
-            let text = "\(percentage)"
-            // Use monospaced digit font for stable bounds and symmetry
+        let drawBlock = { (isInsideFill: Bool) in
+            let text = "\(state.percentage)"
+            // Use semibold for a cleaner look closer to native
             let baseSize: CGFloat = isHorizontal ? 8.5 : 7.0
-            let font = NSFont.monospacedDigitSystemFont(ofSize: baseSize * scale, weight: .bold)
+            let font = NSFont.monospacedDigitSystemFont(ofSize: baseSize * scale, weight: .semibold)
             
             let colorInsideFill: NSColor
             if fillColor == NSColor.labelColor {
@@ -176,21 +175,38 @@ struct BatteryStatusRenderer {
             } else {
                 colorInsideFill = NSColor.white
             }
-            
             let textColor = isInsideFill ? colorInsideFill : NSColor.labelColor
             
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: textColor
             ]
-            
             let attrString = NSAttributedString(string: text, attributes: attributes)
-            let size = attrString.size()
+            let textSize = attrString.size()
             
-            // Adjust y slightly based on capHeight for visual center
+            let needsIcon = state.isCharging || state.isACPowered
+            let iconSpacing: CGFloat = needsIcon ? (1.5 * scale) : 0
+            let iconWidth: CGFloat = needsIcon ? (4.0 * scale) : 0
+            
+            // Calculate total width to perfectly center the group (text + optional icon)
+            let totalWidth = textSize.width + iconSpacing + iconWidth
+            
+            let startX = cx - (totalWidth / 2.0)
+            
+            // Draw Text
             let yOffset = (font.ascender - font.capHeight) / 2.0
-            let rect = NSRect(x: cx - size.width / 2.0, y: cy - size.height / 2.0 - yOffset, width: size.width, height: size.height)
-            attrString.draw(in: rect)
+            let textRect = NSRect(x: startX, y: cy - textSize.height / 2.0 - yOffset, width: textSize.width, height: textSize.height)
+            attrString.draw(in: textRect)
+            
+            // Draw Icon if needed
+            if needsIcon {
+                let iconCX = startX + textSize.width + iconSpacing + (iconWidth / 2.0)
+                if state.isCharging {
+                    drawBolt(cx: iconCX, cy: cy, isInsideFill: isInsideFill, fillColor: fillColor, scale: scale)
+                } else if state.isACPowered {
+                    drawPlug(cx: iconCX, cy: cy, isInsideFill: isInsideFill, fillColor: fillColor, scale: scale)
+                }
+            }
         }
         
         // Setup clip for fill (Inside)
@@ -210,7 +226,7 @@ struct BatteryStatusRenderer {
                 NSRect(x: bodyRect.minX + padding, y: bodyRect.minY + padding, width: bodyRect.width - (padding * 2), height: fillWidth)
             context.clip(to: fillRegion)
         }
-        drawText(true)
+        drawBlock(true)
         context.restoreGState()
         
         // Setup clip for empty (Outside)
@@ -232,7 +248,7 @@ struct BatteryStatusRenderer {
                 NSRect(x: bodyRect.minX + padding, y: bodyRect.minY + padding + fillWidth, width: bodyRect.width - (padding * 2), height: maxFill - fillWidth)
             context.clip(to: emptyRegion)
         }
-        drawText(false)
+        drawBlock(false)
         context.restoreGState()
     }
     
@@ -297,9 +313,6 @@ struct BatteryStatusRenderer {
             
             colorInsideFill.setFill()
             boltPath.fill()
-            NSColor.black.withAlphaComponent(0.15).setStroke()
-            boltPath.lineWidth = 0.5 * scale
-            boltPath.stroke()
         } else {
             NSColor.labelColor.setFill()
             boltPath.fill()

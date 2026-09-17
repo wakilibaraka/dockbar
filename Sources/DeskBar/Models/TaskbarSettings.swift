@@ -328,7 +328,7 @@ class TaskbarSettings: ObservableObject {
         showBatteryPercentage = defaults.object(forKey: "showBatteryPercentage") as? Bool ?? true
         showPercentageInsideIcon = defaults.object(forKey: "showPercentageInsideIcon") as? Bool ?? false
         batteryIconStyle = BatteryIconStyle(rawValue: defaults.string(forKey: "batteryIconStyle") ?? "") ?? .horizontal
-        batteryIconSize = BatteryIconSize(rawValue: defaults.string(forKey: "batteryIconSize") ?? "") ?? .standard
+        batteryIconSize = BatteryIconSize(rawValue: defaults.string(forKey: "batteryIconSize") ?? "") ?? .large
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
