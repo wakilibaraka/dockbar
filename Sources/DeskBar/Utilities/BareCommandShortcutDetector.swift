@@ -2,10 +2,13 @@ import CoreGraphics
 import QuartzCore
 
 struct BareCommandShortcutDetector {
-    private(set) var isTrackingCommandTap = false
+    private var isTrackingCommandTap = false
     private var isCommandDown = false
-    private var lastCommandDownTime: CFTimeInterval = 0
     private var trackingRightCommandOnly: Bool = false
+    
+    // For double tap
+    private var lastValidTapTime: CFTimeInterval = 0
+    private let doubleTapThreshold: CFTimeInterval = 0.3
     
     var isRightCommandTap = false
 
@@ -20,8 +23,8 @@ struct BareCommandShortcutDetector {
         
         if commandIsDown {
             if !isCommandDown {
+                // Command just pressed
                 isTrackingCommandTap = !hasOtherModifier
-                lastCommandDownTime = CACurrentMediaTime()
                 if keyCode == 54 {
                     trackingRightCommandOnly = true
                 } else {
@@ -31,29 +34,48 @@ struct BareCommandShortcutDetector {
                 isTrackingCommandTap = false
             }
             isCommandDown = true
-            return false
+            return false // We don't trigger on press, only on release
         }
 
+        // Command released
+        let wasTracking = isTrackingCommandTap
+        let wasCommandDown = isCommandDown
+        let rightCommand = trackingRightCommandOnly
+        
         defer {
             isTrackingCommandTap = false
             isCommandDown = false
         }
         
-        let elapsed = CACurrentMediaTime() - lastCommandDownTime
-        let validTap = isCommandDown && isTrackingCommandTap && !hasOtherModifier && elapsed >= 0.25
-        if validTap {
-            isRightCommandTap = trackingRightCommandOnly
-            return true
+        if wasCommandDown && wasTracking && !hasOtherModifier {
+            let now = CACurrentMediaTime()
+            let elapsedSinceLastTap = now - lastValidTapTime
+            
+            if elapsedSinceLastTap <= doubleTapThreshold {
+                // Double tap confirmed!
+                lastValidTapTime = 0 // Reset
+                isRightCommandTap = rightCommand
+                return true
+            } else {
+                // First tap
+                lastValidTapTime = now
+            }
+        } else {
+            // Invalid tap
+            lastValidTapTime = 0
         }
+        
         return false
     }
 
     mutating func handleKeyDown() {
         isTrackingCommandTap = false
+        lastValidTapTime = 0
     }
 
     mutating func cancel() {
         isTrackingCommandTap = false
         isCommandDown = false
+        lastValidTapTime = 0
     }
 }
