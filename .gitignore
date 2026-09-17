@@ -25,3 +25,4 @@ build_log*.txt
 /rewrite_*.py
 /purge_*.py
 /popover_*.sh
+/test_*.swift
