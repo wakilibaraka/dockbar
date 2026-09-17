@@ -2283,6 +2283,10 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     private var closePopoverWorkItem: DispatchWorkItem?
     private var thumbnailRequestTask: Task<Void, Never>?
     private let iconView = NSImageView()
+    private let titleLabel = NSTextField(labelWithString: "")
+    private var titleLeadingConstraint: NSLayoutConstraint?
+    private var titleTrailingConstraint: NSLayoutConstraint?
+    private var maxWidthConstraint: NSLayoutConstraint?
     private let statusIndicatorView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
@@ -2541,6 +2545,14 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.imageScaling = .scaleProportionallyUpOrDown
 
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.isEditable = false
+        titleLabel.isBordered = false
+        titleLabel.drawsBackground = false
+        titleLabel.usesSingleLineMode = true
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        titleLabel.lineBreakMode = .byTruncatingTail
+
         statusIndicatorView.translatesAutoresizingMaskIntoConstraints = false
         statusIndicatorView.wantsLayer = true
         statusIndicatorView.layer?.cornerRadius = 1.5
@@ -2588,6 +2600,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
 
         addSubview(statusIndicatorView)
         addSubview(iconView)
+        addSubview(titleLabel)
         addSubview(activityBadgeView)
         activityBadgeView.addSubview(activityLabel)
         addSubview(badgeView)
@@ -2622,9 +2635,18 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         self.dropIndicatorLeadingConstraint = dropIndicatorLeadingConstraint
         self.dropIndicatorTrailingConstraint = dropIndicatorTrailingConstraint
 
+        let titleLeadingConstraint = titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 8)
+        let titleTrailingConstraint = titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10)
+        self.titleLeadingConstraint = titleLeadingConstraint
+        self.titleTrailingConstraint = titleTrailingConstraint
+
+        let maxWidthConstraint = widthAnchor.constraint(equalToConstant: 40)
+        self.maxWidthConstraint = maxWidthConstraint
+
         NSLayoutConstraint.activate([
             widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
-            dotsStackView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            maxWidthConstraint,
+            dotsStackView.centerXAnchor.constraint(equalTo: iconView.centerXAnchor),
             dotsStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
             heightAnchor.constraint(equalToConstant: 32),
 
@@ -2633,10 +2655,14 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
             statusIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
             statusIndicatorView.widthAnchor.constraint(equalToConstant: 3),
 
-            iconView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
             iconView.widthAnchor.constraint(equalToConstant: 24),
             iconView.heightAnchor.constraint(equalToConstant: 24),
+            
+            titleLeadingConstraint,
+            titleTrailingConstraint,
+            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             activityBadgeView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
             activityBadgeView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
@@ -2680,6 +2706,26 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         }
         badgeLabel.stringValue = "\(appGroup.windowCount)"
         toolTip = resolvedToolTip()
+        
+        let title = appGroup.appName
+        titleLabel.stringValue = title
+        titleLabel.textColor = isActive ? .controlAccentColor : .labelColor
+        titleLabel.font = NSFont.systemFont(ofSize: settings.titleFontSize)
+        
+        let showsTitle = settings.showTitles && !title.isEmpty
+        titleLabel.isHidden = !showsTitle
+        titleLeadingConstraint?.isActive = showsTitle
+        titleTrailingConstraint?.isActive = showsTitle
+        
+        if showsTitle {
+            let font = titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize)
+            let textWidth = (title as NSString).size(withAttributes: [.font: font]).width
+            let effectiveTaskWidth = min(settings.maxTaskWidth, 24 + 8 + textWidth + 10)
+            maxWidthConstraint?.constant = effectiveTaskWidth
+        } else {
+            maxWidthConstraint?.constant = 40
+        }
+        
         updateStatusIndicator()
         updateActivityBadge()
         updateProgressIndicator()
