@@ -440,7 +440,9 @@ final class TaskButtonView: NSView, NSDraggingSource {
 
     override func rightMouseDown(with event: NSEvent) {
         let menu = makeContextMenu()
-        NSMenu.popUpContextMenu(menu, with: event, for: self)
+        let localLocation = convert(event.locationInWindow, from: nil)
+        let point = NSPoint(x: localLocation.x, y: bounds.maxY + 4)
+        menu.popUp(positioning: nil, at: point, in: self)
     }
 
     private func setupSubviews() {
