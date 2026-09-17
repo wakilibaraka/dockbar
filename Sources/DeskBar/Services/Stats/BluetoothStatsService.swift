@@ -14,8 +14,11 @@ final class BluetoothStatsService: ObservableObject {
     
     @Published var connectedDevices: [BluetoothDeviceStats] = []
     
-    private var updateTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
     private var isMonitoring = false
+    private var tickCount = 0
+    private var notifiedLowBatteryDevices = Set<String>()
+    private var knownDevices = Set<String>()
     
     private init() {}
     
@@ -23,18 +26,67 @@ final class BluetoothStatsService: ObservableObject {
         guard !isMonitoring else { return }
         isMonitoring = true
         
-        updateTask = Task {
-            while !Task.isCancelled {
-                await fetchDevices()
-                try? await Task.sleep(nanoseconds: 10_000_000_000) // 10s
+        SharedTimer.shared.tick5s
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.tickCount += 1
+                if self.tickCount % 2 == 0 { // Every 10s
+                    Task { @MainActor in
+                        await self.fetchDevices()
+                        self.processNotifications()
+                    }
+                }
             }
+            .store(in: &cancellables)
+            
+        Task { @MainActor in
+            await fetchDevices()
+            self.knownDevices = Set(self.connectedDevices.map { $0.id })
         }
     }
     
     func stopMonitoring() {
         isMonitoring = false
-        updateTask?.cancel()
-        updateTask = nil
+        cancellables.removeAll()
+    }
+    
+    @MainActor
+    private func processNotifications() {
+        let currentDeviceIDs = Set(connectedDevices.map { $0.id })
+        let newlyConnected = currentDeviceIDs.subtracting(knownDevices)
+        let newlyDisconnected = knownDevices.subtracting(currentDeviceIDs)
+        
+        let notifyConnect = UserDefaults.standard.bool(forKey: "notifyBluetoothConnect")
+        let notifyLowBattery = UserDefaults.standard.bool(forKey: "notifyBluetoothLowBattery")
+        
+        if notifyConnect {
+            for id in newlyConnected {
+                if let dev = connectedDevices.first(where: { $0.id == id }) {
+                    NotificationManager.shared.sendNotification(title: "Bluetooth Connected", body: dev.name, identifier: "bt-conn-\(id)")
+                }
+            }
+            for id in newlyDisconnected {
+                NotificationManager.shared.sendNotification(title: "Bluetooth Disconnected", body: "A device disconnected", identifier: "bt-disc-\(id)")
+                notifiedLowBatteryDevices.remove(id) // Reset low battery state when disconnected
+            }
+        }
+        
+        knownDevices = currentDeviceIDs
+        
+        if notifyLowBattery {
+            for dev in connectedDevices {
+                if let battery = dev.batteryLevel, battery < 20 {
+                    if !notifiedLowBatteryDevices.contains(dev.id) {
+                        notifiedLowBatteryDevices.insert(dev.id)
+                        NotificationManager.shared.sendNotification(title: "Low Battery", body: "\(dev.name) is at \(battery)%", identifier: "bt-batt-\(dev.id)")
+                    }
+                } else if let battery = dev.batteryLevel, battery > 20 {
+                    // Remove if they charged it while connected
+                    notifiedLowBatteryDevices.remove(dev.id)
+                }
+            }
+        }
     }
     
     @MainActor

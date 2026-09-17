@@ -119,6 +119,22 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
 
+    @Published var showConnections: Bool {
+        didSet { defaults.set(showConnections, forKey: "showConnections") }
+    }
+    @Published var notifyBluetoothConnect: Bool {
+        didSet { defaults.set(notifyBluetoothConnect, forKey: "notifyBluetoothConnect") }
+    }
+    @Published var notifyBluetoothLowBattery: Bool {
+        didSet { defaults.set(notifyBluetoothLowBattery, forKey: "notifyBluetoothLowBattery") }
+    }
+    @Published var notifyWiFiChange: Bool {
+        didSet { defaults.set(notifyWiFiChange, forKey: "notifyWiFiChange") }
+    }
+    @Published var notifyWiFiWeak: Bool {
+        didSet { defaults.set(notifyWiFiWeak, forKey: "notifyWiFiWeak") }
+    }
+
     @Published var showWindowCountBadges: Bool {
         didSet { defaults.set(showWindowCountBadges, forKey: "showWindowCountBadges") }
     }
@@ -288,6 +304,11 @@ class TaskbarSettings: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         hasCompletedOnboarding = defaults.object(forKey: "hasCompletedOnboarding") as? Bool ?? false
+                showConnections = defaults.object(forKey: "showConnections") as? Bool ?? false
+        notifyBluetoothConnect = defaults.object(forKey: "notifyBluetoothConnect") as? Bool ?? false
+        notifyBluetoothLowBattery = defaults.object(forKey: "notifyBluetoothLowBattery") as? Bool ?? false
+        notifyWiFiChange = defaults.object(forKey: "notifyWiFiChange") as? Bool ?? false
+        notifyWiFiWeak = defaults.object(forKey: "notifyWiFiWeak") as? Bool ?? false
         showWindowCountBadges = defaults.object(forKey: "showWindowCountBadges") as? Bool ?? true
                 enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth", "hideDesktop", "hiddenFiles"]
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight

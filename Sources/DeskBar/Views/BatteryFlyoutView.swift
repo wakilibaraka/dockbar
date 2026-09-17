@@ -3,6 +3,8 @@ import SwiftUI
 struct BatteryFlyoutView: View {
     @ObservedObject var systemStats = SystemStatsService.shared
     @ObservedObject var bluetoothStats = BluetoothStatsService.shared
+    @ObservedObject var networkMonitor = NetworkMonitorService.shared
+    @EnvironmentObject var settings: TaskbarSettings
     @ObservedObject var recentlyClosed = RecentlyClosedTracker.shared
     
     var body: some View {
@@ -13,7 +15,7 @@ struct BatteryFlyoutView: View {
                     Text("DockBar")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
-                    Text("Power & Devices")
+                    Text("Battery & Connections")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.secondary)
                 }
@@ -39,40 +41,58 @@ struct BatteryFlyoutView: View {
                 .background(Color.primary.opacity(0.04))
                 .cornerRadius(12)
                 
-                // Right Column: Bluetooth Devices
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Connected Devices")
+                // Right Column: Connections
+                if settings.showConnections {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Connections")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.secondary)
                         .padding(.leading, 4)
                     
-                    if !bluetoothStats.connectedDevices.isEmpty {
-                        ScrollView(.vertical, showsIndicators: true) {
-                            VStack(spacing: 8) {
-                                ForEach(bluetoothStats.connectedDevices) { device in
-                                    DeviceCardView(device: device)
+                    ScrollView(.vertical, showsIndicators: true) {
+                        VStack(spacing: 8) {
+                            // WiFi Card
+                            HStack(spacing: 8) {
+                                Image(systemName: networkMonitor.isConnected ? "wifi" : "wifi.slash")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(networkMonitor.isConnected ? .blue : .secondary)
+                                    .frame(width: 26, height: 26)
+                                    .background(Color.primary.opacity(0.04))
+                                    .clipShape(Circle())
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(networkMonitor.ssid ?? "Disconnected")
+                                        .font(.system(size: 11, weight: .medium))
+                                    
+                                    if let ip = networkMonitor.localIP {
+                                        Text(ip)
+                                            .font(.system(size: 9))
+                                            .foregroundColor(.secondary)
+                                    } else if let rssi = networkMonitor.rssi {
+                                        Text("\(rssi) dBm")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                Spacer()
                             }
-                            .padding(.trailing, 4)
+                            .padding(8)
+                            .background(Color.primary.opacity(0.03))
+                            .cornerRadius(8)
+                            
+                            // Bluetooth Cards
+                            ForEach(bluetoothStats.connectedDevices) { device in
+                                DeviceCardView(device: device)
+                            }
                         }
-                    } else {
-                        VStack(spacing: 12) {
-                            Spacer()
-                            Image(systemName: "bolt.horizontal.circle")
-                                .font(.system(size: 28))
-                                .foregroundColor(.secondary.opacity(0.4))
-                            Text("No Connected Devices")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.trailing, 4)
                     }
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.primary.opacity(0.04))
                 .cornerRadius(12)
+                }
             }
             .frame(height: 190)
             .padding(14)
@@ -155,6 +175,8 @@ struct BatteryFlyoutView: View {
         .frame(width: 440)
         .onAppear {
             bluetoothStats.startMonitoring()
+            networkMonitor.startMonitoring()
+            networkMonitor.startMonitoring()
             systemStats.updateBatteryStats()
         }
     }

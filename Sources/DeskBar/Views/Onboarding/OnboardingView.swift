@@ -109,6 +109,34 @@ struct OnboardingView: View {
                                 Text("Automatic").tag(WindowGroupingMode.automatic)
                                 Text("Always").tag(WindowGroupingMode.always)
                             }
+                            
+                            Toggle("Track WiFi & Bluetooth connections", isOn: $settings.showConnections)
+                                .padding(.top, 10)
+                            
+                            if settings.showConnections {
+                                Toggle("Enable connection alerts", isOn: Binding(get: {
+                                    settings.notifyBluetoothConnect || settings.notifyBluetoothLowBattery || settings.notifyWiFiChange
+                                }, set: { val in
+                                    if val {
+                                        NotificationManager.shared.requestAuthorization { granted in
+                                            DispatchQueue.main.async {
+                                                if granted {
+                                                    settings.notifyBluetoothConnect = true
+                                                    settings.notifyBluetoothLowBattery = true
+                                                    settings.notifyWiFiChange = true
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        settings.notifyBluetoothConnect = false
+                                        settings.notifyBluetoothLowBattery = false
+                                        settings.notifyWiFiChange = false
+                                        settings.notifyWiFiWeak = false
+                                    }
+                                }))
+                                .padding(.leading, 20)
+                                .foregroundColor(.secondary)
+                            }
                         }
                         .frame(maxWidth: 400)
                         .padding(.top, 10)
