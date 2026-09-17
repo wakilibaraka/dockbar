@@ -3,8 +3,8 @@ import Collaboration
 
 struct LauncherFooterView: View {
     class ViewState: ObservableObject {
-        @Published var state.showingPowerConfirmation = false
-        @Published var state.powerAction: PowerAction?
+        @Published var showingPowerConfirmation = false
+        @Published var powerAction: PowerAction?
     }
     @StateObject private var state = ViewState()
     
