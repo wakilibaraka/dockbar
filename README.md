@@ -3,7 +3,7 @@
 > **A Windows-style taskbar for macOS** — native AppKit, zero dependencies, beautiful glass UI.
 
 <p align="center">
-  <img src="Resources/icon_preview.jpg" width="128" alt="DockBar Icon"/>
+  <img src="assets/icon_preview.png" width="128" alt="DockBar Icon"/>
 </p>
 
 <p align="center">
@@ -35,14 +35,17 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 - **Minimized windows stay visible** — dimmed badge (Windows-style), click to restore
 - **Stable ordering** — windows stay where they are, no MRU jump surprises
 - **Drag to reorder** — rearrange task buttons freely
+- **Window Grouping** — optionally group multiple windows of the same app and click to effortlessly cycle through them.
 
-### Window Switching
+### Window Switching & Restoration
 - **Option+Tab window switcher** — cycles individual windows (not apps) with a glass thumbnail overlay
 - **Hover thumbnails** — live window previews via ScreenCaptureKit
 - **Middle-click** a button to close that window instantly
+- **AppBeBack Integration** — access your recently closed apps right from the menu bar to instantly restore them.
 
-### System Tray
-- **Wi-Fi widget** — shows connection status with SSID and signal quality on hover; click to open Wi-Fi settings
+### System Tray & Menu Bar
+- **Menu Bar Battery Gauge** — beautifully rendered, dynamically updating battery status icon right in your Mac's menu bar.
+- **Dynamic Calendar** — a live, auto-formatting calendar icon that shows the current date and opens Quick Settings.
 - **Quick Settings panel** — Windows-style action center with a grid of toggles:
   - 🌙 Dark Mode  
   - 🔇 Mute Audio  
@@ -52,7 +55,6 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
   - 🗂️ Hide Desktop  
   - 👁️ Hidden Files  
 - **Volume slider** — real-time CoreAudio volume control directly in the panel
-- **Visual divider** between running apps and system tray
 
 ### Launcher Zone
 - **Pinned apps** — pin any app to the left launcher zone
@@ -64,8 +66,9 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 - Click to open Activity Monitor
 
 ### Appearance & Settings
+- **Personalized Onboarding** — pick your layout (Compact vs Full Width) and grouping mode right on first launch.
 - Configurable taskbar height, font size, max button width
-- Icon-only mode (hide window titles)
+- Icon-only mode or full Window Titles
 - Window grouping by app with group indicator dots
 - Dock coexistence — auto-hide, independent, or hidden modes
 
@@ -143,11 +146,9 @@ If you want to completely remove DockBar or perform a fresh reinstall (e.g. usin
 | **Option+Tab** | Window switcher — cycle all open windows |
 | **Hover** a task button | Live window thumbnail |
 | **Middle-click** a task button | Close that window |
-| **Click Wi-Fi icon** | Open Wi-Fi settings |
-| **Hover Wi-Fi icon** | Show SSID + signal quality |
-| **Click ⊟ icon** | Open Quick Settings panel |
+| **Click Calendar icon** | Open Quick Settings panel |
 | **Drag** task buttons | Reorder freely |
-| **Gear** in menu bar | Open Settings or Quit |
+| **Menu Bar Battery** | View power status, click for Recently Closed Apps or Settings |
 
 ---
 
@@ -172,7 +173,6 @@ Pure AppKit — no SwiftUI, no Electron, no web views.
 | `WindowSwitcherService` | Global Option+Tab event tap, glass overlay |
 | `QuickSettingsManager` | Modular protocol-based toggle system — 20+ toggles, all extensible |
 | `DockManager` | Three-mode Dock control with watchdog LaunchAgent |
-| `ConnectivityTrayView` | CoreWLAN Wi-Fi status + CoreAudio volume |
 
 ---
 
