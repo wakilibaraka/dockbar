@@ -1,11 +1,17 @@
 import SwiftUI
 
+enum AllAppsViewMode: String {
+    case category = "Category"
+    case alphabetical = "A-Z"
+}
+
 class LaunchpickState: ObservableObject {
     @Published var searchText = ""
     @Published var launchers: [LaunchpickItem] = []
     @Published var columns: Int = 4
     @Published var focusTrigger = false
-    @Published var selectedIndex: Int = 0
+        @Published var selectedIndex: Int = 0
+    @Published var viewMode: AllAppsViewMode = .category
 
     var onLaunch: ((LaunchpickItem) -> Void)?
     var onDismiss: (() -> Void)?
@@ -15,7 +21,8 @@ class LaunchpickState: ObservableObject {
             LaunchpickItem(
                 name: app.name,
                 exec: "open -a '\(app.name)'",
-                icon: app.icon
+                icon: app.icon,
+                category: app.category
             )
         }
     }()
@@ -38,6 +45,26 @@ class LaunchpickState: ObservableObject {
         }
     }
 
+    var groupedSystemApps: [(String, [LaunchpickItem])] {
+        let apps = searchText.isEmpty ? systemApps : systemApps.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+        }
+        
+        if viewMode == .category {
+            let grouped = Dictionary(grouping: apps, by: { $0.category })
+            let sortedKeys = grouped.keys.sorted {
+                if $0 == "Other" { return false }
+                if $1 == "Other" { return true }
+                return $0 < $1
+            }
+            return sortedKeys.map { ($0, grouped[$0]!) }
+        } else {
+            let grouped = Dictionary(grouping: apps, by: { String($0.name.prefix(1).uppercased()) })
+            let sortedKeys = grouped.keys.sorted()
+            return sortedKeys.map { ($0, grouped[$0]!) }
+        }
+    }
+
     var totalFilteredCount: Int {
         filteredLaunchers.count + filteredSystemApps.count
     }
@@ -48,6 +75,7 @@ struct LaunchpickItem: Identifiable {
     let name: String
     let exec: String
     let icon: NSImage
+    let category: String
 }
 
 struct ContentView: View {
@@ -86,40 +114,50 @@ struct ContentView: View {
                         }
                     }
 
-                    // System apps section
-                    if !state.filteredSystemApps.isEmpty {
-                        if !state.filteredLaunchers.isEmpty {
-                            Divider().padding(.vertical, 4)
-                        }
-
-                        VStack(spacing: 2) {
-                            ForEach(Array(state.filteredSystemApps.prefix(8).enumerated()), id: \.element.id) { index, app in
-                                let globalIndex = state.filteredLaunchers.count + index
-                                SystemAppRow(item: app, isSelected: globalIndex == state.selectedIndex) {
-                                    state.onLaunch?(app)
-                                }
-                            }
-                        }
-                    }
-
-                    // Phase 1 Scaffold: All Apps
-                    if state.searchText.isEmpty {
-                        Divider().padding(.vertical, 8)
-                        
-                        VStack(alignment: .leading, spacing: 12) {
+                    // Phase 2: All Apps (Grouped & Searchable)
+                    Divider().padding(.vertical, 8)
+                    
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
                             Text("All Apps")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.primary)
-                                .padding(.horizontal, 4)
                             
-                            // Scaffold placeholder for now
-                            VStack {
-                                Text("All Apps will be listed here (Phase 2)")
-                                    .foregroundColor(.secondary)
+                            Spacer()
+                            
+                            Picker("", selection: $state.viewMode) {
+                                Text("Category").tag(AllAppsViewMode.category)
+                                Text("A-Z").tag(AllAppsViewMode.alphabetical)
                             }
-                            .frame(maxWidth: .infinity, minHeight: 200)
-                            .background(Color.primary.opacity(0.04))
-                            .cornerRadius(8)
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(width: 150)
+                        }
+                        .padding(.horizontal, 4)
+                        
+                        let groups = state.groupedSystemApps
+                        if groups.isEmpty {
+                            Text("No apps found")
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, minHeight: 100)
+                        } else {
+                            VStack(alignment: .leading, spacing: 20) {
+                                ForEach(groups, id: \.0) { group in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(group.0)
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 8)
+                                        
+                                        VStack(spacing: 2) {
+                                            ForEach(group.1, id: \.id) { app in
+                                                SystemAppRow(item: app, isSelected: false) {
+                                                    state.onLaunch?(app)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 

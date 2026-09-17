@@ -30,7 +30,8 @@ final class LaunchpickManager {
                 LaunchpickItem(
                     name: launcher.name,
                     exec: launcher.exec,
-                    icon: IconResolver.resolve(icon: launcher.icon, exec: launcher.exec)
+                    icon: IconResolver.resolve(icon: launcher.icon, exec: launcher.exec),
+                    category: "Pinned"
                 )
             }
             newState.columns = config.columns ?? 4
