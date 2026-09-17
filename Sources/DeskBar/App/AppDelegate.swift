@@ -243,12 +243,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .combineLatest(
                     settings.$showBatteryPercentage.setFailureType(to: Never.self),
                     settings.$batteryIconStyle.setFailureType(to: Never.self),
-                    settings.$showPercentageInsideIcon.setFailureType(to: Never.self)
+                    settings.$showPercentageInsideIcon.setFailureType(to: Never.self),
+                    settings.$batteryIconSize.setFailureType(to: Never.self)
                 )
                 .receive(on: DispatchQueue.main)
-                .sink { [weak statusItem] state, showPct, style, showInside in
+                .sink { [weak statusItem] state, showPct, style, showInside, size in
                     if let button = statusItem?.button {
-                        button.image = BatteryStatusRenderer.renderImage(for: state, style: style, showTextInside: showInside)
+                        button.image = BatteryStatusRenderer.renderImage(for: state, style: style, size: size, showTextInside: showInside)
                         button.title = showPct ? " \(state.percentage)%" : ""
                     }
                 }

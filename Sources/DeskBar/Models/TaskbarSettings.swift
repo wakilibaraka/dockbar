@@ -20,6 +20,22 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compactGlass
 }
 
+enum BatteryIconSize: String, CaseIterable, Identifiable {
+    case small = "small"
+    case standard = "standard"
+    case large = "large"
+    
+    var id: String { self.rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .small: return "Small"
+        case .standard: return "Standard"
+        case .large: return "Large"
+        }
+    }
+}
+
 enum BatteryIconStyle: String, CaseIterable, Identifiable {
     case horizontal
     case vertical
@@ -241,6 +257,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(batteryIconStyle.rawValue, forKey: "batteryIconStyle") }
     }
 
+    @Published var batteryIconSize: BatteryIconSize {
+        didSet { defaults.set(batteryIconSize.rawValue, forKey: "batteryIconSize") }
+    }
+
     @Published var showSessionManagerAgentTitles: Bool {
         didSet { defaults.set(showSessionManagerAgentTitles, forKey: "showSessionManagerAgentTitles") }
     }
@@ -308,6 +328,7 @@ class TaskbarSettings: ObservableObject {
         showBatteryPercentage = defaults.object(forKey: "showBatteryPercentage") as? Bool ?? true
         showPercentageInsideIcon = defaults.object(forKey: "showPercentageInsideIcon") as? Bool ?? false
         batteryIconStyle = BatteryIconStyle(rawValue: defaults.string(forKey: "batteryIconStyle") ?? "") ?? .horizontal
+        batteryIconSize = BatteryIconSize(rawValue: defaults.string(forKey: "batteryIconSize") ?? "") ?? .standard
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
