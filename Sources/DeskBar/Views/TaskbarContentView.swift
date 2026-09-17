@@ -3,6 +3,11 @@ import ApplicationServices
 import Combine
 import Darwin
 
+protocol TaskbarWidthParticipant: NSView {
+    func widthPlanItem(usesAdaptiveWidth: Bool) -> TaskbarWidthPlanItem
+    func setWidthMode(usesAdaptiveWidth: Bool, widthCap: CGFloat?)
+}
+
 final class TaskbarContentView: NSView {
     private typealias AXUIElementGetWindowFunc = @convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError
 
@@ -171,7 +176,7 @@ final class TaskbarContentView: NSView {
         let contentWidth =
             launcherZoneView.preferredContentWidth() +
             fullMeasurement.preferredWidth +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
             0 +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
@@ -1539,7 +1544,7 @@ final class TaskbarContentView: NSView {
 
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
             0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
@@ -1555,7 +1560,7 @@ final class TaskbarContentView: NSView {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
+            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
             0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
@@ -1585,7 +1590,7 @@ final class TaskbarContentView: NSView {
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
-                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
+                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             effectiveFixedZoneWidth =
@@ -1594,7 +1599,7 @@ final class TaskbarContentView: NSView {
         } else {
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
-                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() +
+                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
                 0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
@@ -1842,19 +1847,19 @@ final class TaskbarContentView: NSView {
         )
     }
 
-    private func taskButtonViews() -> [TaskButtonView] {
+    private func taskButtonViews() -> [TaskbarWidthParticipant] {
         [leftTaskZoneStackView, neutralTaskZoneStackView, rightTaskZoneStackView].flatMap { stackView in
             stackView.arrangedSubviews.flatMap(taskButtonViews(in:))
         }
     }
 
-    private func taskButtonViews(in view: NSView) -> [TaskButtonView] {
+    private func taskButtonViews(in view: NSView) -> [TaskbarWidthParticipant] {
         guard !view.isHidden else {
             return []
         }
 
-        if let taskButtonView = view as? TaskButtonView {
-            return [taskButtonView]
+        if let participant = view as? TaskbarWidthParticipant {
+            return [participant]
         }
 
         if let groupContainerView = view as? TaskZoneGroupContainerView {
@@ -2279,7 +2284,7 @@ private struct TaskZoneOrderingState {
     }
 }
 
-private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
+private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWidthParticipant {
     private var appGroup: AppGroup
     private var hasBadge: Bool
     private var runtimeState: AppRuntimeState
@@ -2299,6 +2304,8 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
     private var titleLeadingConstraint: NSLayoutConstraint?
     private var titleTrailingConstraint: NSLayoutConstraint?
     private var maxWidthConstraint: NSLayoutConstraint?
+    private var widthCap: CGFloat?
+    private var usesAdaptiveWidth = false
     private let statusIndicatorView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
@@ -2710,6 +2717,28 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         ])
     }
 
+    func widthPlanItem(usesAdaptiveWidth: Bool) -> TaskbarWidthPlanItem {
+        let preferred = TaskButtonView.preferredWidth(
+            title: appGroup.appName,
+            font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
+            maxWidth: settings.maxTaskWidth,
+            taskbarHeight: settings.taskbarHeight,
+            showsTitles: settings.showTitles,
+            showsPluginActionButton: false,
+            isAgentWindow: false
+        )
+        return TaskbarWidthPlanItem(
+            preferredWidth: usesAdaptiveWidth ? preferred : preferred,
+            minimumWidth: settings.showTitles ? TaskButtonView.minimumTaskWidth : settings.taskbarHeight + 8
+        )
+    }
+
+    func setWidthMode(usesAdaptiveWidth: Bool, widthCap: CGFloat?) {
+        self.usesAdaptiveWidth = usesAdaptiveWidth
+        self.widthCap = widthCap
+        updateAppearance()
+    }
+
     private func updateAppearance() {
         if let icon = appGroup.icon {
             iconView.image = hasBadge ? icon.withBadgeDot() : icon
@@ -2730,12 +2759,19 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource {
         titleTrailingConstraint?.isActive = showsTitle
         
         if showsTitle {
-            let font = titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize)
-            let textWidth = (title as NSString).size(withAttributes: [.font: font]).width
-            let effectiveTaskWidth = min(settings.maxTaskWidth, 24 + 8 + textWidth + 10)
-            maxWidthConstraint?.constant = effectiveTaskWidth
+            let preferred = TaskButtonView.preferredWidth(
+                title: title,
+                font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
+                maxWidth: settings.maxTaskWidth,
+                taskbarHeight: settings.taskbarHeight,
+                showsTitles: true,
+                showsPluginActionButton: false,
+                isAgentWindow: false
+            )
+            let cappedWidth = widthCap.map { min(preferred, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferred
+            maxWidthConstraint?.constant = cappedWidth
         } else {
-            maxWidthConstraint?.constant = 40
+            maxWidthConstraint?.constant = settings.taskbarHeight + 8
         }
         
         updateStatusIndicator()
@@ -3064,8 +3100,8 @@ private final class TaskZoneGroupContainerView: NSView {
     private let runtimeStateProvider: (pid_t) -> AppRuntimeState
     private var showsActivityOverlay: Bool
 
-    func taskButtonViews() -> [TaskButtonView] {
-        stackView.arrangedSubviews.compactMap { $0 as? TaskButtonView }.filter { !$0.isHidden }
+    func taskButtonViews() -> [TaskbarWidthParticipant] {
+        stackView.arrangedSubviews.compactMap { $0 as? TaskbarWidthParticipant }.filter { !$0.isHidden }
     }
 
     func widthMeasurement(usesAdaptiveTaskWidth: Bool) -> TaskZoneWidthMeasurement {
