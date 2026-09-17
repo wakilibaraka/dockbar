@@ -33,6 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var workspaceObservers: [NSObjectProtocol] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MigrationManager.runMigrations()
+        
         guard singleInstanceLock.acquire() else {
             print("DeskBar: another instance is already running; exiting duplicate.")
             NSApp.terminate(nil)
@@ -223,13 +225,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
+        if let button = statusItem.button {
+            // Synchronously ensure non-zero width so macOS notch collapsing doesn't hide it
+            button.image = BatteryStatusRenderer.renderImage(for: BatteryState(percentage: 100, isCharging: false))
+            button.title = ""
+            button.imagePosition = .imageOnly
+        }
+        
         BatteryMonitor.shared.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak statusItem] state in
                 if let button = statusItem?.button {
                     button.image = BatteryStatusRenderer.renderImage(for: state)
-                    button.title = " \(state.percentage)%"
-                    button.imagePosition = .imageLeft
                 }
             }
             .store(in: &cancellables)

@@ -61,14 +61,14 @@ final class SingleInstanceLock {
     static func defaultLockURL() -> URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config", isDirectory: true)
-            .appendingPathComponent("deskbar", isDirectory: true)
-            .appendingPathComponent("deskbar.lock")
+            .appendingPathComponent("dockbar", isDirectory: true)
+            .appendingPathComponent("dockbar.lock")
     }
 
     static func defaultFallbackLockURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("com.dockbar.app", isDirectory: true)
-            .appendingPathComponent("deskbar.lock")
+            .appendingPathComponent("dockbar.lock")
     }
 
     private func acquireLock(at url: URL) -> AcquisitionResult {
