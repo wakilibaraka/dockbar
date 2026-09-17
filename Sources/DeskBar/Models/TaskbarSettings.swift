@@ -119,6 +119,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
 
+    @Published var showWindowCountBadges: Bool {
+        didSet { defaults.set(showWindowCountBadges, forKey: "showWindowCountBadges") }
+    }
+
     @Published var taskbarHeight: CGFloat {
         didSet { defaults.set(taskbarHeight, forKey: "taskbarHeight") }
     }
@@ -284,6 +288,7 @@ class TaskbarSettings: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         hasCompletedOnboarding = defaults.object(forKey: "hasCompletedOnboarding") as? Bool ?? false
+        showWindowCountBadges = defaults.object(forKey: "showWindowCountBadges") as? Bool ?? true
                 enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth", "hideDesktop", "hiddenFiles"]
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize

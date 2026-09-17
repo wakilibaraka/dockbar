@@ -148,10 +148,11 @@ final class WindowManager: ObservableObject {
             let axWindows = accessibilityService.enumerateWindows(for: application)
 
             for axWindow in axWindows {
-                guard
-                    let frame = axFrame(for: axWindow),
-                    isEligibleAXWindow(axWindow, frame: frame)
-                else {
+                let isMinimized = axIsMinimized(axWindow)
+                let isHidden = application.isHidden
+                let frame = axFrame(for: axWindow) ?? .zero
+                
+                guard isEligibleAXWindow(axWindow, frame: frame, isMinimized: isMinimized, isHidden: isHidden) else {
                     continue
                 }
 
@@ -164,7 +165,7 @@ final class WindowManager: ObservableObject {
                     $0.pid == application.processIdentifier && !$0.title.isEmpty
                 })?.title ?? application.localizedName ?? ""
 
-                let minimized = axIsMinimized(axWindow)
+                let minimized = isMinimized
                 let hidden = application.isHidden
                 let baseInfo = WindowInfo(
                     pid: application.processIdentifier,
@@ -455,13 +456,16 @@ final class WindowManager: ObservableObject {
         return inferredInfo
     }
 
-    private func isEligibleAXWindow(_ element: AXUIElement, frame: CGRect) -> Bool {
+    private func isEligibleAXWindow(_ element: AXUIElement, frame: CGRect, isMinimized: Bool, isHidden: Bool) -> Bool {
         let role = axStringValue(for: element, attribute: kAXRoleAttribute as CFString)
         let subrole = axStringValue(for: element, attribute: kAXSubroleAttribute as CFString)
 
+        guard role == (kAXWindowRole as String) else { return false }
+        guard subrole == (kAXStandardWindowSubrole as String) || subrole == (kAXDialogSubrole as String) else { return false }
+
+        if isMinimized || isHidden { return true }
+
         guard
-            role == (kAXWindowRole as String),
-            subrole == (kAXStandardWindowSubrole as String) || subrole == (kAXDialogSubrole as String),
             frame.width * frame.height >= 100,
             ScreenGeometry.screen(for: frame) != nil
         else {

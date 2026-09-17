@@ -2693,8 +2693,8 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             activityLabel.topAnchor.constraint(equalTo: activityBadgeView.topAnchor, constant: 2),
             activityLabel.bottomAnchor.constraint(equalTo: activityBadgeView.bottomAnchor, constant: -2),
 
-            badgeView.topAnchor.constraint(equalTo: topAnchor, constant: 3),
-            badgeView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            badgeView.centerYAnchor.constraint(equalTo: iconView.topAnchor, constant: 4),
+            badgeView.centerXAnchor.constraint(equalTo: iconView.trailingAnchor, constant: -4),
             badgeView.heightAnchor.constraint(equalToConstant: 16),
             badgeView.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
 
@@ -2747,7 +2747,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             iconView.image = nil
         }
         badgeLabel.stringValue = "\(appGroup.windowCount)"
-        badgeView.isHidden = appGroup.windowCount <= 1
+        badgeView.isHidden = appGroup.windowCount <= 1 || !settings.showWindowCountBadges
         toolTip = resolvedToolTip()
         
         let title = appGroup.appName

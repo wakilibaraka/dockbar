@@ -3,6 +3,7 @@ import AppKit
 final class GroupHeaderButton: NSView {
     private let appGroup: AppGroup
     private let hasBadge: Bool
+    private let showWindowCountBadge: Bool
     private let activationHandler: () -> Void
     private let iconView = NSImageView()
     private let badgeView = NSView()
@@ -23,11 +24,13 @@ final class GroupHeaderButton: NSView {
     init(
         appGroup: AppGroup,
         hasBadge: Bool,
+        showWindowCountBadge: Bool,
         isActive: Bool,
         activationHandler: @escaping () -> Void
     ) {
         self.appGroup = appGroup
         self.hasBadge = hasBadge
+        self.showWindowCountBadge = showWindowCountBadge
         self.isActive = isActive
         self.activationHandler = activationHandler
         super.init(frame: .zero)
@@ -105,8 +108,8 @@ final class GroupHeaderButton: NSView {
             iconView.widthAnchor.constraint(equalToConstant: 24),
             iconView.heightAnchor.constraint(equalToConstant: 24),
 
-            badgeView.topAnchor.constraint(equalTo: topAnchor, constant: 3),
-            badgeView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            badgeView.centerYAnchor.constraint(equalTo: iconView.topAnchor, constant: 4),
+            badgeView.centerXAnchor.constraint(equalTo: iconView.trailingAnchor, constant: -4),
             badgeView.heightAnchor.constraint(equalToConstant: 16),
             badgeView.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
 
@@ -123,6 +126,7 @@ final class GroupHeaderButton: NSView {
             iconView.image = nil
         }
         badgeLabel.stringValue = "\(appGroup.windowCount)"
+        badgeView.isHidden = appGroup.windowCount <= 1 || !showWindowCountBadge
         toolTip = "\(appGroup.appName) (\(appGroup.windowCount) windows)"
         updateBackgroundColor()
     }
