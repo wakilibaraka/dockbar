@@ -90,6 +90,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !settings.hasCompletedOnboarding {
             onboardingWindowController = OnboardingWindowController(settings: settings, permissionsManager: permissions, thumbnailService: thumbnailService) { [weak self] in
                 self?.completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self?.openSettings(nil)
+                }
             }
             onboardingWindowController?.showWindow(nil)
             onboardingWindowController?.window?.makeKeyAndOrderFront(nil)

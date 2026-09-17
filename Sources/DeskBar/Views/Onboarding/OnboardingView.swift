@@ -29,6 +29,11 @@ struct OnboardingView: View {
                         .foregroundStyle(.blue.gradient)
                         .transition(.scale.combined(with: .opacity))
                 } else if state.step == 2 {
+                    Image(systemName: "paintpalette.fill")
+                        .font(.system(size: 80))
+                        .foregroundStyle(.orange.gradient)
+                        .transition(.scale.combined(with: .opacity))
+                } else if state.step == 3 {
                     Image(systemName: "macwindow.badge.plus")
                         .font(.system(size: 80))
                         .foregroundStyle(.purple.gradient)
@@ -86,6 +91,30 @@ struct OnboardingView: View {
                     }
                 } else if state.step == 2 {
                     VStack(spacing: 16) {
+                        Text("Personalize Your DeskBar")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                        Text("Choose your preferred layout and window behavior.")
+                            .foregroundColor(.secondary)
+                        
+                        Form {
+                            Picker("Layout Theme", selection: $settings.layoutMode) {
+                                Text("Compact Glass").tag(DeskBarLayoutMode.compactGlass)
+                                Text("Full Width Glass").tag(DeskBarLayoutMode.fullWidthGlass)
+                                Text("Full Width (Solid)").tag(DeskBarLayoutMode.fullWidth)
+                            }
+                            .padding(.bottom, 8)
+                            
+                            Picker("Window Grouping", selection: $settings.groupingMode) {
+                                Text("Never").tag(WindowGroupingMode.never)
+                                Text("Automatic").tag(WindowGroupingMode.automatic)
+                                Text("Always").tag(WindowGroupingMode.always)
+                            }
+                        }
+                        .frame(maxWidth: 400)
+                        .padding(.top, 10)
+                    }
+                } else if state.step == 3 {
+                    VStack(spacing: 16) {
                         Text("Dock Integration")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                         Text("Choose how DeskBar interacts with the native macOS Dock.")
@@ -119,8 +148,8 @@ struct OnboardingView: View {
                     
                     Spacer()
                     
-                    Button(state.step == 2 ? "Finish" : "Continue") {
-                        if state.step == 2 {
+                    Button(state.step == 3 ? "Finish" : "Continue") {
+                        if state.step == 3 {
                             completion()
                         } else {
                             withAnimation { state.step += 1 }
