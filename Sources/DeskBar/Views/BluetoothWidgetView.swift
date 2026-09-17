@@ -1,9 +1,10 @@
 import AppKit
 import IOBluetooth
+import Combine
 
 final class BluetoothWidgetView: NSView {
     private let iconView = NSImageView()
-    private var timer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     private var trackingArea: NSTrackingArea?
 
     init() {
@@ -33,9 +34,11 @@ final class BluetoothWidgetView: NSView {
         let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleClick))
         addGestureRecognizer(clickGesture)
 
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.updateState()
-        }
+        SharedTimer.shared.tick5s
+            .sink { [weak self] _ in
+                self?.updateState()
+            }
+            .store(in: &cancellables)
     }
 
     @available(*, unavailable)

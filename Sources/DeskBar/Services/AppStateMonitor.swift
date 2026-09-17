@@ -9,7 +9,7 @@ final class AppStateMonitor: ObservableObject {
 
     private let accessibilityService: AccessibilityService
     private var workspaceObservers: [NSObjectProtocol] = []
-    private var pollTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     private var launchDeadlines: [pid_t: Date] = [:]
     private var attentionDeadlines: [pid_t: Date] = [:]
     private var cpuSamples: [pid_t: CPUSample] = [:]
@@ -24,8 +24,6 @@ final class AppStateMonitor: ObservableObject {
     }
 
     deinit {
-        pollTimer?.invalidate()
-
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         workspaceObservers.forEach(workspaceCenter.removeObserver)
     }
@@ -108,16 +106,15 @@ final class AppStateMonitor: ObservableObject {
     }
 
     private func startPollTimer() {
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        SharedTimer.shared.tick2s
+            .sink { [weak self] _ in
                 guard let self, self.requiresPeriodicRefresh else {
                     return
                 }
 
                 self.refresh()
             }
-        }
-        pollTimer?.tolerance = 0.5
+            .store(in: &cancellables)
     }
 
     private var requiresPeriodicRefresh: Bool {

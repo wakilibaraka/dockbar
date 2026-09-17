@@ -25,7 +25,7 @@ final class CalendarEventService: ObservableObject {
     
     func checkPermission() {
         let status = EKEventStore.authorizationStatus(for: .event)
-        if status == .authorized {
+        if status == .fullAccess || status == .authorized {
             isAuthorized = true
             fetchEvents()
         } else if status == .notDetermined {

@@ -1,8 +1,9 @@
 import AppKit
 import CoreWLAN
+import Combine
 
 final class WiFiWidgetView: TrayIconButton {
-    private var wifiTimer: Timer?
+    private var cancellables = Set<Combine.AnyCancellable>()
 
     init() {
         super.init(symbolName: "wifi", accessibilityLabel: "Wi-Fi")
@@ -16,9 +17,11 @@ final class WiFiWidgetView: TrayIconButton {
         }
         
         updateState()
-        wifiTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            DispatchQueue.main.async { self?.updateState() }
-        }
+        SharedTimer.shared.tick5s
+            .sink { [weak self] _ in
+                self?.updateState()
+            }
+            .store(in: &cancellables)
     }
 
     @available(*, unavailable)

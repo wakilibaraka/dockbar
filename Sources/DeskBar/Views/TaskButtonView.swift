@@ -1215,7 +1215,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
         // Open application with `createsNewApplicationInstance = false` 
         // Many apps respond to this by opening a new window if one isn't open, 
         // but to force it, we can activate the app and send Cmd+N
-        owningApplication.activate(options: .activateIgnoringOtherApps)
+        owningApplication.activate(options: .activateAllWindows)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             let source = CGEventSource(stateID: .hidSystemState)
             let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x2D, keyDown: true) // 0x2D is 'N'

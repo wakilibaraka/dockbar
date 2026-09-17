@@ -16,10 +16,18 @@ final class PermissionsManager: ObservableObject {
 
     private let pollQueue = DispatchQueue(label: "com.deskbar.permissions")
     private var pollTimer: DispatchSourceTimer?
+    private var pollAttempts = 0
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         isAccessibilityGranted = Self.checkAccessibilityPermissionOnLaunch()
         startPolling()
+        
+        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.refreshAccessibilityPermission()
+            }
+            .store(in: &cancellables)
     }
 
     deinit {
@@ -50,7 +58,14 @@ final class PermissionsManager: ObservableObject {
         let timer = DispatchSource.makeTimerSource(queue: pollQueue)
         timer.schedule(deadline: .now() + .seconds(5), repeating: .seconds(5))
         timer.setEventHandler { [weak self] in
-            self?.refreshAccessibilityPermission()
+            guard let self else { return }
+            self.refreshAccessibilityPermission()
+            
+            self.pollAttempts += 1
+            if self.isAccessibilityGranted || self.pollAttempts >= 6 {
+                self.pollTimer?.cancel()
+                self.pollTimer = nil
+            }
         }
         timer.resume()
         pollTimer = timer

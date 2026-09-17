@@ -113,7 +113,7 @@ struct ContentView: View {
                 .padding(.bottom, 16)
             }
         }
-        .onChange(of: state.searchText) { _ in
+        .onChange(of: state.searchText) { _, _ in
             state.selectedIndex = 0
         }
     }

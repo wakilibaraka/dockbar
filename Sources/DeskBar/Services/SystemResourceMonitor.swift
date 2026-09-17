@@ -8,17 +8,13 @@ final class SystemResourceMonitor: ObservableObject {
     @Published private(set) var snapshot: SystemResourceSnapshot = .empty
 
     private let sampleInterval: TimeInterval
-    private var timer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     private var previousCPUTicks: ProcessorTicks?
 
     init(sampleInterval: TimeInterval = 2.0) {
         self.sampleInterval = sampleInterval
         refresh()
         startTimer()
-    }
-
-    deinit {
-        timer?.invalidate()
     }
 
     func refresh() {
@@ -35,11 +31,11 @@ final class SystemResourceMonitor: ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        SharedTimer.shared.tick2s
+            .sink { [weak self] _ in
                 self?.refresh()
             }
-        }
+            .store(in: &cancellables)
     }
 
     private func sampleMemoryPressure() -> MemoryPressureSample {
