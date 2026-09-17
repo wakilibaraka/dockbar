@@ -114,7 +114,7 @@ struct LauncherFooterView: View {
     }
     
     private func runAppleScript(_ source: String) {
-        let script = "tell application \\"System Events\\" to " + source
+        let script = "tell application \"System Events\" to " + source
         DispatchQueue.global(qos: .userInitiated).async {
             var error: NSDictionary?
             if let appleScript = NSAppleScript(source: script) {
