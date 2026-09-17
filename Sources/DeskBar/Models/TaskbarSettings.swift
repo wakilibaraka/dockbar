@@ -212,8 +212,8 @@ class TaskbarSettings: ObservableObject {
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
-        showTitles = defaults.object(forKey: "showTitles") as? Bool ?? false
-        taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .appName
+        showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
+        taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .windowTitle
         taskTruncationStyle = TaskTruncationStyle(rawValue: defaults.string(forKey: "taskTruncationStyle") ?? "") ?? .tail
         iconOnlySize = defaults.object(forKey: "iconOnlySize") as? CGFloat ?? 24
         if let rawValue = defaults.string(forKey: "groupingMode"),

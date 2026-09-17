@@ -1,10 +1,7 @@
 import AppKit
 
 final class ConnectivityTrayView: NSStackView {
-    private let quickSettingsButton = TrayIconButton(
-        symbolName: "slider.horizontal.3",
-        accessibilityLabel: "Quick Settings"
-    )
+    private let quickSettingsButton = CalendarTrayButton()
     private let settings: TaskbarSettings
     private let manager = QuickSettingsManager.shared
     
@@ -17,8 +14,8 @@ final class ConnectivityTrayView: NSStackView {
         alignment = .centerY
         spacing = 4
 
-        quickSettingsButton.button.target = self
-        quickSettingsButton.button.action = #selector(toggleQuickSettings)
+        quickSettingsButton.target = self
+        quickSettingsButton.action = #selector(toggleQuickSettings)
         quickSettingsButton.toolTip = "Quick Settings"
 
         addArrangedSubview(quickSettingsButton)
@@ -31,7 +28,7 @@ final class ConnectivityTrayView: NSStackView {
     required init?(coder: NSCoder) { fatalError() }
 
     func preferredContentWidth() -> CGFloat {
-        return 24 + 8
+        return quickSettingsButton.fittingSize.width + 8
     }
 
     @objc private func toggleQuickSettings() {
