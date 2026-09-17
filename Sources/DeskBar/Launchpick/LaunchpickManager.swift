@@ -68,7 +68,7 @@ final class LaunchpickManager {
                 newPopover.behavior = .transient
                 let vc = NSViewController()
                 vc.view = hostingView
-                vc.preferredContentSize = NSSize(width: 680, height: 480)
+                vc.preferredContentSize = NSSize(width: 680, height: 680)
                 newPopover.contentViewController = vc
                 self.popover = newPopover
             }

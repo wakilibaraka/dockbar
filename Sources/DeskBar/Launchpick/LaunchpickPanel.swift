@@ -3,7 +3,7 @@ import Cocoa
 class LaunchpickPanel: NSPanel {
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 720, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 680),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -17,7 +17,7 @@ class LaunchpickPanel: NSPanel {
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
         
-        let blurView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 720, height: 400))
+        let blurView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 720, height: 680))
         blurView.material = .popover
         blurView.state = .active
         blurView.blendingMode = .behindWindow

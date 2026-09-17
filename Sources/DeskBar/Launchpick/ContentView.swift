@@ -102,6 +102,27 @@ struct ContentView: View {
                         }
                     }
 
+                    // Phase 1 Scaffold: All Apps
+                    if state.searchText.isEmpty {
+                        Divider().padding(.vertical, 8)
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("All Apps")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 4)
+                            
+                            // Scaffold placeholder for now
+                            VStack {
+                                Text("All Apps will be listed here (Phase 2)")
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                            .background(Color.primary.opacity(0.04))
+                            .cornerRadius(8)
+                        }
+                    }
+
                     // No results
                     if state.filteredLaunchers.isEmpty && state.filteredSystemApps.isEmpty {
                         Text("No matches")
