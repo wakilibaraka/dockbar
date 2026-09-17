@@ -147,11 +147,34 @@ struct BatteryFlyoutView: View {
                 }
                 .padding(14)
                 .background(Color.primary.opacity(0.04))
-                .padding(.horizontal, 14)
-                .padding(.bottom, 14)
                 .cornerRadius(12)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
             }
             
+            // Context Menu Actions
+            VStack(spacing: 4) {
+                ContextMenuButton(
+                    title: "Restore Windows From Last Sleep",
+                    icon: "uiwindow.split.2x1",
+                    action: { NSApp.sendAction(Selector(("restoreWindowsFromLastSleep:")), to: nil, from: nil) }
+                )
+                
+                ContextMenuButton(
+                    title: "Settings...",
+                    icon: "gearshape.fill",
+                    action: { NSApp.sendAction(Selector(("openSettings:")), to: nil, from: nil) }
+                )
+                
+                ContextMenuButton(
+                    title: "Quit DeskBar",
+                    icon: "power",
+                    action: { NSApp.terminate(nil) },
+                    isDestructive: true
+                )
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
         }
         .frame(width: 440)
         .onAppear {
@@ -326,5 +349,34 @@ struct DeviceCardView: View {
         .padding(8)
         .background(Color.primary.opacity(0.03))
         .cornerRadius(8)
+    }
+}
+
+
+struct ContextMenuButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    var isDestructive: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .frame(width: 20)
+                    .foregroundColor(isDestructive ? .red : .primary)
+                
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(isDestructive ? .red : .primary)
+                
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            // macOS standard context menu uses a subtle background on hover, but since we cannot use @State easily here due to the SPM macro bug, we will let PlainButtonStyle handle the basic interaction, or use a built-in style.
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
