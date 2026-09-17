@@ -5,6 +5,12 @@ enum AllAppsViewMode: String {
     case alphabetical = "A-Z"
 }
 
+enum AllAppsLayout: String, CaseIterable, Identifiable {
+    case list = "List"
+    case grid = "Grid"
+    var id: String { self.rawValue }
+}
+
 class LaunchpickState: ObservableObject {
     @Published var searchText = ""
     @Published var launchers: [LaunchpickItem] = []
@@ -80,6 +86,7 @@ struct LaunchpickItem: Identifiable {
 
 struct ContentView: View {
     @ObservedObject var state: LaunchpickState
+    @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .list
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
@@ -148,10 +155,20 @@ struct ContentView: View {
                                             .foregroundColor(.secondary)
                                             .padding(.horizontal, 8)
                                         
-                                        VStack(spacing: 2) {
-                                            ForEach(group.1, id: \.id) { app in
-                                                SystemAppRow(item: app, isSelected: false) {
-                                                    state.onLaunch?(app)
+                                        if allAppsLayout == .list {
+                                            VStack(spacing: 2) {
+                                                ForEach(group.1, id: \.id) { app in
+                                                    SystemAppRow(item: app, isSelected: false) {
+                                                        state.onLaunch?(app)
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 96), spacing: 12)], spacing: 16) {
+                                                ForEach(group.1, id: \.id) { app in
+                                                    SystemAppGridView(item: app, isSelected: false) {
+                                                        state.onLaunch?(app)
+                                                    }
                                                 }
                                             }
                                         }
@@ -248,6 +265,41 @@ struct SystemAppRow: View {
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct SystemAppGridView: View {
+    let item: LaunchpickItem
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(nsImage: item.icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 48, height: 48)
+                Text(item.name)
+                    .font(.system(size: 11))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .frame(height: 28, alignment: .top)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
             )
         }
         .buttonStyle(.plain)

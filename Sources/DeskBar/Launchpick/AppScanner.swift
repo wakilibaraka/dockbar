@@ -32,7 +32,7 @@ class AppScanner {
                 var category = "Other"
                 if let bundle = Bundle(path: fullPath),
                    let catType = bundle.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String {
-                    category = mapCategory(catType)
+                    category = Self.mapCategory(catType)
                 }
                 result.append(App(id: fullPath, name: name, path: fullPath, icon: icon, category: category))
             }

@@ -2,11 +2,29 @@ import SwiftUI
 
 struct LauncherSettingsTab: View {
     @ObservedObject var pinnedAppManager: PinnedAppManager
+    @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .list
     class ViewState: ObservableObject { @Published var isShowingFilePicker = false }
     @StateObject private var state = ViewState()
     
     var body: some View {
         VStack(alignment: .leading) {
+            Text("All Apps Layout")
+                .font(.headline)
+            Text("Choose how the All Apps list is presented.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Picker("", selection: $allAppsLayout) {
+                ForEach(AllAppsLayout.allCases) { layout in
+                    Text(layout.rawValue).tag(layout)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .frame(width: 200)
+            .padding(.bottom, 16)
+            
+            Divider().padding(.bottom, 8)
+            
             Text("Pinned Applications")
                 .font(.headline)
             Text("These apps will always be pinned to the DeskBar launcher.")
