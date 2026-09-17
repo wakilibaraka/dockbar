@@ -117,34 +117,38 @@ final class SystemResourceWidgetView: NSView {
     }
     
     // MARK: - Interaction
-    private lazy var flyoutPanel: SystemResourceFlyoutPanel = {
-        SystemResourceFlyoutPanel(monitor: monitor, smPluginService: smPluginService)
+    private lazy var popover: NSPopover = {
+        let pop = NSPopover()
+        pop.behavior = .transient
+        // NSHostingController automatically provides the standard macOS popover appearance
+        pop.contentViewController = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
+        return pop
     }()
+    
+    private var popoverEventMonitor: Any?
 
     override func mouseDown(with event: NSEvent) {
-        if flyoutPanel.isVisible {
-            flyoutPanel.close()
+        if popover.isShown {
+            closePopover()
             return
         }
         
-        guard let window = self.window, let screen = window.screen else { return }
-        let screenRect = window.convertToScreen(self.convert(self.bounds, to: nil))
-        let panelSize = flyoutPanel.frame.size
+        popover.show(relativeTo: bounds, of: self, preferredEdge: .maxY)
+        NSApp.activate(ignoringOtherApps: true)
         
-        let margin: CGFloat = 8
-        
-        var originX = screenRect.midX - (panelSize.width / 2)
-        let maxAllowedX = screen.frame.maxX - margin
-        
-        if originX + panelSize.width > maxAllowedX {
-            originX = maxAllowedX - panelSize.width
+        if popoverEventMonitor == nil {
+            popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                self?.closePopover()
+            }
         }
-        originX = max(screen.frame.minX + margin, originX)
-        
-        let originY = screenRect.maxY + margin
-        
-        flyoutPanel.setFrameOrigin(NSPoint(x: originX, y: originY))
-        flyoutPanel.makeKeyAndOrderFront(nil)
+    }
+    
+    private func closePopover() {
+        popover.performClose(nil)
+        if let monitor = popoverEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            popoverEventMonitor = nil
+        }
     }
 
     override func mouseEntered(with event: NSEvent) {
