@@ -24,6 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var onboardingWindowController: OnboardingWindowController?
     private var statusItem: NSStatusItem?
+    private var statusMenu: NSMenu?
+    private var batteryPopover: NSPopover?
+    private var popoverEventMonitor: Any?
+    
     private var restoreWindowsMenuItem: NSMenuItem?
     private let singleInstanceLock = SingleInstanceLock()
     private var cancellables = Set<AnyCancellable>()
@@ -302,9 +306,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quitItem.target = self
         menu.addItem(quitItem)
 
-        statusItem.menu = menu
+        // Instead of setting statusItem.menu, store it to present manually on right-click
+        self.statusMenu = menu
         self.statusItem = statusItem
         updateRestoreWindowsMenuItem()
+        
+        // Setup popover for left-clicks
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 440, height: 260)
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(rootView: BatteryFlyoutView())
+        self.batteryPopover = popover
+        
+        if let button = statusItem.button {
+            button.action = #selector(handleStatusItemClick(_:))
+            button.target = self
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+    }
+    
+    @objc private func handleStatusItemClick(_ sender: Any?) {
+        guard let button = statusItem?.button else { return }
+        let event = NSApp.currentEvent
+        let isRightClick = event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true
+        
+        if isRightClick {
+            if let menu = statusMenu {
+                menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 5), in: button)
+            }
+        } else {
+            // Left click toggles the battery popover
+            if let popover = batteryPopover {
+                if popover.isShown {
+                    closePopover(nil)
+                } else {
+                    popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+                    NSApp.activate(ignoringOtherApps: true)
+                    
+                    popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                        self?.closePopover(nil)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func closePopover(_ sender: Any?) {
+        batteryPopover?.performClose(sender)
+        if let monitor = popoverEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            popoverEventMonitor = nil
+        }
     }
 
     private func configureObservers(

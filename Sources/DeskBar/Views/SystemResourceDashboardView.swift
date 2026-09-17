@@ -14,14 +14,6 @@ struct SystemResourceDashboardView: View {
     var body: some View {
         VStack(spacing: 20) {
             
-            // 1. Battery & Devices
-            BatteryAndDevicesSection(
-                systemStats: systemStats,
-                bluetoothStats: bluetoothStats
-            )
-            
-            Divider().overlay(borderDark)
-            
             // 2. Antigravity Activity
             if let smPluginService = smPluginService {
                 AgentActivitySectionView(service: smPluginService)
@@ -52,120 +44,6 @@ struct SystemResourceDashboardView: View {
     }
 }
 
-// MARK: - Battery & Devices
-struct BatteryAndDevicesSection: View {
-    @ObservedObject var systemStats: SystemStatsService
-    @ObservedObject var bluetoothStats: BluetoothStatsService
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Main Battery Card
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Battery")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(systemStats.batteryStats?.isCharging == true ? "Charging" : "Discharging")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    ZStack {
-                        let percentage = systemStats.batteryStats?.percentage ?? 100
-                        Circle()
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 4)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(percentage) / 100)
-                            .stroke(Color.green, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                        
-                        Text("\(Int(percentage))%")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .frame(width: 32, height: 32)
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    PowerMetric(icon: "bolt.fill", title: "Draw", value: String(format: "%.1f W", systemStats.batteryStats?.wattage ?? 0))
-                    PowerMetric(icon: "arrow.2.circlepath", title: "Cycles", value: "\(systemStats.batteryStats?.cycleCount ?? 0)")
-                    PowerMetric(icon: "heart.fill", title: "Health", value: "\(systemStats.batteryStats?.healthPercentage ?? 100)%")
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.primary.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.05), lineWidth: 1))
-            
-            // Devices Card
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Devices")
-                    .font(.system(size: 13, weight: .semibold))
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        if bluetoothStats.connectedDevices.isEmpty {
-                            Text("No devices")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                        } else {
-                            ForEach(bluetoothStats.connectedDevices) { device in
-                                HStack {
-                                    Image(systemName: deviceIcon(for: device.type))
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.secondary)
-                                        .frame(width: 14)
-                                    Text(device.name)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .lineLimit(1)
-                                    Spacer(minLength: 4)
-                                    if let level = device.batteryLevel {
-                                        Text("\(level)%")
-                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 126) // Match Battery card height approximately
-            .background(Color.primary.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.05), lineWidth: 1))
-        }
-    }
-    
-    private func deviceIcon(for type: String) -> String {
-        switch type {
-        case "headphones": return "headphones"
-        case "mouse": return "magicmouse"
-        default: return "keyboard"
-        }
-    }
-}
-
-struct PowerMetric: View {
-    let icon: String
-    let title: String
-    let value: String
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 9))
-                .foregroundColor(.secondary)
-                .frame(width: 12)
-            Text(title)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-        }
-    }
-}
 
 // MARK: - Antigravity Activity
 struct AgentActivitySectionView: View {
