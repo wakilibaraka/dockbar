@@ -12,6 +12,11 @@ struct BehaviorSettingsTab: View {
                     Text("Always").tag(WindowGroupingMode.always)
                 }
                 
+                Picker("Active app click action", selection: $settings.frontmostClickAction) {
+                    Text("Minimize").tag(FrontmostClickAction.minimize)
+                    Text("Cycle Windows").tag(FrontmostClickAction.cycle)
+                }
+                
                 Toggle("Drag reorder", isOn: $settings.dragReorder)
                 Toggle("Middle click closes window", isOn: $settings.middleClickCloses)
             }

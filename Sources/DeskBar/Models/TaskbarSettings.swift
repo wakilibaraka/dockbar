@@ -20,6 +20,11 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compactGlass
 }
 
+enum FrontmostClickAction: String, CaseIterable {
+    case minimize
+    case cycle
+}
+
 enum AppsLauncherShortcut: String, CaseIterable {
     case commandTap
     case rightCommandTap
@@ -92,6 +97,10 @@ class TaskbarSettings: ObservableObject {
 
     @Published var groupingMode: WindowGroupingMode {
         didSet { defaults.set(groupingMode.rawValue, forKey: "groupingMode") }
+    }
+
+    @Published var frontmostClickAction: FrontmostClickAction {
+        didSet { defaults.set(frontmostClickAction.rawValue, forKey: "frontmostClickAction") }
     }
 
     @Published var dragReorder: Bool {
@@ -215,6 +224,7 @@ class TaskbarSettings: ObservableObject {
         } else {
             groupingMode = .automatic
         }
+        frontmostClickAction = FrontmostClickAction(rawValue: defaults.string(forKey: "frontmostClickAction") ?? "") ?? .minimize
         dragReorder = defaults.object(forKey: "dragReorder") as? Bool ?? true
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
         thumbnailSize = defaults.object(forKey: "thumbnailSize") as? CGFloat ?? Self.defaultThumbnailSize

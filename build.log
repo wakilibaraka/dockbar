@@ -1,43 +1,26 @@
 Building for production...
-[Planning deferred tasks]
-[2 / 7] DockBar-product
-[12 / 142]
-[15 / 142]
-[21 / 142]
-[26 / 142]
-[28 / 142]
-[34 / 142]
-[37 / 142]
-[45 / 142]
-[48 / 142]
-[50 / 142]
-[51 / 142]
-[66 / 142]
-[71 / 142]
-[72 / 142]
-[77 / 142]
-[82 / 142]
-[83 / 142]
-[86 / 142]
-[92 / 142]
-[94 / 142]
-[99 / 142]
-[100 / 142]
-[101 / 142]
-[104 / 142]
-[106 / 142]
-[115 / 142]
-[118 / 142]
-[119 / 142]
-[123 / 142]
-[129 / 142]
-[130 / 142]
-[133 / 142]
-[134 / 142]
-[135 / 142]
-[137 / 142]
+[2 / 5] DockBar-product
+[3 / 58]
+[9 / 58]
+[11 / 58]
+[16 / 58]
+[17 / 58]
+[18 / 58]
+[20 / 58]
+[21 / 58]
+[23 / 58]
+[32 / 58]
+[35 / 58]
+[40 / 58]
+[46 / 58]
+[47 / 58]
+[50 / 58]
+[51 / 58]
+[52 / 58]
+[54 / 58]
 error: SwiftCompile normal arm64 failed with a nonzero exit code. Command line:     cd /Users/baraka
     
+[55 / 58] DockBar-product
 /Users/baraka/DockBar/Sources/DeskBar/Launchpick/ContentView.swift:116:10: [1;33mwarning: [1;39m'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
 [0;36m114 |[0;0m             }
 [0;36m115 |[0;0m         }
@@ -78,13 +61,32 @@ error: SwiftCompile normal arm64 failed with a nonzero exit code. Command line: 
 [0;36m158 |[0;0m             .null,
 [0;36m159 |[0;0m             .optionIncludingWindow,
 
-/Users/baraka/DockBar/Sources/DeskBar/Views/Settings/AppearanceSettingsTab.swift:39:58: [1;31merror: [1;39mtype 'TaskTruncationStyle' has no member 'head'[0;0m
-[0;36m37 |[0;0m                     Text("Tail").tag(TaskTruncationStyle.tail)
-[0;36m38 |[0;0m                     Text("Middle").tag(TaskTruncationStyle.middle)
-[0;36m39 |[0;0m                     Text("Head").tag([4;39mTaskTruncationStyle[0;0m.[4;39mhead[0;0m)
-   [0;36m|[0;0m                                                          `- [1;31merror: [1;39mtype 'TaskTruncationStyle' has no member 'head'[0;0m
-[0;36m40 |[0;0m                 }
-[0;36m41 |[0;0m                 
+/Users/baraka/DockBar/Sources/DeskBar/Views/LauncherButtonView.swift:73:9: [1;31merror: [1;39mswitch must be exhaustive[0;0m
+ [0;36m71 |[0;0m         IconClickFeedback.show(on: iconView)
+ [0;36m72 |[0;0m 
+ [0;36m73 |[0;0m         switch actionForPrimaryClick() {
+    [0;36m|[0;0m         |- [1;31merror: [1;39mswitch must be exhaustive[0;0m
+    [0;36m|[0;0m         |- [1;39mnote: [1;39madd missing case: '.minimizeApplication'[0;0m
+    [0;36m|[0;0m         |- [1;39mnote: [1;39madd missing case: '.cycleWindows'[0;0m
+    [0;36m|[0;0m         `- [1;39mnote: [1;39madd missing cases[0;0m
+ [0;36m74 |[0;0m         case .launchApplication:
+ [0;36m75 |[0;0m             launchApplication()
+
+/Users/baraka/DockBar/Sources/DeskBar/Views/LauncherButtonView.swift:153:48: [1;31merror: [1;39mmissing arguments for parameters 'frontmostClickAction', 'isActive' in call[0;0m
+[0;36m151 |[0;0m         let hasAnyWindows = hasAnyApplicationWindows()
+[0;36m152 |[0;0m 
+[0;36m153 |[0;0m         return LauncherActivationPlanner.action(
+    [0;36m|[0;0m                                                `- [1;31merror: [1;39mmissing arguments for parameters 'frontmostClickAction', 'isActive' in call[0;0m
+[0;36m154 |[0;0m             bundleIdentifier: pinnedApp.bundleIdentifier,
+[0;36m155 |[0;0m             isRunning: isRunning,
+
+/Users/baraka/DockBar/Sources/DeskBar/Utilities/LauncherActivationPlanner.swift:13:17: [1;39mnote: [1;39m'action(frontmostClickAction:isActive:bundleIdentifier:isRunning:hasVisibleLocalWindows:hasAnyWindows:)' declared here[0;0m
+[0;36m11 |[0;0m     static let finderBundleIdentifier = "com.apple.finder"
+[0;36m12 |[0;0m 
+[0;36m13 |[0;0m     static func action(
+   [0;36m|[0;0m                 `- [1;39mnote: [1;39m'action(frontmostClickAction:isActive:bundleIdentifier:isRunning:hasVisibleLocalWindows:hasAnyWindows:)' declared here[0;0m
+[0;36m14 |[0;0m         frontmostClickAction: FrontmostClickAction,
+[0;36m15 |[0;0m         isActive: Bool,
 
 /Users/baraka/DockBar/Sources/DeskBar/Views/TaskButtonView.swift:1218:46: [1;33mwarning: [1;39m'activateIgnoringOtherApps' was deprecated in macOS 14.0: ignoringOtherApps is deprecated in macOS 14 and will have no effect.[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
 [0;36m1216 |[0;0m         // Many apps respond to this by opening a new window if one isn't open, 

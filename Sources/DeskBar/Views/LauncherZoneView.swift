@@ -444,6 +444,10 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
             activateApplication()
         case .openFinderWindow:
             openFinderWindow()
+        case .minimizeApplication:
+            minimizeApplication()
+        case .cycleWindows:
+            cycleWindows()
         }
     }
 
@@ -507,6 +511,8 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
         let hasAnyWindows = hasAnyApplicationWindows()
 
         return LauncherActivationPlanner.action(
+            frontmostClickAction: settings.frontmostClickAction,
+            isActive: runningApplication?.isActive == true,
             bundleIdentifier: pinnedApp.bundleIdentifier,
             isRunning: isRunning,
             hasVisibleLocalWindows: !visibleLocalWindows.isEmpty,
@@ -537,6 +543,22 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
 
     private func openFinderWindow() {
         LauncherApplicationActivator.openFinderWindow()
+    }
+
+    private func minimizeApplication() {
+        runningApplication?.hide()
+    }
+
+    private func cycleWindows() {
+        guard let runningApplication else { return }
+        let windows = accessibilityService.enumerateWindows(for: runningApplication)
+        
+        // Activating the last window brings it to the front, effectively cycling them
+        if let lastWindow = windows.last {
+            accessibilityService.raiseAndActivate(element: lastWindow, app: runningApplication)
+        } else {
+            activateMostRecentWindow()
+        }
     }
 
     private func hasAnyApplicationWindows() -> Bool? {
