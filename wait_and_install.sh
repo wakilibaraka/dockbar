@@ -7,4 +7,5 @@ echo "Build finished, installing..."
 killall DockBar || true
 rm -rf /Applications/DockBar.app
 cp -R .build/release/DockBar.app /Applications/
+sleep 2
 open /Applications/DockBar.app

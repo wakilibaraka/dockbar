@@ -2,8 +2,11 @@ import SwiftUI
 import Collaboration
 
 struct LauncherFooterView: View {
-    @State private var showingPowerConfirmation = false
-    @State private var powerAction: PowerAction?
+    class ViewState: ObservableObject {
+        @Published var state.showingPowerConfirmation = false
+        @Published var state.powerAction: PowerAction?
+    }
+    @StateObject private var state = ViewState()
     
     enum PowerAction {
         case restart, shutdown, logout
@@ -76,10 +79,10 @@ struct LauncherFooterView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .background(Color.primary.opacity(0.05))
-        .alert(isPresented: $showingPowerConfirmation) {
+        .alert(isPresented: $state.showingPowerConfirmation) {
             let title: String
             let action: () -> Void
-            switch powerAction {
+            switch state.powerAction {
             case .restart:
                 title = "Are you sure you want to restart your computer now?"
                 action = restartMac
@@ -109,8 +112,8 @@ struct LauncherFooterView: View {
     }
     
     private func triggerPowerAction(_ action: PowerAction) {
-        powerAction = action
-        showingPowerConfirmation = true
+        state.powerAction = action
+        state.showingPowerConfirmation = true
     }
     
     private func runAppleScript(_ source: String) {
