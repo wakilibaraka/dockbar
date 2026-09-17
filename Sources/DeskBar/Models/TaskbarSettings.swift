@@ -233,6 +233,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showBatteryPercentage, forKey: "showBatteryPercentage") }
     }
 
+    @Published var showPercentageInsideIcon: Bool {
+        didSet { defaults.set(showPercentageInsideIcon, forKey: "showPercentageInsideIcon") }
+    }
+
     @Published var batteryIconStyle: BatteryIconStyle {
         didSet { defaults.set(batteryIconStyle.rawValue, forKey: "batteryIconStyle") }
     }
@@ -302,6 +306,7 @@ class TaskbarSettings: ObservableObject {
         appTheme = AppTheme(rawValue: defaults.string(forKey: "appTheme") ?? "") ?? .system
         launcherStyle = LauncherStyle(rawValue: defaults.string(forKey: "launcherStyle") ?? "") ?? .anchored
         showBatteryPercentage = defaults.object(forKey: "showBatteryPercentage") as? Bool ?? true
+        showPercentageInsideIcon = defaults.object(forKey: "showPercentageInsideIcon") as? Bool ?? false
         batteryIconStyle = BatteryIconStyle(rawValue: defaults.string(forKey: "batteryIconStyle") ?? "") ?? .horizontal
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true

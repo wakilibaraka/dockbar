@@ -6,7 +6,8 @@ struct WidgetsSettingsTab: View {
     var body: some View {
         Form {
             Section(header: Text("Battery Widget").font(.headline)) {
-                Toggle("Show battery percentage text", isOn: $settings.showBatteryPercentage)
+                Toggle("Show battery percentage text (Next to icon)", isOn: $settings.showBatteryPercentage)
+                Toggle("Show percentage inside icon", isOn: $settings.showPercentageInsideIcon)
                 Picker("Battery Icon Style", selection: $settings.batteryIconStyle) {
                     ForEach(BatteryIconStyle.allCases) { style in
                         Text(style.displayName).tag(style)
