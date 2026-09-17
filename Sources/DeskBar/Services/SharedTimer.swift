@@ -16,7 +16,7 @@ final class SharedTimer {
     }
     
     private func start() {
-        let queue = DispatchQueue(label: "com.deskbar.sharedtimer", qos: .background)
+        let queue = DispatchQueue(label: "com.dockbar.sharedtimer", qos: .background)
         timer = DispatchSource.makeTimerSource(queue: queue)
         timer?.schedule(deadline: .now(), repeating: 2.0)
         

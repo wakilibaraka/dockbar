@@ -12,7 +12,7 @@ Rather than work around a buggy third-party app with a suspicious bundle ID, we'
 - **Build system:** Swift Package Manager (no Xcode required)
 - **Min deployment:** macOS 14.0
 - **Position:** Bottom edge of screen, full width by default, with optional compact centered layouts (see Dock Coexistence for interaction with the macOS Dock)
-- **Bundle ID:** `com.deskbar.app`
+- **Bundle ID:** `com.dockbar.app`
 
 ## Features
 
@@ -270,7 +270,7 @@ When the user switches to `autoHide` or `hidden` mode, DeskBar writes the prior 
 
 1. **Normal quit:** `applicationWillTerminate` reads `dock-prior-state.json` and restores. Deletes the state file on success.
 2. **SIGTERM/SIGINT:** Signal handlers (via `DispatchSource.makeSignalSource`) trigger the same restore logic.
-3. **Crash / force-quit:** A companion LaunchAgent (`com.deskbar.dock-watchdog.plist`) runs a 30-second interval shell script: if `dock-prior-state.json` exists and DeskBar is not running (`pgrep -x DeskBar` fails), it restores the Dock and deletes the state file.
+3. **Crash / force-quit:** A companion LaunchAgent (`com.dockbar.dock-watchdog.plist`) runs a 30-second interval shell script: if `dock-prior-state.json` exists and DeskBar is not running (`pgrep -x DeskBar` fails), it restores the Dock and deletes the state file.
 4. **Login restart:** The same LaunchAgent fires on login, catches the case where DeskBar crashed before a reboot.
 
 The watchdog LaunchAgent is installed when the user first switches to `autoHide` or `hidden` mode, and removed when Dock mode is set back to `independent`. In `independent` mode, no watchdog is running and no state file exists.
@@ -453,7 +453,7 @@ TaskbarContentView
 | Thumbnails | `SCScreenshotManager.captureSampleBuffer` |
 | Dark/light mode | `NSVisualEffectView` auto-adapts |
 | Multi-monitor | `NSScreen.screens` + `didChangeScreenParametersNotification` |
-| Settings persistence | `UserDefaults(suiteName: "com.deskbar.app")` |
+| Settings persistence | `UserDefaults(suiteName: "com.dockbar.app")` |
 | Start at login | Write LaunchAgent plist to `~/Library/LaunchAgents/` |
 | Open Apps launcher | `NSWorkspace.openApplication` for `com.apple.apps.launcher` |
 | System resource widget | Mach processor ticks + memorystatus sysctls + IOAccelerator performance statistics |

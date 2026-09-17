@@ -14,7 +14,7 @@ final class PermissionsManager: ObservableObject {
         )!
     ]
 
-    private let pollQueue = DispatchQueue(label: "com.deskbar.permissions")
+    private let pollQueue = DispatchQueue(label: "com.dockbar.permissions")
     private var pollTimer: DispatchSourceTimer?
     private var pollAttempts = 0
     private var cancellables = Set<AnyCancellable>()

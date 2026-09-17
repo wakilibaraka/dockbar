@@ -80,7 +80,7 @@ final class TaskButtonView: NSView, NSDraggingSource {
 
         return width
     }
-    static let dragPasteboardType = NSPasteboard.PasteboardType("com.deskbar.task")
+    static let dragPasteboardType = NSPasteboard.PasteboardType("com.dockbar.task")
 
     private enum WindowState {
         case active

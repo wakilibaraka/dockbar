@@ -59,7 +59,7 @@ final class LauncherAppLoginItemManager {
             character.isLetter || character.isNumber || character == "." || character == "-" ? character : "-"
         }
 
-        return "com.deskbar.launcher-login.\(String(sanitized))"
+        return "com.dockbar.launcher-login.\(String(sanitized))"
     }
 
     private func enable(bundleIdentifier: String) throws {

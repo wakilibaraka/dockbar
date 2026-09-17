@@ -74,6 +74,14 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 
 ---
 
+## ⚠️ Upgrading to v1.4.0+
+
+> **Important Upgrade Note:** As of v1.4.0, the app's bundle identifier has been officially renamed to `com.dockbar.app`. macOS will treat this as a completely new application. 
+> * You will need to **re-grant Accessibility and Screen Recording permissions**.
+> * Your old settings (stored under `com.deskbar.app`) will not automatically carry over.
+
+---
+
 ## Install
 
 ### Download (Recommended)
@@ -119,20 +127,20 @@ If you want to completely remove DockBar or perform a fresh reinstall (e.g. usin
 
 3. **Reset System Permissions**:
    ```bash
-   tccutil reset Accessibility com.deskbar.app
-   tccutil reset ScreenCapture com.deskbar.app
+   tccutil reset Accessibility com.dockbar.app
+   tccutil reset ScreenCapture com.dockbar.app
    ```
 
 4. **Delete Application Support & Preferences**:
    ```bash
-   defaults delete com.deskbar.app 2>/dev/null || true
+   defaults delete com.dockbar.app 2>/dev/null || true
    rm -rf ~/Library/Application\ Support/DockBar
    rm -rf ~/Library/Application\ Support/DeskBar
-   rm -rf ~/Library/Application\ Support/com.deskbar.app
-   rm -rf ~/Library/Preferences/com.deskbar.app.plist
-   rm -rf ~/Library/Caches/com.deskbar.app
-   rm -rf ~/Library/LaunchAgents/com.deskbar.app.plist
-   rm -rf ~/Library/LaunchAgents/com.deskbar.dock-watchdog.plist
+   rm -rf ~/Library/Application\ Support/com.dockbar.app
+   rm -rf ~/Library/Preferences/com.dockbar.app.plist
+   rm -rf ~/Library/Caches/com.dockbar.app
+   rm -rf ~/Library/LaunchAgents/com.dockbar.app.plist
+   rm -rf ~/Library/LaunchAgents/com.dockbar.dock-watchdog.plist
    ```
 
 ---

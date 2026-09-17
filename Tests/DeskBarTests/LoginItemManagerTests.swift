@@ -11,7 +11,7 @@ struct LoginItemManagerTests {
         let fileManager = FileManager.default
         let plistURL = fileManager.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-            .appendingPathComponent("com.deskbar.app.plist")
+            .appendingPathComponent("com.dockbar.app.plist")
         var launchctlCalls: [[String]] = []
 
         defaults.removePersistentDomain(forName: suiteName)
@@ -41,7 +41,7 @@ struct LoginItemManagerTests {
         <plist version="1.0">
         <dict>
             <key>Label</key>
-            <string>com.deskbar.app</string>
+            <string>com.dockbar.app</string>
             <key>ProgramArguments</key>
             <array>
                 <string>/Applications/DeskBar.app/Contents/MacOS/DeskBar</string>
@@ -60,7 +60,7 @@ struct LoginItemManagerTests {
         let fileManager = FileManager.default
         let plistURL = fileManager.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-            .appendingPathComponent("com.deskbar.app.plist")
+            .appendingPathComponent("com.dockbar.app.plist")
         var launchctlCalls: [[String]] = []
 
         defaults.removePersistentDomain(forName: suiteName)
@@ -99,7 +99,7 @@ struct LoginItemManagerTests {
         let fileManager = FileManager.default
         let plistURL = fileManager.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-            .appendingPathComponent("com.deskbar.app.plist")
+            .appendingPathComponent("com.dockbar.app.plist")
         var launchctlCalls: [[String]] = []
 
         defaults.removePersistentDomain(forName: suiteName)

@@ -36,7 +36,7 @@ final class DockManager {
     private let stateFileURL: URL
     private let watchdogScriptURL: URL
     private let launchAgentURL: URL
-    private let launchAgentLabel = "com.deskbar.dock-watchdog"
+    private let launchAgentLabel = "com.dockbar.dock-watchdog"
 
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager

@@ -22,7 +22,7 @@ final class LoginItemManager {
         settings: TaskbarSettings,
         fileManager: FileManager = .default,
         plistURL: URL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/LaunchAgents/com.deskbar.app.plist"),
+            .appendingPathComponent("Library/LaunchAgents/com.dockbar.app.plist"),
         binaryPathProvider: @escaping () -> String? = {
             Bundle.main.executablePath ?? CommandLine.arguments.first
         },
@@ -114,7 +114,7 @@ final class LoginItemManager {
         <plist version="1.0">
         <dict>
             <key>Label</key>
-            <string>com.deskbar.app</string>
+            <string>com.dockbar.app</string>
             <key>ProgramArguments</key>
             <array>
                 <string>\(escapedBinaryPath)</string>

@@ -23,8 +23,8 @@ func launcherAppLoginItemManagerWritesLaunchAgentPlist() throws {
     let plistContents = try String(contentsOf: plistURL, encoding: .utf8)
 
     #expect(manager.isEnabled(bundleIdentifier: "com.google.Chrome"))
-    #expect(plistURL.lastPathComponent == "com.deskbar.launcher-login.com.google.Chrome.plist")
-    #expect(plistContents.contains("<string>com.deskbar.launcher-login.com.google.Chrome</string>"))
+    #expect(plistURL.lastPathComponent == "com.dockbar.launcher-login.com.google.Chrome.plist")
+    #expect(plistContents.contains("<string>com.dockbar.launcher-login.com.google.Chrome</string>"))
     #expect(plistContents.contains("<string>/usr/bin/open</string>"))
     #expect(plistContents.contains("<string>-b</string>"))
     #expect(plistContents.contains("<string>com.google.Chrome</string>"))
@@ -56,6 +56,6 @@ func launcherAppLoginItemManagerRemovesLaunchAgentPlist() throws {
 func launcherAppLoginItemManagerSanitizesLaunchAgentLabel() {
     #expect(
         LauncherAppLoginItemManager.label(for: "com.example.App Helper") ==
-            "com.deskbar.launcher-login.com.example.App-Helper"
+            "com.dockbar.launcher-login.com.example.App-Helper"
     )
 }

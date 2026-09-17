@@ -82,7 +82,7 @@ P3-C (utilities) can start during P2. P4 can overlap with P5. P8 sub-tickets are
 
 | Ticket | Scope | Files | Blocked By |
 |--------|-------|-------|------------|
-| **5-A: Settings Model** | Observable class backed by UserDefaults("com.deskbar.app"), all 14 settings with defaults, dockMode as Swift enum. Tests. | TaskbarSettings.swift, TaskbarSettingsTests.swift | P1 |
+| **5-A: Settings Model** | Observable class backed by UserDefaults("com.dockbar.app"), all 14 settings with defaults, dockMode as Swift enum. Tests. | TaskbarSettings.swift, TaskbarSettingsTests.swift | P1 |
 | **5-B: Settings UI** | NSWindow with NSTabView (5 tabs: General, Appearance, Behavior, Launcher placeholder, Blacklist placeholder), standard AppKit controls | SettingsWindowController.swift, SettingsView.swift | None (stubs 5-A; must merge after 5-A) |
 | **5-C: Integration + Status Item** | NSStatusItem (gear icon, "Settings...", "Quit"), wire early settings only: taskbarHeight, titleFontSize, maxTaskWidth, showTitles, thumbnailSize, hoverDelay. Remaining settings wired by their owning tickets: groupByApp/dragReorder (7-A/7-B), middleClickCloses (7-C), showOverFullScreenApps (8-C), dockMode (8-A), startAtLogin (8-B), showOnAllMonitors (8-C), showLaunchpadButton (8-D) | AppDelegate.swift (mod), TaskbarPanel.swift (mod), TaskButtonView.swift (mod), ThumbnailPopover.swift (mod) | 5-A, 5-B |
 
@@ -127,10 +127,10 @@ P3-C (utilities) can start during P2. P4 can overlap with P5. P8 sub-tickets are
 | Ticket | Scope | Files | Blocked By |
 |--------|-------|-------|------------|
 | **8-A: DockManager** | Three modes (independent/autoHide/hidden), prior-state to ~/.config/deskbar/dock-prior-state.json, defense-in-depth restore (applicationWillTerminate, SIGTERM/SIGINT handlers, watchdog LaunchAgent with 30s interval), watchdog install/remove on mode switch | DockManager.swift | P5 |
-| **8-B: LoginItemManager** | LaunchAgent plist to ~/Library/LaunchAgents/com.deskbar.app.plist, enable/disable, runtime binary path detection, wire to startAtLogin setting | LoginItemManager.swift | P5 |
+| **8-B: LoginItemManager** | LaunchAgent plist to ~/Library/LaunchAgents/com.dockbar.app.plist, enable/disable, runtime binary path detection, wire to startAtLogin setting | LoginItemManager.swift | P5 |
 | **8-C: Multi-Monitor + Full-Screen** | Panel per NSScreen.screens, display-scoped window filtering (CGDisplayBounds containment), per-display full-screen detection + panel hide/show (orderOut/orderFront), screen connect/disconnect handling, showOnAllMonitors toggle, showOverFullScreenApps toggle (adds .fullScreenAuxiliary to collectionBehavior + skips hide/show logic). Single-monitor full-screen detection also lands here. | TaskbarPanel.swift (mod), TaskbarContentView.swift (mod), WindowManager.swift (mod), AppDelegate.swift (mod), ScreenGeometry.swift (mod) | P5 |
 | **8-D: Launchpad Button** | LaunchpadButtonView (Launchpad icon, opens /System/Applications/Launchpad.app), leftmost in LauncherZone, showLaunchpadButton toggle | LaunchpadButtonView.swift, LauncherZoneView.swift (mod) | P6 |
-| **8-E: Build Scripts** | build.sh (swift build -c release), package.sh (.app bundle assembly), Info.plist.template (LSUIElement=true, com.deskbar.app, macOS 14), ad-hoc codesign | scripts/build.sh, scripts/package.sh, Info.plist.template | None |
+| **8-E: Build Scripts** | build.sh (swift build -c release), package.sh (.app bundle assembly), Info.plist.template (LSUIElement=true, com.dockbar.app, macOS 14), ad-hoc codesign | scripts/build.sh, scripts/package.sh, Info.plist.template | None |
 
 **Parallelism:** All 5 fully parallel.
 

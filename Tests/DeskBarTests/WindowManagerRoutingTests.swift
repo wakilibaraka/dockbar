@@ -107,7 +107,7 @@ func trayApplicationCandidatesRespectZoneRoutingAndAlphabeticalOrder() {
         RunningApplicationCandidate(pid: 33, bundleIdentifier: "com.example.blacklisted", name: "Blacklisted"),
         RunningApplicationCandidate(pid: 44, bundleIdentifier: "com.example.notes", name: "notes"),
         RunningApplicationCandidate(pid: 55, bundleIdentifier: nil, name: "Arc"),
-        RunningApplicationCandidate(pid: 66, bundleIdentifier: "com.deskbar.app", name: "DockBar")
+        RunningApplicationCandidate(pid: 66, bundleIdentifier: "com.dockbar.app", name: "DockBar")
     ]
 
     let result = WindowManager.trayApplicationCandidates(
@@ -115,7 +115,7 @@ func trayApplicationCandidatesRespectZoneRoutingAndAlphabeticalOrder() {
         visibleWindowPIDs: Set([11]),
         pinnedBundleIdentifiers: Set(["com.example.pinned"]),
         blacklistedBundleIdentifiers: Set(["com.example.blacklisted"]),
-        currentBundleIdentifier: "com.deskbar.app"
+        currentBundleIdentifier: "com.dockbar.app"
     )
 
     #expect(result.map(\.pid) == [55, 44])
@@ -135,7 +135,7 @@ func trayApplicationCandidatesHideAppsWithVisibleBundleSiblings() {
         visibleWindowBundleIdentifiers: Set(["com.valvesoftware.steam"]),
         pinnedBundleIdentifiers: [],
         blacklistedBundleIdentifiers: [],
-        currentBundleIdentifier: "com.deskbar.app"
+        currentBundleIdentifier: "com.dockbar.app"
     )
 
     #expect(result.map(\.bundleIdentifier) == ["com.example.notes"])
@@ -154,7 +154,7 @@ func trayApplicationCandidatesDeduplicateByBundleIdentifier() {
         visibleWindowPIDs: [],
         pinnedBundleIdentifiers: [],
         blacklistedBundleIdentifiers: [],
-        currentBundleIdentifier: "com.deskbar.app"
+        currentBundleIdentifier: "com.dockbar.app"
     )
 
     #expect(result.count == 2)
