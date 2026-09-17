@@ -461,6 +461,8 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
         titleLabel.isBordered = false
         titleLabel.drawsBackground = false
         titleLabel.usesSingleLineMode = true
+        titleLabel.maximumNumberOfLines = 1
+        titleLabel.cell?.truncatesLastVisibleLine = true
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         applyTruncationStyle(settings.taskTruncationStyle)
 

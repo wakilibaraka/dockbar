@@ -1,0 +1,22 @@
+Sources/DeskBar/App/main.swift:4:1: error: expressions are not allowed at the top level
+2 | 
+3 | let app = NSApplication.shared
+4 | app.setActivationPolicy(.accessory)
+  | `- error: expressions are not allowed at the top level
+5 | 
+6 | let delegate = AppDelegate()
+
+Sources/DeskBar/App/main.swift:7:1: error: expressions are not allowed at the top level
+5 | 
+6 | let delegate = AppDelegate()
+7 | app.delegate = delegate
+  | `- error: expressions are not allowed at the top level
+8 | app.run()
+9 | 
+
+Sources/DeskBar/App/main.swift:8:1: error: expressions are not allowed at the top level
+6 | let delegate = AppDelegate()
+7 | app.delegate = delegate
+8 | app.run()
+  | `- error: expressions are not allowed at the top level
+9 | 

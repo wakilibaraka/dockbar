@@ -383,19 +383,18 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(launcherZoneView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
-        zonesStackView.addArrangedSubview(connectivityTrayView)
-
-        // Vertical divider
-        let trayDivider = NSView()
-        trayDivider.wantsLayer = true
-        trayDivider.layer?.backgroundColor = NSColor.separatorColor.cgColor
-        trayDivider.translatesAutoresizingMaskIntoConstraints = false
+        // Vertical divider separating apps from right-hand widgets
+        let clusterDivider = NSView()
+        clusterDivider.wantsLayer = true
+        clusterDivider.layer?.backgroundColor = NSColor.separatorColor.cgColor
+        clusterDivider.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            trayDivider.widthAnchor.constraint(equalToConstant: 1),
-            trayDivider.heightAnchor.constraint(equalToConstant: 20)
+            clusterDivider.widthAnchor.constraint(equalToConstant: 1),
+            clusterDivider.heightAnchor.constraint(equalToConstant: 20)
         ])
-        zonesStackView.addArrangedSubview(trayDivider)
+        zonesStackView.addArrangedSubview(clusterDivider)
         
+        zonesStackView.addArrangedSubview(connectivityTrayView)
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
     }
 
@@ -1826,9 +1825,9 @@ final class TaskbarContentView: NSView {
         for view: NSView,
         usesAdaptiveTaskWidth: Bool
     ) -> TaskZoneWidthMeasurement {
-        if let taskButtonView = view as? TaskButtonView {
+        if let participant = view as? TaskbarWidthParticipant {
             return TaskZoneWidthMeasurement(taskButtonItems: [
-                taskButtonView.widthPlanItem(usesAdaptiveWidth: usesAdaptiveTaskWidth)
+                participant.widthPlanItem(usesAdaptiveWidth: usesAdaptiveTaskWidth)
             ])
         }
 
@@ -2569,6 +2568,8 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         titleLabel.isBordered = false
         titleLabel.drawsBackground = false
         titleLabel.usesSingleLineMode = true
+        titleLabel.maximumNumberOfLines = 1
+        titleLabel.cell?.truncatesLastVisibleLine = true
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.lineBreakMode = .byTruncatingTail
 
@@ -2746,6 +2747,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             iconView.image = nil
         }
         badgeLabel.stringValue = "\(appGroup.windowCount)"
+        badgeView.isHidden = appGroup.windowCount <= 1
         toolTip = resolvedToolTip()
         
         let title = appGroup.appName
@@ -3112,9 +3114,9 @@ private final class TaskZoneGroupContainerView: NSView {
 
         var measurement = TaskZoneWidthMeasurement()
         for view in visibleSubviews {
-            if let taskButtonView = view as? TaskButtonView {
+            if let participant = view as? TaskbarWidthParticipant {
                 measurement.taskButtonItems.append(
-                    taskButtonView.widthPlanItem(usesAdaptiveWidth: usesAdaptiveTaskWidth)
+                    participant.widthPlanItem(usesAdaptiveWidth: usesAdaptiveTaskWidth)
                 )
             } else {
                 measurement.fixedWidth += Self.preferredWidth(for: view)
