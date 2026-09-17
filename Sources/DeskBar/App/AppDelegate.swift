@@ -160,6 +160,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateRestoreWindowsMenuItem()
     }
 
+    @objc private func restoreApp(_ sender: NSMenuItem) {
+        guard let bundleID = sender.representedObject as? String else { return }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            NSWorkspace.shared.open(url)
+            RecentlyClosedTracker.shared.remove(bundleIdentifier: bundleID)
+        }
+    }
+
     private func bindDockMode(settings: TaskbarSettings) {
         dockManager?.apply(mode: settings.dockMode)
 
@@ -210,11 +218,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureStatusItem() {
-        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-
-        if let button = statusItem.button {
-            button.image = NSImage.dockBarMenuIcon()
-        }
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        
+        BatteryMonitor.shared.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak statusItem] state in
+                if let button = statusItem?.button {
+                    button.image = BatteryStatusRenderer.renderImage(for: state)
+                    button.title = " \(state.percentage)%"
+                    button.imagePosition = .imageLeft
+                }
+            }
+            .store(in: &cancellables)
 
         let menu = NSMenu()
         let settingsItem = NSMenuItem(
@@ -225,6 +240,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
         menu.addItem(.separator())
+        
+        let recentlyClosedItem = NSMenuItem(title: "Recently Closed", action: nil, keyEquivalent: "")
+        let recentlyClosedMenu = NSMenu()
+        recentlyClosedItem.submenu = recentlyClosedMenu
+        menu.addItem(recentlyClosedItem)
+        menu.addItem(.separator())
+        
+        RecentlyClosedTracker.shared.$closedApps
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self, weak recentlyClosedItem] apps in
+                guard let self, let submenu = recentlyClosedItem?.submenu else { return }
+                submenu.removeAllItems()
+                if apps.isEmpty {
+                    let emptyItem = NSMenuItem(title: "No Recently Closed Apps", action: nil, keyEquivalent: "")
+                    emptyItem.isEnabled = false
+                    submenu.addItem(emptyItem)
+                } else {
+                    for app in apps {
+                        let item = NSMenuItem(title: app.localizedName, action: #selector(self.restoreApp(_:)), keyEquivalent: "")
+                        item.target = self
+                        item.representedObject = app.bundleIdentifier
+                        if let icon = app.icon {
+                            let resized = NSImage(size: NSSize(width: 16, height: 16))
+                            resized.lockFocus()
+                            icon.draw(in: NSRect(x: 0, y: 0, width: 16, height: 16))
+                            resized.unlockFocus()
+                            item.image = resized
+                        }
+                        submenu.addItem(item)
+                    }
+                }
+            }
+            .store(in: &cancellables)
 
         let restoreWindowsItem = NSMenuItem(
             title: "Restore Windows From Last Sleep",
