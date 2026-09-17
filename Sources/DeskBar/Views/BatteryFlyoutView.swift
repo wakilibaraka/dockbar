@@ -77,13 +77,19 @@ struct BatteryFlyoutView: View {
             .frame(height: 190)
             .padding(14)
 
-            // Recently Closed Apps
-            if !recentlyClosed.closedApps.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Recently Closed")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.secondary)
-                    
+            // Recently Closed Apps (Always render to maintain structure)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Recently Closed")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.secondary)
+                
+                if recentlyClosed.closedApps.isEmpty {
+                    Text("No recently closed apps")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(recentlyClosed.closedApps, id: \.bundleIdentifier) { app in
@@ -112,27 +118,27 @@ struct BatteryFlyoutView: View {
                         }
                     }
                 }
-                .padding(14)
-                .background(Color.primary.opacity(0.04))
-                .cornerRadius(12)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 12)
             }
+            .padding(14)
+            .background(Color.primary.opacity(0.04))
+            .cornerRadius(12)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
             
-            // Context Menu Actions
-            VStack(spacing: 4) {
+            // Context Menu Actions in a Unified Card
+            VStack(spacing: 2) {
                 ContextMenuButton(
                     title: "Restore Windows From Last Sleep",
                     icon: "uiwindow.split.2x1",
                     action: { NSApp.sendAction(Selector(("restoreWindowsFromLastSleep:")), to: nil, from: nil) }
                 )
-                
+                Divider().opacity(0.4).padding(.horizontal, 8)
                 ContextMenuButton(
                     title: "Settings...",
                     icon: "gearshape.fill",
                     action: { NSApp.sendAction(Selector(("openSettings:")), to: nil, from: nil) }
                 )
-                
+                Divider().opacity(0.4).padding(.horizontal, 8)
                 ContextMenuButton(
                     title: "Quit DeskBar",
                     icon: "power",
@@ -140,6 +146,9 @@ struct BatteryFlyoutView: View {
                     isDestructive: true
                 )
             }
+            .padding(.vertical, 6)
+            .background(Color.primary.opacity(0.04))
+            .cornerRadius(12)
             .padding(.horizontal, 14)
             .padding(.bottom, 14)
         }
