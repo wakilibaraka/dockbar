@@ -12,6 +12,11 @@ struct BehaviorSettingsTab: View {
                     Text("Always").tag(WindowGroupingMode.always)
                 }
                 
+                Picker("Grouped click action", selection: $settings.groupedClickAction) {
+                    Text("Show Popover").tag(GroupedClickAction.showPopover)
+                    Text("Cycle Windows").tag(GroupedClickAction.cycleWindows)
+                }
+                
                 Picker("Active app click action", selection: $settings.frontmostClickAction) {
                     Text("Minimize").tag(FrontmostClickAction.minimize)
                     Text("Cycle Windows").tag(FrontmostClickAction.cycle)

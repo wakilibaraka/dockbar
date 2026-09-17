@@ -899,7 +899,12 @@ final class TaskbarContentView: NSView {
                     ) ?? (window.pid == frontmostPID)
                 },
                 activationHandler: { [weak self] in
-                    self?.toggleGroupExpansion(for: group.id)
+                    guard let self else { return }
+                    if self.settings.groupedClickAction == .cycleWindows {
+                        self.handleGroupClick(group)
+                    } else {
+                        self.toggleGroupExpansion(for: group.id)
+                    }
                 },
                 windowActivationHandler: { [weak self] windowInfo in
                     self?.activate(windowInfo: windowInfo)
@@ -1881,6 +1886,32 @@ final class TaskbarContentView: NSView {
     private func toggleGroupExpansion(for groupID: String) {
         expandedGroupID = expandedGroupID == groupID ? nil : groupID
         rebuildTaskZone()
+    }
+
+    private func handleGroupClick(_ group: AppGroup) {
+        let windows = group.windows
+        guard let firstWindow = windows.first, let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == firstWindow.pid }) else { return }
+        
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let baseScopedWindows = scopedVisibleWindows()
+        let frontmostWindowID = currentFrontmostWindowID(in: baseScopedWindows)
+        
+        let isActive = windows.contains {
+            isWindowActive($0, frontmostPID: frontmostPID, frontmostWindowID: frontmostWindowID)
+        }
+        
+        if isActive {
+            if windows.count > 1 {
+                let axWindows = accessibilityService.enumerateWindows(for: app)
+                if let lastWindow = axWindows.last {
+                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
+                }
+            } else {
+                app.hide()
+            }
+        } else {
+            activate(windowInfo: firstWindow)
+        }
     }
 
     private func collapseExpandedGroup() {

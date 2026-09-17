@@ -20,6 +20,11 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compactGlass
 }
 
+enum GroupedClickAction: String, CaseIterable {
+    case showPopover
+    case cycleWindows
+}
+
 enum FrontmostClickAction: String, CaseIterable {
     case minimize
     case cycle
@@ -97,6 +102,10 @@ class TaskbarSettings: ObservableObject {
 
     @Published var groupingMode: WindowGroupingMode {
         didSet { defaults.set(groupingMode.rawValue, forKey: "groupingMode") }
+    }
+
+    @Published var groupedClickAction: GroupedClickAction {
+        didSet { defaults.set(groupedClickAction.rawValue, forKey: "groupedClickAction") }
     }
 
     @Published var frontmostClickAction: FrontmostClickAction {
@@ -224,6 +233,7 @@ class TaskbarSettings: ObservableObject {
         } else {
             groupingMode = .automatic
         }
+                groupedClickAction = GroupedClickAction(rawValue: defaults.string(forKey: "groupedClickAction") ?? "") ?? .cycleWindows
         frontmostClickAction = FrontmostClickAction(rawValue: defaults.string(forKey: "frontmostClickAction") ?? "") ?? .minimize
         dragReorder = defaults.object(forKey: "dragReorder") as? Bool ?? true
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
