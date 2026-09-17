@@ -238,15 +238,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         }
         
-        BatteryMonitor.shared.$state
-            .receive(on: DispatchQueue.main)
-            .sink { [weak statusItem] state in
-                if let button = statusItem?.button {
-                    button.image = BatteryStatusRenderer.renderImage(for: state)
-                    button.title = " \(state.percentage)%"
+        if let settings = self.settings {
+            BatteryMonitor.shared.$state
+                .combineLatest(
+                    settings.$showBatteryPercentage.setFailureType(to: Never.self),
+                    settings.$batteryIconStyle.setFailureType(to: Never.self)
+                )
+                .receive(on: DispatchQueue.main)
+                .sink { [weak statusItem] state, showPct, style in
+                    if let button = statusItem?.button {
+                        button.image = BatteryStatusRenderer.renderImage(for: state, style: style)
+                        button.title = showPct ? " \(state.percentage)%" : ""
+                    }
                 }
-            }
-            .store(in: &cancellables)
+                .store(in: &cancellables)
+        } else {
+            BatteryMonitor.shared.$state
+                .receive(on: DispatchQueue.main)
+                .sink { [weak statusItem] state in
+                    if let button = statusItem?.button {
+                        button.image = BatteryStatusRenderer.renderImage(for: state)
+                        button.title = " \(state.percentage)%"
+                    }
+                }
+                .store(in: &cancellables)
+        }
 
         let menu = NSMenu()
         let settingsItem = NSMenuItem(

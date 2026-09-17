@@ -20,6 +20,21 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compactGlass
 }
 
+enum BatteryIconStyle: String, CaseIterable, Identifiable {
+    case horizontal
+    case vertical
+    case verticalBars
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .horizontal: return "Horizontal"
+        case .vertical: return "Vertical"
+        case .verticalBars: return "Vertical (Bars)"
+        }
+    }
+}
+
 enum GroupedClickAction: String, CaseIterable {
     case showPopover
     case cycleWindows
@@ -214,6 +229,14 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(enableSessionManagerPlugin, forKey: "enableSessionManagerPlugin") }
     }
 
+    @Published var showBatteryPercentage: Bool {
+        didSet { defaults.set(showBatteryPercentage, forKey: "showBatteryPercentage") }
+    }
+
+    @Published var batteryIconStyle: BatteryIconStyle {
+        didSet { defaults.set(batteryIconStyle.rawValue, forKey: "batteryIconStyle") }
+    }
+
     @Published var showSessionManagerAgentTitles: Bool {
         didSet { defaults.set(showSessionManagerAgentTitles, forKey: "showSessionManagerAgentTitles") }
     }
@@ -278,6 +301,8 @@ class TaskbarSettings: ObservableObject {
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap
         appTheme = AppTheme(rawValue: defaults.string(forKey: "appTheme") ?? "") ?? .system
         launcherStyle = LauncherStyle(rawValue: defaults.string(forKey: "launcherStyle") ?? "") ?? .anchored
+        showBatteryPercentage = defaults.object(forKey: "showBatteryPercentage") as? Bool ?? true
+        batteryIconStyle = BatteryIconStyle(rawValue: defaults.string(forKey: "batteryIconStyle") ?? "") ?? .horizontal
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
