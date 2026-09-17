@@ -134,22 +134,6 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showSystemResourceWidget, forKey: "showSystemResourceWidget") }
     }
     
-    @Published var showRingCharts: Bool {
-        didSet { defaults.set(showRingCharts, forKey: "showRingCharts") }
-    }
-
-    @Published var showSystemResourceMemoryMetric: Bool {
-        didSet { defaults.set(showSystemResourceMemoryMetric, forKey: "showSystemResourceMemoryMetric") }
-    }
-
-    @Published var showSystemResourceCPUMetric: Bool {
-        didSet { defaults.set(showSystemResourceCPUMetric, forKey: "showSystemResourceCPUMetric") }
-    }
-
-    @Published var showSystemResourceGPUMetric: Bool {
-        didSet { defaults.set(showSystemResourceGPUMetric, forKey: "showSystemResourceGPUMetric") }
-    }
-
     @Published var systemResourceWidgetPinnedDisplayID: CGDirectDisplayID? {
         didSet {
             if let systemResourceWidgetPinnedDisplayID {
@@ -162,10 +146,6 @@ class TaskbarSettings: ObservableObject {
 
     @Published var startAtLogin: Bool {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
-    }
-
-    @Published var trackBluetoothDevices: Bool {
-        didSet { defaults.set(trackBluetoothDevices, forKey: "trackBluetoothDevices") }
     }
 
     @Published var showOnAllMonitors: Bool {
@@ -245,11 +225,6 @@ class TaskbarSettings: ObservableObject {
         showProgressIndicators = defaults.object(forKey: "showProgressIndicators") as? Bool ?? true
         enableActivityMode = defaults.object(forKey: "enableActivityMode") as? Bool ?? true
         showSystemResourceWidget = defaults.object(forKey: "showSystemResourceWidget") as? Bool ?? true
-        showRingCharts = defaults.object(forKey: "showRingCharts") as? Bool ?? false
-        showSystemResourceMemoryMetric = defaults.object(forKey: "showSystemResourceMemoryMetric") as? Bool ?? true
-        showSystemResourceCPUMetric = defaults.object(forKey: "showSystemResourceCPUMetric") as? Bool ?? true
-        showSystemResourceGPUMetric = defaults.object(forKey: "showSystemResourceGPUMetric") as? Bool ?? true
-        trackBluetoothDevices = defaults.object(forKey: "trackBluetoothDevices") as? Bool ?? true
         if let pinnedDisplayID = defaults.object(forKey: "systemResourceWidgetPinnedDisplayID") as? NSNumber {
             systemResourceWidgetPinnedDisplayID = CGDirectDisplayID(pinnedDisplayID.uint32Value)
         } else {

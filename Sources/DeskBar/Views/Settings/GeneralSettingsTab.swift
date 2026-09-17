@@ -10,7 +10,6 @@ struct GeneralSettingsTab: View {
         Form {
             Section(header: Text("Startup & Integration").font(.headline)) {
                 Toggle("Start at login", isOn: $settings.startAtLogin)
-                Toggle("Track Bluetooth device batteries", isOn: $settings.trackBluetoothDevices)
                 
                 Picker("Dock mode", selection: $settings.dockMode) {
                     Text("Independent").tag(DockMode.independent)
