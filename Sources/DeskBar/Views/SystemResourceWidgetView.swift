@@ -103,11 +103,12 @@ final class SystemResourceWidgetView: NSView {
         textLabel.stringValue = String(format: "%.0f%%", percent)
         
         let color: NSColor
-        if percent > 80 {
+        switch snapshot.memoryPressureLevel {
+        case .critical:
             color = NSColor.systemRed
-        } else if percent > 60 {
+        case .warning:
             color = NSColor.systemOrange
-        } else {
+        case .normal, .unknown:
             color = NSColor.systemGreen
         }
         
