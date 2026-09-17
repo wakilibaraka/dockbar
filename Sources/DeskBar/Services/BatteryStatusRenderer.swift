@@ -2,9 +2,11 @@ import AppKit
 
 struct BatteryStatusRenderer {
     static func renderImage(for state: BatteryState) -> NSImage {
-        // Increased size for better text legibility
-        let width: CGFloat = 36
+        // Maximized size for standard menu bar
         let height: CGFloat = 16
+        let bodyWidth: CGFloat = 36
+        let nubWidth: CGFloat = 3
+        let width: CGFloat = bodyWidth + nubWidth
         let size = NSSize(width: width, height: height)
         let image = NSImage(size: size)
         
@@ -12,10 +14,8 @@ struct BatteryStatusRenderer {
         let context = NSGraphicsContext.current?.cgContext
         context?.saveGState()
         
-        let bodyWidth: CGFloat = 33
-        let bodyHeight: CGFloat = 14
-        let bodyRect = NSRect(x: 1, y: 1, width: bodyWidth, height: bodyHeight)
-        let cornerRadius: CGFloat = 3.5
+        let bodyRect = NSRect(x: 1, y: 1, width: bodyWidth, height: height - 2)
+        let cornerRadius: CGFloat = 4.0
         
         // 1. Draw Empty portion (translucent background pill)
         let emptyPath = NSBezierPath(roundedRect: bodyRect, xRadius: cornerRadius, yRadius: cornerRadius)
@@ -27,7 +27,7 @@ struct BatteryStatusRenderer {
         let fillWidth = max(0, min(CGFloat(state.percentage) / 100.0 * bodyWidth, bodyWidth))
         if fillWidth > 0 {
             context?.saveGState()
-            let clipRect = NSRect(x: 1, y: 1, width: fillWidth, height: bodyHeight)
+            let clipRect = NSRect(x: 1, y: 1, width: fillWidth, height: height - 2)
             context?.clip(to: clipRect)
             NSColor.black.setFill() // Alpha 1.0 = solid color when isTemplate = true
             emptyPath.fill()
@@ -35,13 +35,13 @@ struct BatteryStatusRenderer {
         }
         
         // 3. Draw Terminal nub
-        let nubRect = NSRect(x: 1 + bodyWidth, y: (height - 6) / 2.0, width: 2, height: 6)
-        let nubPath = NSBezierPath(roundedRect: nubRect, xRadius: 1.0, yRadius: 1.0)
+        let nubHeight: CGFloat = 6.5
+        let nubRect = NSRect(x: 1 + bodyWidth, y: (height - nubHeight) / 2.0, width: nubWidth, height: nubHeight)
+        let nubPath = NSBezierPath(roundedRect: nubRect, xRadius: 1.5, yRadius: 1.5)
         NSColor.black.setFill()
         nubPath.fill()
         
         // 4. Punch out text or bolt
-        // .destinationOut erases the shape from the image completely, letting the menu bar show through.
         context?.setBlendMode(.destinationOut)
         NSColor.black.setFill()
         
@@ -59,15 +59,16 @@ struct BatteryStatusRenderer {
             boltPath.fill()
         } else {
             let text = "\(state.percentage)"
-            let font = NSFont.systemFont(ofSize: 10, weight: .bold)
+            // Increased text size
+            let font = NSFont.systemFont(ofSize: 11, weight: .bold)
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
-                .foregroundColor: NSColor.black // The color doesn't matter for .destinationOut, just alpha 1.0
+                .foregroundColor: NSColor.black 
             ]
             let attrString = NSAttributedString(string: text, attributes: attributes)
             let textSize = attrString.size()
             let textRect = NSRect(x: 1 + (bodyWidth - textSize.width) / 2.0,
-                                  y: 1 + (bodyHeight - textSize.height) / 2.0 - 0.5, // Nudge down slightly
+                                  y: 1 + (height - 2 - textSize.height) / 2.0 - 0.5, // Center vertically
                                   width: textSize.width,
                                   height: textSize.height)
             attrString.draw(in: textRect)
@@ -76,7 +77,7 @@ struct BatteryStatusRenderer {
         context?.restoreGState()
         image.unlockFocus()
         
-        // Treating it as a template image allows macOS to automatically tint it for dark/light mode
+        // Treating it as a template image allows macOS to automatically tint it
         image.isTemplate = true
         return image
     }
