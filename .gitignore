@@ -3,3 +3,25 @@
 *.xcodeproj/
 .swiftpm/
 .claude/workspace.lock
+
+# Agent scratch files
+.build/
+dmg_build/
+*.dmg
+build.log
+build_log*.txt
+/*.patch
+/fix_*.sh
+/fix_*.py
+/patch_*.sh
+/patch_*.py
+/update_*.sh
+/update_*.py
+/wipe_*.py
+/delete_*.py
+/strip_*.py
+/mask_*.py
+/refine_*.py
+/rewrite_*.py
+/purge_*.py
+/popover_*.sh
