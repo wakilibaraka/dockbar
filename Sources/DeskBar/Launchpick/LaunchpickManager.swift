@@ -9,6 +9,7 @@ final class LaunchpickManager {
     private var state: LaunchpickState?
     private var localMonitor: Any?
     private var globalMonitor: Any?
+    private var keyMonitor: Any?
     
     private init() {}
     
@@ -92,6 +93,40 @@ final class LaunchpickManager {
             panel?.makeKeyAndOrderFront(nil)
             setupMonitors()
         }
+        
+        if keyMonitor == nil {
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self = self, let state = self.state else { return event }
+                let maxIndex = state.totalFilteredCount - 1
+                if maxIndex < 0 { return event }
+                
+                switch event.keyCode {
+                case 126: // Up
+                    state.selectedIndex = max(0, state.selectedIndex - state.columns)
+                    return nil
+                case 125: // Down
+                    state.selectedIndex = min(maxIndex, state.selectedIndex + state.columns)
+                    return nil
+                case 123: // Left
+                    state.selectedIndex = max(0, state.selectedIndex - 1)
+                    return nil
+                case 124: // Right
+                    state.selectedIndex = min(maxIndex, state.selectedIndex + 1)
+                    return nil
+                case 36: // Enter
+                    let index = state.selectedIndex
+                    if index < state.filteredLaunchers.count {
+                        self.launch(item: state.filteredLaunchers[index])
+                    } else if index - state.filteredLaunchers.count < state.orderedSystemApps.count {
+                        self.launch(item: state.orderedSystemApps[index - state.filteredLaunchers.count])
+                    }
+                    self.hide()
+                    return nil
+                default:
+                    return event
+                }
+            }
+        }
         NSApp.activate(ignoringOtherApps: true)
     }
     
@@ -118,6 +153,7 @@ final class LaunchpickManager {
     private func removeMonitors() {
         if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
         if let m = globalMonitor { NSEvent.removeMonitor(m); globalMonitor = nil }
+        if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
     }
     
     private func launch(item: LaunchpickItem) {

@@ -71,8 +71,12 @@ class LaunchpickState: ObservableObject {
         }
     }
 
+    var orderedSystemApps: [LaunchpickItem] {
+        groupedSystemApps.flatMap { $0.1 }
+    }
+
     var totalFilteredCount: Int {
-        filteredLaunchers.count + filteredSystemApps.count
+        filteredLaunchers.count + orderedSystemApps.count
     }
 }
 
@@ -87,6 +91,7 @@ struct LaunchpickItem: Identifiable {
 struct ContentView: View {
     @ObservedObject var state: LaunchpickState
     @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .list
+    @AppStorage("showAllPinned") private var showAllPinned: Bool = false
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
@@ -109,13 +114,41 @@ struct ContentView: View {
                 VStack(spacing: 16) {
                     // Launchers grid
                     if !state.filteredLaunchers.isEmpty {
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: state.columns),
-                            spacing: 16
-                        ) {
-                            ForEach(Array(state.filteredLaunchers.enumerated()), id: \.element.id) { index, item in
-                                LaunchpickItemView(item: item, isSelected: index == state.selectedIndex) {
-                                    state.onLaunch?(item)
+                        VStack {
+                            HStack {
+                                Text("Pinned")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if state.filteredLaunchers.count > state.columns * 2 {
+                                    Button(action: { showAllPinned.toggle() }) {
+                                        HStack(spacing: 4) {
+                                            Text(showAllPinned ? "Show less" : "Show more")
+                                                .font(.system(size: 12))
+                                            Image(systemName: showAllPinned ? "chevron.up" : "chevron.down")
+                                                .font(.system(size: 10))
+                                        }
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(6)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 4)
+                            .padding(.bottom, 8)
+                            
+                            let visibleLaunchers = showAllPinned ? state.filteredLaunchers : Array(state.filteredLaunchers.prefix(state.columns * 2))
+                            
+                            LazyVGrid(
+                                columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: state.columns),
+                                spacing: 16
+                            ) {
+                                ForEach(Array(visibleLaunchers.enumerated()), id: \.element.id) { index, item in
+                                    LaunchpickItemView(item: item, isSelected: index == state.selectedIndex) {
+                                        state.onLaunch?(item)
+                                    }
                                 }
                             }
                         }
@@ -158,7 +191,7 @@ struct ContentView: View {
                                         if allAppsLayout == .list {
                                             VStack(spacing: 2) {
                                                 ForEach(group.1, id: \.id) { app in
-                                                    SystemAppRow(item: app, isSelected: false) {
+                                                    SystemAppRow(item: app, isSelected: (state.orderedSystemApps.firstIndex(where: { $0.id == app.id }).map { $0 + state.filteredLaunchers.count } ?? -1) == state.selectedIndex) {
                                                         state.onLaunch?(app)
                                                     }
                                                 }
@@ -166,7 +199,7 @@ struct ContentView: View {
                                         } else {
                                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 96), spacing: 12)], spacing: 16) {
                                                 ForEach(group.1, id: \.id) { app in
-                                                    SystemAppGridView(item: app, isSelected: false) {
+                                                    SystemAppGridView(item: app, isSelected: (state.orderedSystemApps.firstIndex(where: { $0.id == app.id }).map { $0 + state.filteredLaunchers.count } ?? -1) == state.selectedIndex) {
                                                         state.onLaunch?(app)
                                                     }
                                                 }
