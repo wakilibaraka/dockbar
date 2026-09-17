@@ -17,40 +17,7 @@ struct BatteryFlyoutView: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.secondary)
                 }
-                
                 Spacer()
-                
-                HStack(spacing: 12) {
-                    Button(action: {
-                        NSApp.sendAction(Selector(("restoreWindowsFromLastSleep:")), to: nil, from: nil)
-                    }) {
-                        Image(systemName: "uiwindow.split.2x1")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Restore Windows")
-                    
-                    Button(action: {
-                        NSApp.sendAction(Selector(("openSettings:")), to: nil, from: nil)
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Settings")
-                    
-                    Button(action: {
-                        NSApp.terminate(nil)
-                    }) {
-                        Image(systemName: "power")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Quit")
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
