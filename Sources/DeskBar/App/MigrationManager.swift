@@ -9,7 +9,7 @@ struct MigrationManager {
         // 1. Terminate any running old "DeskBar" instances
         let runningApps = NSWorkspace.shared.runningApplications
         for app in runningApps {
-            if app.bundleIdentifier == "com.deskbar.app" || app.localizedName == "DeskBar" {
+            if app.bundleIdentifier == "com.deskbar.app" {
                 print("DeskBar Migration: Terminating old instance -> \(app.localizedName ?? "Unknown")")
                 app.forceTerminate()
             }
