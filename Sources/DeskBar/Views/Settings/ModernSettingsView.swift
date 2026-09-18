@@ -38,6 +38,11 @@ struct ModernSettingsView: View {
                 .tabItem {
                     Label("Launcher", systemImage: "rocket")
                 }
+            
+            QuickSettingsTab(settings: settings)
+                .tabItem {
+                    Label("Quick Settings", systemImage: "switch.2")
+                }
                 
             BlacklistSettingsTab(blacklistManager: blacklistManager)
                 .tabItem {

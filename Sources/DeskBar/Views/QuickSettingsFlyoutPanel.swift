@@ -1,3 +1,31 @@
+import Foundation
+import CoreGraphics
+
+class DisplayBrightnessService {
+    static let shared = DisplayBrightnessService()
+    private var setLinearBrightness: @convention(c) (CGDirectDisplayID, Float) -> Int32
+    private var getLinearBrightness: @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
+    
+    private init?() {
+        guard let handle = dlopen("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices", RTLD_NOW) else { return nil }
+        guard let setSym = dlsym(handle, "DisplayServicesSetLinearBrightness") else { return nil }
+        guard let getSym = dlsym(handle, "DisplayServicesGetLinearBrightness") else { return nil }
+        
+        self.setLinearBrightness = unsafeBitCast(setSym, to: (@convention(c) (CGDirectDisplayID, Float) -> Int32).self)
+        self.getLinearBrightness = unsafeBitCast(getSym, to: (@convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32).self)
+    }
+    
+    func getBrightness(for display: CGDirectDisplayID) -> Float? {
+        var brightness: Float = 0.0
+        let result = getLinearBrightness(display, &brightness)
+        return result == 0 ? brightness : nil
+    }
+    
+    func setBrightness(_ brightness: Float, for display: CGDirectDisplayID) {
+        _ = setLinearBrightness(display, brightness)
+    }
+}
+
 import AppKit
 import SwiftUI
 import CoreAudio
@@ -105,6 +133,16 @@ final class QuickSettingsViewController: NSViewController {
         outer.addArrangedSubview(sep)
         sep.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
+                // Brightness slider
+        if let _ = DisplayBrightnessService.shared {
+            let brightRow = makeSliderRow(
+                symbol: "sun.max.fill",
+                slider: makeBrightnessSlider()
+            )
+            outer.addArrangedSubview(brightRow)
+            brightRow.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
+        }
+
         // Volume slider
         let sliderRow = makeSliderRow(
             symbol: "speaker.wave.2.fill",
@@ -150,6 +188,19 @@ final class QuickSettingsViewController: NSViewController {
         row.addArrangedSubview(icon)
         row.addArrangedSubview(slider)
         return row
+    }
+
+    private func makeBrightnessSlider() -> NSSlider {
+        let current = DisplayBrightnessService.shared?.getBrightness(for: CGMainDisplayID()) ?? 0.5
+        let slider = NSSlider(value: Double(current * 100), minValue: 0, maxValue: 100,
+                              target: self, action: #selector(brightnessChanged(_:)))
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        return slider
+    }
+
+    @objc private func brightnessChanged(_ sender: NSSlider) {
+        let val = Float(sender.doubleValue / 100.0)
+        DisplayBrightnessService.shared?.setBrightness(val, for: CGMainDisplayID())
     }
 
     private func makeVolumeSlider() -> NSSlider {

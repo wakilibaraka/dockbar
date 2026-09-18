@@ -11,10 +11,13 @@ final class EmptyTrashQuickSetting: QuickSetting {
     
     func toggle() {
         DispatchQueue.global(qos: .utility).async {
-            let trashURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash")
-            let contents = (try? FileManager.default.contentsOfDirectory(at: trashURL, includingPropertiesForKeys: nil)) ?? []
-            for item in contents {
-                try? FileManager.default.removeItem(at: item)
+            let script = "tell application \"Finder\" to empty trash"
+            var error: NSDictionary?
+            if let appleScript = NSAppleScript(source: script) {
+                appleScript.executeAndReturnError(&error)
+                if let err = error {
+                    print("Error emptying trash: \(err)")
+                }
             }
         }
     }

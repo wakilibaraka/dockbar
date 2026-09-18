@@ -139,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         bindDockMode(settings: settings)
         bindSessionManagerPlugin(settings: settings, smPluginService: smPluginService)
         configureSignalHandlers()
+        DispatchQueue.main.async { HoldToQuitService.shared.start() }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

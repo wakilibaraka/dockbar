@@ -19,6 +19,8 @@ final class QuickSettingsManager {
         ShowExtensionsQuickSetting(),
         ShowUserLibraryQuickSetting(),
         DockRecentAppsQuickSetting(),
+        ScreenshotQuickSetting(),
+        RestartFinderQuickSetting(),
         EmptyTrashQuickSetting(),
         EmptyPasteboardQuickSetting(),
         EjectDiscsQuickSetting(),

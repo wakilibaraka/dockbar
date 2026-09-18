@@ -293,6 +293,16 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(animateSessionManagerActivity, forKey: "animateSessionManagerActivity") }
     }
 
+    @Published var enableHoldToQuit: Bool {
+        didSet { defaults.set(enableHoldToQuit, forKey: "enableHoldToQuit") }
+    }
+    @Published var holdToQuitDuration: Double {
+        didSet { defaults.set(holdToQuitDuration, forKey: "holdToQuitDuration") }
+    }
+    @Published var holdToQuitCmdW: Bool {
+        didSet { defaults.set(holdToQuitCmdW, forKey: "holdToQuitCmdW") }
+    }
+
     @Published var enableSessionManagerTerminalActions: Bool {
         didSet { defaults.set(enableSessionManagerTerminalActions, forKey: "enableSessionManagerTerminalActions") }
     }
@@ -359,6 +369,9 @@ class TaskbarSettings: ObservableObject {
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
         animateSessionManagerActivity = defaults.object(forKey: "animateSessionManagerActivity") as? Bool ?? false
+                enableHoldToQuit = defaults.object(forKey: "enableHoldToQuit") as? Bool ?? true
+        holdToQuitDuration = defaults.object(forKey: "holdToQuitDuration") as? Double ?? 2.0
+        holdToQuitCmdW = defaults.object(forKey: "holdToQuitCmdW") as? Bool ?? false
         enableSessionManagerTerminalActions = defaults.object(forKey: "enableSessionManagerTerminalActions") as? Bool ?? true
         showSessionManagerActionButton = defaults.object(forKey: "showSessionManagerActionButton") as? Bool ?? true
     }
