@@ -25,52 +25,53 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 
 ---
 
+## What's New
+We are gearing up for a `v1.0` release! Recent major additions include:
+- **100% Native macOS Settings Window:** Overhauled settings UI using 7 perfectly categorized native macOS preference tabs.
+- **Start Menu Overhaul:** Spotlight integration for **Most Used Apps**, plus a robust drag-and-drop editor for pinned applications.
+- **Hold-to-Quit Prevention:** Configurable safeguard (Cmd+Q and optionally Cmd+W) with a visual hold timer to prevent accidentally closing apps.
+- **Connectivity Tracking:** New Bluetooth and WiFi tracking system giving you tray icons and status-change notifications.
+- **Advanced Minimized Window Handling:** Non-standard apps (like Chrome) that don't report minimized windows to macOS accessibility APIs are now gracefully handled—DockBar manually injects dummy items so they remain visible as dimmed icons in your taskbar.
+
+---
+
 ## Features
 
 ### Core Taskbar
-- **Per-window task buttons** — one button per open window, not per app
-- **Floating compact glass mode** — a pill-shaped bar that doesn't take up your whole screen
-- **Full-width mode** — classic Windows-style edge-to-edge bar
-- **Multi-monitor** — separate bar on each display showing only that screen's windows
-- **Minimized windows stay visible** — dimmed badge (Windows-style), click to restore
-- **Stable ordering** — windows stay where they are, no MRU jump surprises
-- **Drag to reorder** — rearrange task buttons freely
+- **Per-window task buttons** — one button per open window, not per app.
+- **Floating compact glass mode** — a pill-shaped bar that doesn't take up your whole screen.
+- **Full-width mode** — classic Windows-style edge-to-edge bar.
+- **Multi-monitor** — separate bar on each display showing only that screen's windows.
+- **Minimized windows stay visible** — dimmed badge (Windows-style), click to restore.
+- **Stable ordering** — windows stay where they are, no MRU jump surprises.
+- **Drag to reorder** — rearrange task buttons freely.
 - **Window Grouping** — optionally group multiple windows of the same app and click to effortlessly cycle through them.
 
 ### Window Switching & Restoration
-- **Option+Tab window switcher** — cycles individual windows (not apps) with a glass thumbnail overlay
-- **Hover thumbnails** — live window previews via ScreenCaptureKit
-- **Middle-click** a button to close that window instantly
+- **Option+Tab window switcher** — cycles individual windows (not apps) with a glass thumbnail overlay.
+- **Hover thumbnails** — live window previews via ScreenCaptureKit.
+- **Middle-click** a button to close that window instantly.
 - **AppBeBack Integration** — access your recently closed apps right from the menu bar to instantly restore them.
+- **Hold-to-Quit Prevention** — Prevents accidental app closes with a visual hold ring.
+
+### Start Menu & Launcher
+- **Start Menu** — View Most Used apps (via Spotlight) and Pinned Apps.
+- **Drag & Drop Editor** — Edit pinned apps natively in settings (`launchpick.json`).
+- **Command Launcher** — Customizable keyboard shortcut (default: Control+Option+Return) to pop up a bare command launcher.
 
 ### System Tray & Menu Bar
-- **Menu Bar Battery Gauge** — beautifully rendered, dynamically updating battery status icon right in your Mac's menu bar.
-- **Dynamic Calendar** — a live, auto-formatting calendar icon that shows the current date and opens Quick Settings.
-- **Quick Settings panel** — Windows-style action center with a grid of toggles:
-  - 🌙 Dark Mode  
-  - 🔇 Mute Audio  
-  - 🎙️ Mute Mic  
-  - ☕ Keep Awake  
-  - 📡 Bluetooth  
-  - 🗂️ Hide Desktop  
-  - 👁️ Hidden Files  
-- **Volume slider** — real-time CoreAudio volume control directly in the panel
-
-### Launcher Zone
-- **Pinned apps** — pin any app to the left launcher zone
-- **Apps launcher shortcut** — customizable keyboard shortcut (default: Control+Option+Return)
-
-### System Resource Widget
-- Collapsible MEM/CPU/GPU widget
-- Per-metric toggles
-- Click to open Activity Monitor
+- **Menu Bar Battery Gauge** — dynamically updating battery status icon right in your Mac's menu bar.
+- **Dynamic Calendar** — live calendar icon that shows the current date and opens Quick Settings.
+- **Quick Settings panel** — Windows-style action center with a grid of toggles (Dark Mode, Mute Audio/Mic, Keep Awake, Hide Desktop).
+- **Volume slider** — real-time CoreAudio volume control directly in the panel.
+- **System Resources** — Collapsible MEM/CPU/GPU widget.
+- **Connectivity Tracking** — WiFi and Bluetooth status icons in the tray with alert notifications for low battery or signal drops.
 
 ### Appearance & Settings
+- **7-Tab Native Preferences** — General, Dock, Behavior, Launcher, Start Menu, Elements, and Flyouts.
 - **Personalized Onboarding** — pick your layout (Compact vs Full Width) and grouping mode right on first launch.
-- Configurable taskbar height, font size, max button width
-- Icon-only mode or full Window Titles
-- Window grouping by app with group indicator dots
-- Dock coexistence — auto-hide, independent, or hidden modes
+- Configurable taskbar height, font size, max button width, and icon-only mode.
+- Dock coexistence — auto-hide, independent, or hidden modes.
 
 ---
 
@@ -170,7 +171,7 @@ If you want to completely remove DockBar or perform a fresh reinstall (e.g. usin
 
 ## Architecture
 
-Pure AppKit — no SwiftUI, no Electron, no web views.
+Pure AppKit — no SwiftUI Scene, no Electron, no web views.
 
 | Component | Description |
 |-----------|-------------|
@@ -180,7 +181,7 @@ Pure AppKit — no SwiftUI, no Electron, no web views.
 | `ThumbnailService` | ScreenCaptureKit with 2s cache |
 | `WindowSwitcherService` | Global Option+Tab event tap, glass overlay |
 | `QuickSettingsManager` | Modular protocol-based toggle system — 20+ toggles, all extensible |
-| `DockManager` | Three-mode Dock control with watchdog LaunchAgent |
+| `SettingsWindowController` | Uses native `NSTabViewController` with SwiftUI Hosting |
 
 ---
 
