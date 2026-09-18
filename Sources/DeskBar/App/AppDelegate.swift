@@ -154,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc
-    private func openSettings(_ sender: Any?) {
+    func openSettings(_ sender: Any?) {
         settingsWindowController?.showWindow(sender)
         settingsWindowController?.window?.makeKeyAndOrderFront(sender)
         NSApp.activate(ignoringOtherApps: true)

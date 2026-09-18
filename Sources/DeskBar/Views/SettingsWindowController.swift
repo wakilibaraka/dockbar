@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 class SettingsWindowController: NSWindowController {
+    
+    private let tabViewController = NSTabViewController()
+    
     convenience init(
         settings: TaskbarSettings,
         blacklistManager: BlacklistManager,
@@ -10,23 +13,74 @@ class SettingsWindowController: NSWindowController {
         thumbnailService: ThumbnailService
     ) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 660, height: 480),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         window.title = "DeskBar Settings"
         window.center()
         
-        let settingsView = ModernSettingsView(
-            settings: settings,
-            pinnedAppManager: pinnedAppManager,
-            blacklistManager: blacklistManager,
-            permissionsManager: permissionsManager,
-            thumbnailService: thumbnailService
-        )
+        self.init(window: window as NSWindow?)
         
-        window.contentView = NSHostingView(rootView: settingsView)
-        self.init(window: window)
+        // Configure NSTabViewController
+        tabViewController.tabStyle = .toolbar
+        tabViewController.transitionOptions = [.crossfade, .slideDown]
+        
+        // 1. General
+        let generalTab = NSHostingController(rootView: GeneralSettingsTab(
+            settings: settings,
+            permissionsManager: permissionsManager,
+            thumbnailService: thumbnailService,
+            blacklistManager: blacklistManager
+        ))
+        generalTab.title = "General"
+        let generalItem = NSTabViewItem(viewController: generalTab)
+        generalItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "General")
+        tabViewController.addTabViewItem(generalItem)
+        
+        // 2. Dock
+        let dockTab = NSHostingController(rootView: DockSettingsTab(settings: settings))
+        dockTab.title = "Dock"
+        let dockItem = NSTabViewItem(viewController: dockTab)
+        dockItem.image = NSImage(systemSymbolName: "macwindow.badge.plus", accessibilityDescription: "Dock")
+        tabViewController.addTabViewItem(dockItem)
+        
+        // 3. Behavior
+        let behaviorTab = NSHostingController(rootView: BehaviorSettingsTab(settings: settings))
+        behaviorTab.title = "Behavior"
+        let behaviorItem = NSTabViewItem(viewController: behaviorTab)
+        behaviorItem.image = NSImage(systemSymbolName: "hand.tap", accessibilityDescription: "Behavior")
+        tabViewController.addTabViewItem(behaviorItem)
+        
+        // 4. Launcher
+        let launcherTab = NSHostingController(rootView: LauncherOptionsTab(settings: settings))
+        launcherTab.title = "Launcher"
+        let launcherItem = NSTabViewItem(viewController: launcherTab)
+        launcherItem.image = NSImage(systemSymbolName: "command", accessibilityDescription: "Launcher")
+        tabViewController.addTabViewItem(launcherItem)
+        
+        // 5. Start Menu
+        let startMenuTab = NSHostingController(rootView: StartMenuSettingsTab(pinnedAppManager: pinnedAppManager))
+        startMenuTab.title = "Start Menu"
+        let startMenuItem = NSTabViewItem(viewController: startMenuTab)
+        startMenuItem.image = NSImage(systemSymbolName: "square.grid.3x3.fill", accessibilityDescription: "Start Menu")
+        tabViewController.addTabViewItem(startMenuItem)
+        
+        // 6. Taskbar Elements
+        let elementsTab = NSHostingController(rootView: TaskbarElementsTab(settings: settings))
+        elementsTab.title = "Elements"
+        let elementsItem = NSTabViewItem(viewController: elementsTab)
+        elementsItem.image = NSImage(systemSymbolName: "puzzlepiece.extension", accessibilityDescription: "Elements")
+        tabViewController.addTabViewItem(elementsItem)
+        
+        // 7. Status & Flyouts
+        let statusTab = NSHostingController(rootView: StatusFlyoutsTab(settings: settings))
+        statusTab.title = "Flyouts"
+        let statusItem = NSTabViewItem(viewController: statusTab)
+        statusItem.image = NSImage(systemSymbolName: "menu.bar.window", accessibilityDescription: "Flyouts")
+        tabViewController.addTabViewItem(statusItem)
+        
+        window.contentViewController = tabViewController
     }
 }

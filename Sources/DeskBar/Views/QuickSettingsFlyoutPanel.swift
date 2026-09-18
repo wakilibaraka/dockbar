@@ -84,10 +84,35 @@ final class QuickSettingsViewController: NSViewController {
         sep2.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
         // Header
+        let headerStack = NSStackView()
+        headerStack.orientation = .horizontal
+        headerStack.alignment = .centerY
+        headerStack.distribution = .fillProportionally
+        headerStack.spacing = 8
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+
         let header = NSTextField(labelWithString: "Quick Settings")
         header.font = .systemFont(ofSize: 13, weight: .semibold)
         header.textColor = .labelColor
-        outer.addArrangedSubview(header)
+        headerStack.addArrangedSubview(header)
+
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        headerStack.addArrangedSubview(spacer)
+
+        let editButton = NSButton(
+            image: NSImage(systemSymbolName: "slider.horizontal.3", accessibilityDescription: "Edit Quick Settings")!
+                .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))!,
+            target: self,
+            action: #selector(editQuickSettings)
+        )
+        editButton.isBordered = false
+        editButton.contentTintColor = NSColor.secondaryLabelColor
+        editButton.toolTip = "Edit Quick Settings"
+        headerStack.addArrangedSubview(editButton)
+
+        outer.addArrangedSubview(headerStack)
+        headerStack.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
         // Tile grid — 3 columns
         let enabledSettings = manager.enabledSettings(for: settings.enabledQuickSettings)
@@ -245,5 +270,12 @@ final class QuickSettingsViewController: NSViewController {
         var vol = Float32(sender.doubleValue / 100.0)
         let size = UInt32(MemoryLayout<Float32>.size)
         AudioObjectSetPropertyData(devID, &addr, 0, nil, size, &vol)
+    }
+}
+
+extension QuickSettingsViewController {
+    @objc private func editQuickSettings() {
+        self.view.window?.close()
+        (NSApp.delegate as? AppDelegate)?.openSettings(nil)
     }
 }

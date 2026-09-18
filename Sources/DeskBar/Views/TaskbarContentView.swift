@@ -705,7 +705,32 @@ final class TaskbarContentView: NSView {
 
         // Include all windows (including minimized/hidden) so they stay in the taskbar
         // with dimmed appearance — Windows-style behavior
-        return windowManager.windows(on: screen)
+        var windows = windowManager.windows(on: screen)
+
+        // Ensure apps that completely hide their AXWindows when minimized (like Chrome)
+        // are still represented by a dummy "minimized" WindowInfo so they stay in the dock.
+        let representedPIDs = Set(windows.map(\.pid))
+        let isMainScreen = ScreenGeometry.mainDisplayBounds() == ScreenGeometry.displayBounds(for: screen)
+
+        if isMainScreen {
+            for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+                if !representedPIDs.contains(app.processIdentifier) {
+                    let dummyWindow = WindowInfo(
+                        pid: app.processIdentifier,
+                        appName: app.localizedName ?? "",
+                        title: app.localizedName ?? "",
+                        icon: app.icon?.scaled(to: NSSize(width: 32, height: 32)),
+                        bundleIdentifier: app.bundleIdentifier,
+                        applicationURL: app.bundleURL,
+                        isMinimized: true,
+                        isHidden: app.isHidden
+                    )
+                    windows.append(dummyWindow)
+                }
+            }
+        }
+
+        return windows
     }
 
     private func smScopedWindows(baseWindows: [WindowInfo]) -> [WindowInfo] {
@@ -974,7 +999,15 @@ final class TaskbarContentView: NSView {
         var groups: [AppGroup] = []
         var groupIndexes: [String: Int] = [:]
 
+        // Get the list of pinned bundle identifiers to exclude them from the regular task zone
+        let pinnedIdentifiers = Set(pinnedAppManager.pinnedApps.map(\.bundleIdentifier))
+
         for window in windows {
+            // Skip windows belonging to pinned apps; they are rendered exclusively in LauncherZoneView
+            if let bundleIdentifier = window.bundleIdentifier, pinnedIdentifiers.contains(bundleIdentifier) {
+                continue
+            }
+
             let groupID = resolvedGroupID(for: window)
 
             if let index = groupIndexes[groupID] {

@@ -41,21 +41,20 @@ struct BehaviorSettingsTab: View {
             
             Divider().padding(.vertical, 8)
             
-            Section(header: Text("Launcher").font(.headline)) {
-                Toggle("Enable bare command launcher", isOn: $settings.enableBareCommandLauncher)
+            Section(header: Text("Hold-to-Quit (Cmd+Q / Cmd+W)").font(.headline)) {
+                Toggle("Enable hold-to-quit prevention", isOn: $settings.enableHoldToQuit)
                 
-                Picker("Apps launcher shortcut", selection: $settings.appsLauncherShortcut) {
-                    Text("Double Tap Command").tag(AppsLauncherShortcut.commandTap)
-                    Text("Double Tap Right Command").tag(AppsLauncherShortcut.rightCommandTap)
-                    Text("Control + Option + Return").tag(AppsLauncherShortcut.controlOptionReturn)
-                    Text("Control + Option + Space").tag(AppsLauncherShortcut.controlOptionSpace)
-                    Text("Option + Space").tag(AppsLauncherShortcut.optionSpace)
+                Group {
+                    Toggle("Include Cmd+W (Close Window)", isOn: $settings.holdToQuitCmdW)
+                    
+                    HStack {
+                        Text("Hold duration:")
+                        Slider(value: $settings.holdToQuitDuration, in: 0.5...5.0, step: 0.5)
+                        Text(String(format: "%.1fs", settings.holdToQuitDuration))
+                    }
                 }
-                
-                Picker("Launcher style", selection: $settings.launcherStyle) {
-                    Text("Anchored").tag(LauncherStyle.anchored)
-                    Text("Floating").tag(LauncherStyle.floating)
-                }
+                .disabled(!settings.enableHoldToQuit)
+                .padding(.leading, 16)
             }
         }
         .padding()

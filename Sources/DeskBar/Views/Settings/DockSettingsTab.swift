@@ -1,11 +1,18 @@
 import SwiftUI
 
-struct AppearanceSettingsTab: View {
+struct DockSettingsTab: View {
     @ObservedObject var settings: TaskbarSettings
     
     var body: some View {
         Form {
             Section(header: Text("Taskbar").font(.headline)) {
+                Picker("Dock mode", selection: $settings.dockMode) {
+                    Text("Independent").tag(DockMode.independent)
+                    Text("Hide Native Dock").tag(DockMode.hidden)
+                    Text("Replace (Autohide)").tag(DockMode.autoHide)
+                }
+                .pickerStyle(MenuPickerStyle())
+                
                 Picker("Theme", selection: $settings.appTheme) {
                     ForEach(AppTheme.allCases) { theme in
                         Text(theme.displayName).tag(theme)
@@ -65,6 +72,6 @@ struct AppearanceSettingsTab: View {
                 }
             }
         }
-        .padding()
+        .padding(20)
     }
 }

@@ -25,18 +25,6 @@ final class LaunchpickManager {
         if state == nil {
             let newState = LaunchpickState()
             
-            // Load config
-            let config = LaunchpickConfig.load()
-            newState.launchers = config.launchers.map { launcher in
-                LaunchpickItem(
-                    name: launcher.name,
-                    exec: launcher.exec,
-                    icon: IconResolver.resolve(icon: launcher.icon, exec: launcher.exec),
-                    category: "Pinned"
-                )
-            }
-            newState.columns = config.columns ?? 4
-            
             newState.onLaunch = { [weak self] item in
                 self?.launch(item: item)
                 self?.hide()
@@ -50,6 +38,26 @@ final class LaunchpickManager {
         }
         
         guard let state = state else { return }
+        
+        // Refresh launchers from config
+        let config = LaunchpickConfigManager.shared.config
+        state.columns = config.columns ?? 4
+        state.launchers = config.launchers.map { launcher in
+            LaunchpickItem(
+                name: launcher.name,
+                exec: launcher.exec,
+                icon: IconResolver.resolve(icon: launcher.icon, exec: launcher.exec),
+                category: "Pinned"
+            )
+        }
+        
+        if UserDefaults.standard.bool(forKey: "launchpickShowMostUsedApps") {
+            SpotlightMostUsed.shared.fetch { items in
+                state.mostUsedLaunchers = items
+            }
+        } else {
+            state.mostUsedLaunchers = []
+        }
         
         state.searchText = ""
         state.focusTrigger.toggle()

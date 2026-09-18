@@ -4,19 +4,24 @@ struct GeneralSettingsTab: View {
     @ObservedObject var settings: TaskbarSettings
     @ObservedObject var permissionsManager: PermissionsManager
     @ObservedObject var thumbnailService: ThumbnailService
-    @ObservedObject var calendarService = CalendarEventService.shared
+    @ObservedObject var blacklistManager: BlacklistManager
+    @ObservedObject var calendarService: CalendarEventService
+    
+    class ViewState: ObservableObject { @Published var newBlacklistBundleID = "" }
+    @StateObject private var state = ViewState()
+    
+    init(settings: TaskbarSettings, permissionsManager: PermissionsManager, thumbnailService: ThumbnailService, blacklistManager: BlacklistManager) {
+        self.settings = settings
+        self.permissionsManager = permissionsManager
+        self.thumbnailService = thumbnailService
+        self.blacklistManager = blacklistManager
+        self.calendarService = CalendarEventService.shared
+    }
     
     var body: some View {
         Form {
-            Section(header: Text("Startup & Integration").font(.headline)) {
+            Section(header: Text("Startup").font(.headline)) {
                 Toggle("Start at login", isOn: $settings.startAtLogin)
-                
-                Picker("Dock mode", selection: $settings.dockMode) {
-                    Text("Independent").tag(DockMode.independent)
-                    Text("Hide Native Dock").tag(DockMode.hidden)
-                    Text("Replace (Autohide)").tag(DockMode.autoHide)
-                }
-                .pickerStyle(MenuPickerStyle())
             }
             
             Divider().padding(.vertical, 8)
@@ -53,7 +58,43 @@ struct GeneralSettingsTab: View {
                     }
                 }
             }
+            
+            Divider().padding(.vertical, 8)
+            
+            Section(header: Text("Hidden Applications (Blacklist)").font(.headline)) {
+                Text("Apps added here will not appear in the taskbar.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    TextField("Bundle Identifier (e.g. com.apple.Safari)", text: $state.newBlacklistBundleID)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    Button("Add") {
+                        blacklistManager.add(bundleIdentifier: state.newBlacklistBundleID)
+                        state.newBlacklistBundleID = ""
+                    }
+                    .disabled(state.newBlacklistBundleID.isEmpty)
+                }
+                
+                List {
+                    ForEach(Array(blacklistManager.blacklistedBundleIDs).sorted(), id: \.self) { bundleID in
+                        HStack {
+                            Text(bundleID)
+                            Spacer()
+                            Button(action: {
+                                blacklistManager.remove(bundleIdentifier: bundleID)
+                            }) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                }
+                .frame(minHeight: 100)
+                .border(Color.secondary.opacity(0.2))
+            }
         }
-        .padding()
+        .padding(20)
     }
 }

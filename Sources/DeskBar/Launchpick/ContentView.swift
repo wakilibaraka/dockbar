@@ -14,6 +14,7 @@ enum AllAppsLayout: String, CaseIterable, Identifiable {
 class LaunchpickState: ObservableObject {
     @Published var searchText = ""
     @Published var launchers: [LaunchpickItem] = []
+    @Published var mostUsedLaunchers: [LaunchpickItem] = []
     @Published var columns: Int = 4
     @Published var focusTrigger = false
         @Published var selectedIndex: Int = 0
@@ -92,6 +93,8 @@ struct ContentView: View {
     @ObservedObject var state: LaunchpickState
     @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .list
     @AppStorage("showAllPinned") private var showAllPinned: Bool = false
+    @AppStorage("launchpickShowPinnedApps") private var launchpickShowPinnedApps: Bool = true
+    @AppStorage("launchpickShowMostUsedApps") private var launchpickShowMostUsedApps: Bool = false
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
@@ -113,7 +116,7 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Launchers grid
-                    if !state.filteredLaunchers.isEmpty {
+                    if launchpickShowPinnedApps && !state.filteredLaunchers.isEmpty {
                         VStack {
                             HStack {
                                 Text("Pinned")
@@ -147,6 +150,33 @@ struct ContentView: View {
                             ) {
                                 ForEach(Array(visibleLaunchers.enumerated()), id: \.element.id) { index, item in
                                     LaunchpickItemView(item: item, isSelected: index == state.selectedIndex) {
+                                        state.onLaunch?(item)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Most Used section
+                    if launchpickShowMostUsedApps && !state.mostUsedLaunchers.isEmpty {
+                        VStack {
+                            HStack {
+                                Text("Most Used")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 4)
+                            .padding(.bottom, 8)
+                            
+                            LazyVGrid(
+                                columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: state.columns),
+                                spacing: 16
+                            ) {
+                                ForEach(Array(state.mostUsedLaunchers.enumerated()), id: \.element.id) { index, item in
+                                    // Offset the index for keyboard selection (assuming most used apps come right after pinned apps)
+                                    let offsetIndex = (launchpickShowPinnedApps ? state.filteredLaunchers.count : 0) + index
+                                    LaunchpickItemView(item: item, isSelected: offsetIndex == state.selectedIndex) {
                                         state.onLaunch?(item)
                                     }
                                 }
