@@ -27,6 +27,21 @@ struct StatusFlyoutsTab: View {
                             .padding(.leading, 16)
                         Toggle("WiFi signal weak", isOn: $settings.notifyWiFiWeak)
                             .padding(.leading, 16)
+                            
+                        Button("Test Notification") {
+                            NotificationManager.shared.requestAuthorization { granted in
+                                if granted {
+                                    DispatchQueue.main.async {
+                                        NotificationManager.shared.sendNotification(
+                                            title: "Connectivity Tracker",
+                                            body: "This is a test notification from DeskBar Settings.",
+                                            identifier: UUID().uuidString
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -55,7 +70,7 @@ struct StatusFlyoutsTab: View {
                                     Spacer()
                                     
                                     Toggle("", isOn: $item.isEnabled)
-                                        .onChange(of: item.isEnabled) { _ in
+                                        .onChange(of: item.isEnabled) {
                                             saveQuickSettings()
                                         }
                                 }

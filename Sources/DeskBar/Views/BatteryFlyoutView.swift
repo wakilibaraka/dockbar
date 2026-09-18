@@ -172,7 +172,7 @@ struct BatteryFlyoutView: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 14)
         }
-        .frame(width: 440)
+        .frame(width: 320)
         .onAppear {
             bluetoothStats.startMonitoring()
             networkMonitor.startMonitoring()

@@ -1138,7 +1138,7 @@ final class TaskbarContentView: NSView {
             }
         }
 
-        return matchingVisibleWindows.count == 1 ? matchingVisibleWindows.first?.id : nil
+        return nil
     }
 
     private func topmostCGWindowID(
@@ -1196,7 +1196,11 @@ final class TaskbarContentView: NSView {
             return window.id == frontmostWindowID
         }
 
-        return window.pid == frontmostPID
+        // If frontmostWindowID is nil, it means we couldn't find ANY active on-screen window for the frontmost app.
+        // It could be that the app has no windows, or they are all minimized.
+        // Returning true here would cause clicking the task button to attempt minimizing a non-existent window.
+        // Returning false ensures we attempt to activate/unminimize the app.
+        return false
     }
 
     private func matchingVisibleWindowID(for element: AXUIElement, in windows: [WindowInfo]) -> String? {
@@ -2123,7 +2127,7 @@ final class TaskbarContentView: NSView {
 
     private func unminimize(windowInfo: WindowInfo, application: NSRunningApplication) {
         guard let windowElement = matchingWindowElement(for: windowInfo, application: application) else {
-            application.activate(options: .activateAllWindows)
+            activateOrphanWindowApplication(windowInfo)
             return
         }
 

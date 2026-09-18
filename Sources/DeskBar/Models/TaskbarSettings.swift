@@ -134,6 +134,14 @@ class TaskbarSettings: ObservableObject {
     @Published var notifyWiFiWeak: Bool {
         didSet { defaults.set(notifyWiFiWeak, forKey: "notifyWiFiWeak") }
     }
+    
+    @Published var autoOpenSingleSearchResult: Bool {
+        didSet { defaults.set(autoOpenSingleSearchResult, forKey: "autoOpenSingleSearchResult") }
+    }
+    
+    @Published var fuzzySearch: Bool {
+        didSet { defaults.set(fuzzySearch, forKey: "fuzzySearch") }
+    }
 
     @Published var showWindowCountBadges: Bool {
         didSet { defaults.set(showWindowCountBadges, forKey: "showWindowCountBadges") }
@@ -317,8 +325,12 @@ class TaskbarSettings: ObservableObject {
                 showConnections = defaults.object(forKey: "showConnections") as? Bool ?? false
         notifyBluetoothConnect = defaults.object(forKey: "notifyBluetoothConnect") as? Bool ?? false
         notifyBluetoothLowBattery = defaults.object(forKey: "notifyBluetoothLowBattery") as? Bool ?? false
-        notifyWiFiChange = defaults.object(forKey: "notifyWiFiChange") as? Bool ?? false
+        notifyWiFiChange = defaults.object(forKey: "notifyWiFiChange") as? Bool ?? true
         notifyWiFiWeak = defaults.object(forKey: "notifyWiFiWeak") as? Bool ?? false
+        
+        autoOpenSingleSearchResult = defaults.object(forKey: "autoOpenSingleSearchResult") as? Bool ?? false
+        fuzzySearch = defaults.object(forKey: "fuzzySearch") as? Bool ?? true
+        
         showWindowCountBadges = defaults.object(forKey: "showWindowCountBadges") as? Bool ?? true
                 enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth", "hideDesktop", "hiddenFiles"]
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
@@ -334,7 +346,7 @@ class TaskbarSettings: ObservableObject {
         } else if defaults.object(forKey: "groupByApp") != nil {
             self.groupingMode = (defaults.object(forKey: "groupByApp") as? Bool ?? false) ? .always : .never
         } else {
-            groupingMode = .automatic
+            groupingMode = .always
         }
                 groupedClickAction = GroupedClickAction(rawValue: defaults.string(forKey: "groupedClickAction") ?? "") ?? .cycleWindows
         frontmostClickAction = FrontmostClickAction(rawValue: defaults.string(forKey: "frontmostClickAction") ?? "") ?? .minimize

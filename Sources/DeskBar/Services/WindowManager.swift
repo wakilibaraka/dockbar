@@ -181,9 +181,18 @@ final class WindowManager: ObservableObject {
                     isProvisional: true
                 )
 
-                if let windowID = accessibilityService.getWindowID(for: axWindow) {
+                var matchedWindowID = accessibilityService.getWindowID(for: axWindow)
+                if matchedWindowID == nil && (minimized || hidden) {
+                    if let oldMatch = authoritative.values.first(where: { 
+                        $0.pid == application.processIdentifier && $0.title == title 
+                    }) {
+                        matchedWindowID = oldMatch.cgWindowID
+                    }
+                }
+
+                if let windowID = matchedWindowID {
                     let merged = mergeAuthoritativeWindow(
-                        existing: nextAuthoritative[windowID],
+                        existing: nextAuthoritative[windowID] ?? authoritative[windowID],
                         fallback: baseInfo,
                         windowID: windowID
                     )

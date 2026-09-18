@@ -13,8 +13,8 @@ class SettingsWindowController: NSWindowController {
         thumbnailService: ThumbnailService
     ) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 700, height: 600),
-            styleMask: [.titled, .closable, .miniaturizable],
+            contentRect: NSRect(x: 0, y: 0, width: 1000, height: 800),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -54,31 +54,24 @@ class SettingsWindowController: NSWindowController {
         tabViewController.addTabViewItem(behaviorItem)
         
         // 4. Launcher
-        let launcherTab = NSHostingController(rootView: LauncherOptionsTab(settings: settings))
+        let launcherTab = NSHostingController(rootView: LauncherOptionsTab(settings: settings, pinnedAppManager: pinnedAppManager))
         launcherTab.title = "Launcher"
         let launcherItem = NSTabViewItem(viewController: launcherTab)
         launcherItem.image = NSImage(systemSymbolName: "command", accessibilityDescription: "Launcher")
         tabViewController.addTabViewItem(launcherItem)
         
-        // 5. Start Menu
-        let startMenuTab = NSHostingController(rootView: StartMenuSettingsTab(pinnedAppManager: pinnedAppManager))
-        startMenuTab.title = "Start Menu"
-        let startMenuItem = NSTabViewItem(viewController: startMenuTab)
-        startMenuItem.image = NSImage(systemSymbolName: "square.grid.3x3.fill", accessibilityDescription: "Start Menu")
-        tabViewController.addTabViewItem(startMenuItem)
-        
-        // 6. Taskbar Elements
+        // 5. Elements
         let elementsTab = NSHostingController(rootView: TaskbarElementsTab(settings: settings))
         elementsTab.title = "Elements"
         let elementsItem = NSTabViewItem(viewController: elementsTab)
         elementsItem.image = NSImage(systemSymbolName: "puzzlepiece.extension", accessibilityDescription: "Elements")
         tabViewController.addTabViewItem(elementsItem)
         
-        // 7. Status & Flyouts
+        // 6. Flyouts
         let statusTab = NSHostingController(rootView: StatusFlyoutsTab(settings: settings))
         statusTab.title = "Flyouts"
         let statusItem = NSTabViewItem(viewController: statusTab)
-        statusItem.image = NSImage(systemSymbolName: "menu.bar.window", accessibilityDescription: "Flyouts")
+        statusItem.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: "Flyouts")
         tabViewController.addTabViewItem(statusItem)
         
         window.contentViewController = tabViewController

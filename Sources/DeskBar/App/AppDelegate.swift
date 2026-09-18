@@ -94,9 +94,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.windowSwitcherService = windowSwitcherService
 
+        completeLaunch(
+            wm: wm,
+            permissions: permissions,
+            settings: settings,
+            blacklistManager: blacklistManager,
+            pinnedAppManager: pinnedAppManager,
+            thumbnailService: thumbnailService,
+            smPluginService: smPluginService
+        )
+
         if !settings.hasCompletedOnboarding {
             onboardingWindowController = OnboardingWindowController(settings: settings, permissionsManager: permissions, thumbnailService: thumbnailService) { [weak self] in
-                self?.completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self?.openSettings(nil)
                 }
@@ -104,8 +113,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onboardingWindowController?.showWindow(nil)
             onboardingWindowController?.window?.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
-        } else {
-            completeLaunch(wm: wm, permissions: permissions, settings: settings, blacklistManager: blacklistManager, pinnedAppManager: pinnedAppManager, thumbnailService: thumbnailService, smPluginService: smPluginService)
         }
     }
 

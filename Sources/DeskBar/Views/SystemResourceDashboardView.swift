@@ -28,8 +28,8 @@ struct SystemResourceDashboardView: View {
             BackgroundProcessesSectionView()
             
         }
-        .padding(20)
-        .frame(width: 360)
+        .padding(16)
+        .frame(width: 280)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(NSColor.windowBackgroundColor))
