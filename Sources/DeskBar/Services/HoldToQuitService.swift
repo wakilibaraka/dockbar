@@ -6,7 +6,6 @@ import SwiftUI
 final class HoldToQuitService: ObservableObject {
     static let shared = HoldToQuitService()
     
-    private var overlayWindow: NSWindow?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     
@@ -22,7 +21,7 @@ final class HoldToQuitService: ObservableObject {
     private var isHandlingSynthesizedEvent = false
     private var currentEventToForward: CGEvent?
     
-        private init() {
+        private lazy var overlayWindow: NSWindow? = {
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 160, height: 160),
             styleMask: [.nonactivatingPanel, .borderless],
@@ -36,10 +35,12 @@ final class HoldToQuitService: ObservableObject {
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
         panel.center()
-        let view = NSHostingView(rootView: HoldToQuitOverlayView())
+        let view = NSHostingView(rootView: HoldToQuitOverlayView(service: self))
         panel.contentView = view
-        self.overlayWindow = panel
-    }
+        return panel
+    }()
+    
+    private init() {}
     
     func start() {
         guard eventTap == nil else { return }

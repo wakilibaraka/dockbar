@@ -338,7 +338,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup popover for both left and right clicks
         let popover = NSPopover()
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: BatteryFlyoutView())
+        popover.contentViewController = NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!))
         self.batteryPopover = popover
         
         if let button = statusItem.button {

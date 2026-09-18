@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HoldToQuitOverlayView: View {
-    @ObservedObject var service = HoldToQuitService.shared
+    @ObservedObject var service: HoldToQuitService
     
     var body: some View {
         if service.isShowingOverlay {
