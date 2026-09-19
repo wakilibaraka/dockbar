@@ -23,6 +23,7 @@ final class TaskbarContentView: NSView {
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
     
+        private let clusterDivider = NSView()
     private let axGetWindow: AXUIElementGetWindowFunc?
     private let accessibilityService = AccessibilityService()
 
@@ -116,7 +117,8 @@ final class TaskbarContentView: NSView {
             smPluginService: smPluginService,
             displayID: displayID
         )
-        self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+                self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+        updateClusterDividerVisibility()
         
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
@@ -176,7 +178,7 @@ final class TaskbarContentView: NSView {
         let contentWidth =
             launcherZoneView.preferredContentWidth() +
             fullMeasurement.preferredWidth +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
             0 +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
@@ -384,7 +386,6 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
         // Vertical divider separating apps from right-hand widgets
-        let clusterDivider = NSView()
         clusterDivider.wantsLayer = true
         clusterDivider.layer?.backgroundColor = NSColor.separatorColor.cgColor
         clusterDivider.translatesAutoresizingMaskIntoConstraints = false
@@ -398,7 +399,31 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
     }
 
+
+    private func updateClusterDividerVisibility() {
+        let hasRightWidgets = settings.connectivityTrayLocation == .dock || settings.systemResourceWidgetLocation == .dock
+        clusterDivider.isHidden = !hasRightWidgets
+    }
+
     private func bindState() {
+
+        settings.$connectivityTrayLocation
+            .receive(on: RunLoop.main)
+            .sink { [weak self] location in
+                self?.connectivityTrayView.isHidden = location != .dock
+                self?.updateClusterDividerVisibility()
+                self?.scheduleRebuildTaskZone()
+            }
+            .store(in: &cancellables)
+
+        settings.$systemResourceWidgetLocation
+            .receive(on: RunLoop.main)
+            .sink { [weak self] location in
+                self?.systemResourceWidgetView.isHidden = location != .dock
+                self?.updateClusterDividerVisibility()
+                self?.scheduleRebuildTaskZone()
+            }
+            .store(in: &cancellables)
         windowManager.$visibleWindows
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -1580,7 +1605,7 @@ final class TaskbarContentView: NSView {
 
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
             0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
@@ -1596,7 +1621,7 @@ final class TaskbarContentView: NSView {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
             0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
@@ -1626,7 +1651,7 @@ final class TaskbarContentView: NSView {
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
-                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+                (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             effectiveFixedZoneWidth =
@@ -1635,7 +1660,7 @@ final class TaskbarContentView: NSView {
         } else {
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
-                systemResourceWidgetView.preferredContentWidth() + connectivityTrayView.preferredContentWidth() + 1 +
+                (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
                 0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }

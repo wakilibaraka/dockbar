@@ -1,23 +1,18 @@
-# DockBar v1.5.0 Beta
+# DockBar v1.7.0 Beta
 
-This major beta release finalizes our transition from DeskBar to DockBar, introduces a pixel-perfect native battery menu bar replacement, and brings an entirely new flyout for power and device management.
+This major beta release brings highly requested customizability features, allowing you to freely mix and match where your widgets live, and introduces new productivity Quick Settings integrated from Hop.
 
 ## 🚀 Key Features & Changes
 
-### 🔋 Native Battery Icon
-- **Pixel-Perfect Redesign:** The menu bar battery icon has been completely rebuilt to match the native macOS proportions (16pt height) with a clean 1.5pt internal gap padding.
-- **Dynamic Theming:** The outer stroke correctly adapts to Light and Dark mode using dynamic AppKit drawing handlers, while the inner fill adjusts its color based on your charge state (Green/Orange/Red).
-- **Contrasting Text:** Percentage text is mathematically clipped to render in white over the color fill, and inverted over the empty background to ensure perfect readability.
+### 🔄 Dock & Menu Bar Widget Switching
+- **Freely Move Widgets:** You can now decide exactly where you want your widgets to live! Move the Battery Widget, Calendar & Quick Settings (Connectivity Tray), and System Resources Widget between the **Dock** and the **Menu Bar**.
+- **Settings UI:** Configure widget placement effortlessly via the updated "Taskbar Elements" tab in Settings.
+- **Dynamic Adaptability:** The Dock and Menu Bar will dynamically reorganize themselves and cleanly hide separators based on your choices.
 
-### ⚡️ Power & Bluetooth Flyout
-- **Rich Status Popover:** Left-clicking the battery icon now opens a new BeteriApp-inspired popover.
-- **Battery Hero:** A circular, animated gauge showing live power draw (Watts), cycle count, battery health, and temperature.
-- **Connected Devices:** A dedicated scrollable column for connected Bluetooth accessories, displaying specific icons (headphones, mouse, keyboard) and color-coded battery bars.
-- **Smart Context Menu:** Right-clicking the battery icon seamlessly falls back to the standard application menu (Settings, Restore Windows, Quit).
-- **Dashboard Cleanup:** Redundant battery and device sections have been removed from the main System Resource Dashboard to streamline the UI.
+### ⚡️ New Quick Settings (from Hop)
+- **Keyboard Lock (Cleaning Mode):** A new quick setting that allows you to instantly lock your keyboard input. Perfect for when you need to wipe down your MacBook keyboard without putting it to sleep or pressing random keys. Simply toggle it off using your mouse when you're done.
+- **Speed Test:** A new quick setting to instantly run a network speed test directly from your Mac without opening any external applications.
 
-### 🧹 System Migration & Stability
-- **Bundle ID Transition:** Fully migrated the underlying application bundle from `com.deskbar.app` to `com.dockbar.app`. 
-- **Automated Cleanup:** Added a `MigrationManager` that automatically hunts down and terminates old DeskBar instances, unregisters stale LaunchAgents, and removes outdated config locks so that you never end up with two instances competing for permissions.
-- **Zero-Width Bug Fix:** The menu bar item is now synchronously populated before layout to prevent macOS from incorrectly collapsing it on Macs with a notch.
-
+### 🧹 Refinements & Stability
+- Integrated seamlessly with the existing Quick Settings grid.
+- Cleaned up settings architecture for better state management.

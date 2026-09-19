@@ -1,0 +1,67 @@
+import AppKit
+
+final class KeyboardLockQuickSetting: QuickSetting {
+    let id = "keyboardLock"
+    let title = "Keyboard Lock"
+    let symbolName = "keyboard"
+    var isOn: Bool = false
+
+    // We'll just toggle it and use an event tap to block all keyboard events
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
+
+    deinit {
+        disableLock()
+    }
+
+    func refreshState() {
+        isOn = eventTap != nil
+    }
+
+    func toggle() {
+        if isOn {
+            disableLock()
+        } else {
+            enableLock()
+        }
+        refreshState()
+    }
+
+    private func enableLock() {
+        let eventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+
+        let callback: CGEventTapCallBack = { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+            // Swallow all keyboard events
+            return nil
+        }
+
+        guard let tap = CGEvent.tapCreate(
+            tap: .cghidEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(eventMask),
+            callback: callback,
+            userInfo: nil
+        ) else {
+            print("Failed to create keyboard event tap")
+            return
+        }
+
+        self.eventTap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        self.runLoopSource = source
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func disableLock() {
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+            }
+            self.eventTap = nil
+            self.runLoopSource = nil
+        }
+    }
+}

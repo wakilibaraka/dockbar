@@ -29,6 +29,8 @@ final class QuickSettingsManager {
         SmallLaunchpadQuickSetting(),
         XcodeCacheQuickSetting(),
         PomodoroQuickSetting(),
+        KeyboardLockQuickSetting(),
+        SpeedTestQuickSetting(),
     ]
     
     private let settingsMap: [String: QuickSetting]
