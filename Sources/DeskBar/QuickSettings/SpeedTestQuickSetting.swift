@@ -1,5 +1,6 @@
 import AppKit
 import UserNotifications
+import Combine
 
 @MainActor
 final class SpeedTestQuickSetting: QuickSetting {

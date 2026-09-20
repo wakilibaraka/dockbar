@@ -261,7 +261,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     item.isVisible = location == .menuBar
                     if location == .menuBar {
                         item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        let view = ConnectivityTrayView(settings: self.settings!)
+                        guard let validSettings = self.settings else { return }
+                        let view = ConnectivityTrayView(settings: validSettings)
                         view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
                         item.button?.addSubview(view)
                         item.length = view.preferredContentWidth()
@@ -278,7 +279,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     item.isVisible = location == .menuBar
                     if location == .menuBar {
                         item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        let view = SystemResourceWidgetView(settings: self.settings!, monitor: self.systemResourceMonitor!, smPluginService: self.smPluginService!, displayID: CGMainDisplayID())
+                        guard let validSettings = self.settings,
+                              let validMonitor = self.systemResourceMonitor,
+                              let validSMPlugin = self.smPluginService else { return }
+                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, smPluginService: validSMPlugin, displayID: CGMainDisplayID())
                         view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
                         item.button?.addSubview(view)
                         item.length = view.preferredContentWidth()
