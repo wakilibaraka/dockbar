@@ -118,8 +118,6 @@ final class TaskbarContentView: NSView {
             displayID: displayID
         )
                 self.connectivityTrayView = ConnectivityTrayView(settings: settings)
-        updateClusterDividerVisibility()
-        
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
         } else {
@@ -128,6 +126,7 @@ final class TaskbarContentView: NSView {
         
         super.init(frame: .zero)
         wantsLayer = true
+        updateClusterDividerVisibility()
         autoresizingMask = [.width, .height]
 
         configureLayout()

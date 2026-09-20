@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class QuickSettingsManager {
     static let shared = QuickSettingsManager()
     

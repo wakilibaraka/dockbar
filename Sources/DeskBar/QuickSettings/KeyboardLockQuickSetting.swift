@@ -12,11 +12,16 @@ final class KeyboardLockQuickSetting: QuickSetting {
     var isOn: Bool = false
 
     // We'll just toggle it and use an event tap to block all keyboard events
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    nonisolated(unsafe) private var eventTap: CFMachPort?
+    nonisolated(unsafe) private var runLoopSource: CFRunLoopSource?
 
     deinit {
-        disableLock()
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+            }
+        }
     }
 
     func refreshState() {
