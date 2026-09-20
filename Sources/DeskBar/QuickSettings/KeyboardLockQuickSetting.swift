@@ -1,9 +1,14 @@
 import AppKit
 
+@MainActor
 final class KeyboardLockQuickSetting: QuickSetting {
     let id = "keyboardLock"
-    let title = "Keyboard Lock"
-    let symbolName = "keyboard"
+    var title: String {
+        return isOn ? "Keyboard Locked" : "Keyboard Lock"
+    }
+    var symbolName: String {
+        return isOn ? "lock.fill" : "keyboard"
+    }
     var isOn: Bool = false
 
     // We'll just toggle it and use an event tap to block all keyboard events
@@ -28,6 +33,17 @@ final class KeyboardLockQuickSetting: QuickSetting {
     }
 
     private func enableLock() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        guard AXIsProcessTrustedWithOptions(options) else {
+            let alert = NSAlert()
+            alert.messageText = "Accessibility Permission Required"
+            alert.informativeText = "Keyboard lock requires Accessibility permission to intercept and swallow keyboard events."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+
         let eventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
 
         let callback: CGEventTapCallBack = { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
@@ -52,6 +68,16 @@ final class KeyboardLockQuickSetting: QuickSetting {
         self.runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
+
+        // Auto-unlock after 5 minutes
+        Task {
+            try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
+            if self.eventTap != nil {
+                self.disableLock()
+                self.refreshState()
+                QuickSettingsManager.shared.refreshAll()
+            }
+        }
     }
 
     private func disableLock() {
