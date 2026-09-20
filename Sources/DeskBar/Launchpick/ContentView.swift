@@ -23,8 +23,11 @@ class LaunchpickState: ObservableObject {
     var onLaunch: ((LaunchpickItem) -> Void)?
     var onDismiss: (() -> Void)?
 
-    lazy var systemApps: [LaunchpickItem] = {
-        AppScanner.shared.apps.map { app in
+    var systemApps: [LaunchpickItem] {
+        AppScanner.shared.apps.filter { app in
+            guard let bundleID = app.bundleIdentifier else { return true }
+            return !BlacklistManager.shared.isBlacklisted(bundleIdentifier: bundleID)
+        }.map { app in
             LaunchpickItem(
                 name: app.name,
                 exec: "open -a '\(app.name)'",
@@ -32,7 +35,7 @@ class LaunchpickState: ObservableObject {
                 category: app.category
             )
         }
-    }()
+    }
 
     var filteredLaunchers: [LaunchpickItem] {
         if searchText.isEmpty {

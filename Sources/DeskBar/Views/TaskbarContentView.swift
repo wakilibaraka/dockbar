@@ -2261,16 +2261,32 @@ private struct TaskZonePlacedView {
 private struct TaskZoneOrderingState {
     private(set) var nonPositionedItemIDs: [String] = []
     private(set) var userPositionedRanks: [String: Int] = [:]
+    private var recentlyDepartedItemIDs: [String: Date] = [:]
 
     mutating func reconcile(currentIDs: [String]) {
         let currentIDSet = Set(currentIDs)
-        userPositionedRanks = userPositionedRanks.filter { currentIDSet.contains($0.key) }
+        let now = Date()
+        
+        recentlyDepartedItemIDs = recentlyDepartedItemIDs.filter { now.timeIntervalSince($0.value) < 10.0 }
+        for id in currentIDs { recentlyDepartedItemIDs.removeValue(forKey: id) }
+        
+        let knownItemIDs = Set(nonPositionedItemIDs).union(userPositionedRanks.keys)
+        let departedItemIDs = knownItemIDs.subtracting(currentIDSet)
+        for id in departedItemIDs {
+            if recentlyDepartedItemIDs[id] == nil {
+                recentlyDepartedItemIDs[id] = now
+            }
+        }
+        
+        let activeOrRecentlyDeparted = currentIDSet.union(recentlyDepartedItemIDs.keys)
+        
+        userPositionedRanks = userPositionedRanks.filter { activeOrRecentlyDeparted.contains($0.key) }
         nonPositionedItemIDs = nonPositionedItemIDs.filter {
-            currentIDSet.contains($0) && userPositionedRanks[$0] == nil
+            activeOrRecentlyDeparted.contains($0) && userPositionedRanks[$0] == nil
         }
 
-        let knownItemIDs = Set(nonPositionedItemIDs).union(userPositionedRanks.keys)
-        let newItemIDs = currentIDs.filter { !knownItemIDs.contains($0) }
+        let knownActive = Set(nonPositionedItemIDs).union(userPositionedRanks.keys)
+        let newItemIDs = currentIDs.filter { !knownActive.contains($0) }
         for itemID in newItemIDs {
             nonPositionedItemIDs.append(itemID)
         }

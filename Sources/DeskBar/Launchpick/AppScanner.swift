@@ -9,6 +9,7 @@ class AppScanner {
         let path: String
         let icon: NSImage
         let category: String
+        let bundleIdentifier: String?
     }
 
     lazy var apps: [App] = {
@@ -30,11 +31,13 @@ class AppScanner {
                 guard seen.insert(name).inserted else { continue }
                 let icon = NSWorkspace.shared.icon(forFile: fullPath)
                 var category = "Other"
-                if let bundle = Bundle(path: fullPath),
+                let bundle = Bundle(path: fullPath)
+                let bundleIdentifier = bundle?.bundleIdentifier
+                if let bundle = bundle,
                    let catType = bundle.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String {
                     category = Self.mapCategory(catType)
                 }
-                result.append(App(id: fullPath, name: name, path: fullPath, icon: icon, category: category))
+                result.append(App(id: fullPath, name: name, path: fullPath, icon: icon, category: category, bundleIdentifier: bundleIdentifier))
             }
         }
 

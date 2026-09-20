@@ -2,6 +2,7 @@ import AppKit
 import Combine
 
 final class BlacklistManager: ObservableObject {
+    static let shared = BlacklistManager()
     static let didChangeNotification = Notification.Name("BlacklistManager.didChange")
 
     @Published var blacklistedBundleIDs: Set<String>

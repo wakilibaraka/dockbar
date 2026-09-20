@@ -376,7 +376,7 @@ class TaskbarSettings: ObservableObject {
             groupingMode = .always
         }
                 groupedClickAction = GroupedClickAction(rawValue: defaults.string(forKey: "groupedClickAction") ?? "") ?? .cycleWindows
-        frontmostClickAction = FrontmostClickAction(rawValue: defaults.string(forKey: "frontmostClickAction") ?? "") ?? .minimize
+        frontmostClickAction = FrontmostClickAction(rawValue: defaults.string(forKey: "frontmostClickAction") ?? "") ?? .cycle
         dragReorder = defaults.object(forKey: "dragReorder") as? Bool ?? true
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
         thumbnailSize = defaults.object(forKey: "thumbnailSize") as? CGFloat ?? Self.defaultThumbnailSize
