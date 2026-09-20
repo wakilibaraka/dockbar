@@ -24,6 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowSwitcherService: WindowSwitcherService?
     private var settingsWindowController: SettingsWindowController?
     private var onboardingWindowController: OnboardingWindowController?
+    private var connectivityStatusItem: NSStatusItem?
+    private var systemResourceStatusItem: NSStatusItem?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var restoreWindowsMenuItem: NSMenuItem?
@@ -237,6 +239,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configureStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let connectivityStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let systemResourceStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        self.statusItem = statusItem
+        self.connectivityStatusItem = connectivityStatusItem
+        self.systemResourceStatusItem = systemResourceStatusItem
+
+        if let settings = self.settings {
+            settings.$batteryWidgetLocation
+                .receive(on: DispatchQueue.main)
+                .sink { [weak statusItem] location in
+                    statusItem?.isVisible = location == .menuBar
+                }
+                .store(in: &cancellables)
+
+            settings.$connectivityTrayLocation
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self, weak connectivityStatusItem] location in
+                    guard let self = self, let item = connectivityStatusItem else { return }
+                    item.isVisible = location == .menuBar
+                    if location == .menuBar {
+                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                        guard let validSettings = self.settings else { return }
+                        let view = ConnectivityTrayView(settings: validSettings)
+                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                        item.button?.addSubview(view)
+                        item.length = view.preferredContentWidth()
+                    } else {
+                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                    }
+                }
+                .store(in: &cancellables)
+
+            settings.$systemResourceWidgetLocation
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self, weak systemResourceStatusItem] location in
+                    guard let self = self, let item = systemResourceStatusItem else { return }
+                    item.isVisible = location == .menuBar
+                    if location == .menuBar {
+                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                        guard let validSettings = self.settings,
+                              let validMonitor = self.systemResourceMonitor,
+                              let validSMPlugin = self.smPluginService else { return }
+                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, smPluginService: validSMPlugin, displayID: CGMainDisplayID())
+                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                        item.button?.addSubview(view)
+                        item.length = view.preferredContentWidth()
+
+                        view.preferredWidthDidChange = { [weak item, weak view] in
+                            if let item = item, let view = view {
+                                item.length = view.preferredContentWidth()
+                                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                            }
+                        }
+                    } else {
+                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                    }
+                }
+                .store(in: &cancellables)
+        }
         
         if let button = statusItem.button {
             // Synchronously ensure non-zero width so macOS notch collapsing doesn't hide it

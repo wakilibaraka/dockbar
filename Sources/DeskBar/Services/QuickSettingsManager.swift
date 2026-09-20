@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class QuickSettingsManager {
     static let shared = QuickSettingsManager()
     
@@ -29,6 +30,8 @@ final class QuickSettingsManager {
         SmallLaunchpadQuickSetting(),
         XcodeCacheQuickSetting(),
         PomodoroQuickSetting(),
+        KeyboardLockQuickSetting(),
+        SpeedTestQuickSetting(),
     ]
     
     private let settingsMap: [String: QuickSetting]

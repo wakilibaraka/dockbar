@@ -20,6 +20,15 @@ struct TaskbarElementsTab: View {
                 // Battery Widget
                 GroupBox(label: Text("Battery Widget").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
+                        Picker("Location:", selection: $settings.batteryWidgetLocation) {
+                            ForEach(WidgetLocation.allCases) { loc in
+                                Text(loc.displayName).tag(loc)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 200)
+
+                        Divider()
                         VStack(alignment: .leading, spacing: 6) {
                             Toggle("Show percentage next to icon", isOn: $settings.showBatteryPercentage)
                             Toggle("Show percentage inside icon", isOn: $settings.showPercentageInsideIcon)
@@ -47,9 +56,34 @@ struct TaskbarElementsTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
+
+                GroupBox(label: Text("Calendar & Quick Settings").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Picker("Location:", selection: $settings.connectivityTrayLocation) {
+                            ForEach(WidgetLocation.allCases) { loc in
+                                Text(loc.displayName).tag(loc)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 200)
+                    }
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 // System Resources
                 GroupBox(label: Text("System Resources Widget").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Picker("Location:", selection: $settings.systemResourceWidgetLocation) {
+                            ForEach(WidgetLocation.allCases) { loc in
+                                Text(loc.displayName).tag(loc)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 200)
+
+                        Divider()
+
                         Toggle("Show system resource widget", isOn: $settings.showSystemResourceWidget)
                     }
                     .padding(.top, 8)

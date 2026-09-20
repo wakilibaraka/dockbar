@@ -101,6 +101,20 @@ enum TaskTruncationStyle: String, CaseIterable {
     case ellipsisHead   // "...Very Long Title"
 }
 
+
+enum WidgetLocation: String, CaseIterable, Identifiable {
+    case dock
+    case menuBar
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .dock: return "Dock"
+        case .menuBar: return "Menu Bar"
+        }
+    }
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -289,6 +303,19 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(batteryIconSize.rawValue, forKey: "batteryIconSize") }
     }
 
+
+    @Published var connectivityTrayLocation: WidgetLocation {
+        didSet { defaults.set(connectivityTrayLocation.rawValue, forKey: "connectivityTrayLocation") }
+    }
+
+    @Published var systemResourceWidgetLocation: WidgetLocation {
+        didSet { defaults.set(systemResourceWidgetLocation.rawValue, forKey: "systemResourceWidgetLocation") }
+    }
+
+    @Published var batteryWidgetLocation: WidgetLocation {
+        didSet { defaults.set(batteryWidgetLocation.rawValue, forKey: "batteryWidgetLocation") }
+    }
+
     @Published var showSessionManagerAgentTitles: Bool {
         didSet { defaults.set(showSessionManagerAgentTitles, forKey: "showSessionManagerAgentTitles") }
     }
@@ -378,6 +405,10 @@ class TaskbarSettings: ObservableObject {
         batteryIconStyle = BatteryIconStyle(rawValue: defaults.string(forKey: "batteryIconStyle") ?? "") ?? .horizontal
         batteryIconSize = BatteryIconSize(rawValue: defaults.string(forKey: "batteryIconSize") ?? "") ?? .large
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
+
+        connectivityTrayLocation = WidgetLocation(rawValue: defaults.string(forKey: "connectivityTrayLocation") ?? "") ?? .dock
+        systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .dock
+        batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
         animateSessionManagerActivity = defaults.object(forKey: "animateSessionManagerActivity") as? Bool ?? false
