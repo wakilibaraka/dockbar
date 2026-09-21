@@ -136,7 +136,6 @@ final class TaskbarContentView: NSView {
         observePinRequests()
         systemResourceWidgetView.preferredWidthDidChange = { [weak self] in
             self?.schedulePreferredWidthNotification()
-            self?.applyResponsiveWidthCapsNowOrSchedule()
         }
         updateTaskbarLayout()
         rebuildTaskZone()
@@ -170,14 +169,20 @@ final class TaskbarContentView: NSView {
         rebuildTaskZone()
     }
 
+    /// Width contributed by right-cluster widgets that are currently in the Dock,
+    /// plus the 1pt cluster-divider pixel. Use this at every layout budget site.
+    private var dockWidgetFixedWidth: CGFloat {
+        (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0)
+            + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0)
+            + 1
+    }
+
     func preferredCompactWidth() -> CGFloat {
-        layoutSubtreeIfNeeded()
-        
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let contentWidth =
             launcherZoneView.preferredContentWidth() +
             fullMeasurement.preferredWidth +
-            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
+            dockWidgetFixedWidth +
             0 +
             zonesStackView.edgeInsets.left +
             zonesStackView.edgeInsets.right
@@ -411,7 +416,7 @@ final class TaskbarContentView: NSView {
             .sink { [weak self] location in
                 self?.connectivityTrayView.isHidden = location != .dock
                 self?.updateClusterDividerVisibility()
-                self?.scheduleRebuildTaskZone()
+                self?.schedulePreferredWidthNotification()
             }
             .store(in: &cancellables)
 
@@ -420,7 +425,7 @@ final class TaskbarContentView: NSView {
             .sink { [weak self] location in
                 self?.systemResourceWidgetView.isHidden = location != .dock
                 self?.updateClusterDividerVisibility()
-                self?.scheduleRebuildTaskZone()
+                self?.schedulePreferredWidthNotification()
             }
             .store(in: &cancellables)
         windowManager.$visibleWindows
@@ -1604,7 +1609,7 @@ final class TaskbarContentView: NSView {
 
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
+            dockWidgetFixedWidth +
             0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
@@ -1620,7 +1625,7 @@ final class TaskbarContentView: NSView {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
-            (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
+            dockWidgetFixedWidth +
             0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
@@ -1650,7 +1655,7 @@ final class TaskbarContentView: NSView {
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
-                (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
+                dockWidgetFixedWidth +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             effectiveFixedZoneWidth =
@@ -1659,7 +1664,7 @@ final class TaskbarContentView: NSView {
         } else {
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
-                (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0) + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0) + 1 +
+                dockWidgetFixedWidth +
                 0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }

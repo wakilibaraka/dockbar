@@ -1,4 +1,4 @@
-# DockBar v1.9.2 Beta
+# DockBar v1.9.3 Beta
 
 This major beta release brings highly requested customizability features, allowing you to freely mix and match where your widgets live, and introduces new productivity Quick Settings integrated from Hop.
 

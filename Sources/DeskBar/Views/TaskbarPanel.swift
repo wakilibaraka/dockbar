@@ -270,17 +270,21 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func normalizeFrame(to frame: NSRect) {
-        if !Self.framesApproximatelyEqual(self.frame, frame) {
+        let windowFrameChanged = !Self.framesApproximatelyEqual(self.frame, frame)
+        if windowFrameChanged {
             setFrame(frame, display: true, animate: false)
         }
 
         let rootFrame = NSRect(origin: .zero, size: frame.size)
-        if !Self.framesApproximatelyEqual(rootView.frame, rootFrame) {
+        let rootFrameChanged = !Self.framesApproximatelyEqual(rootView.frame, rootFrame)
+        if rootFrameChanged {
             rootView.frame = rootFrame
         }
 
         updateChromeLayout(animated: false)
-        hostedView?.needsLayout = true
+        if windowFrameChanged || rootFrameChanged {
+            hostedView?.needsLayout = true
+        }
     }
 
     private static func framesApproximatelyEqual(_ lhs: NSRect, _ rhs: NSRect) -> Bool {
