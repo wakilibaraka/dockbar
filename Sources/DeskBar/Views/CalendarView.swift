@@ -112,14 +112,7 @@ struct CalendarView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        // Colourful Windows-like background using a gradient overlay
-        .background {
-            LinearGradient(
-                colors: [Color.accentColor.opacity(0.15), Color.clear],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        .background(.regularMaterial)
     }
 
     private var upcomingEvents: [CalendarEvent] {

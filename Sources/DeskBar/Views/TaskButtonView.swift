@@ -31,6 +31,7 @@ struct TaskButtonPluginMenuConfiguration {
 }
 
 final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
+    static let maximumTaskButtonWidth: CGFloat = 160
     static let minimumTaskWidth: CGFloat = 56
     static let minimumPluginActionTaskWidth: CGFloat = 88
     static let minimumAdaptiveTaskWidth: CGFloat = 32

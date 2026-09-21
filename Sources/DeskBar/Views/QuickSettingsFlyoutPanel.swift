@@ -136,23 +136,7 @@ final class QuickSettingsViewController: NSViewController {
             let grid = NSGridView(views: rows)
             grid.rowSpacing = 8
             grid.columnSpacing = 12
-            grid.translatesAutoresizingMaskIntoConstraints = false
-
-            let gridScrollView = NSScrollView()
-            gridScrollView.hasVerticalScroller = true
-            gridScrollView.hasHorizontalScroller = false
-            gridScrollView.borderType = .noBorder
-            gridScrollView.drawsBackground = false
-            gridScrollView.scrollerStyle = .overlay
-            gridScrollView.translatesAutoresizingMaskIntoConstraints = false
-            gridScrollView.documentView = grid
-            outer.addArrangedSubview(gridScrollView)
-            gridScrollView.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
-            gridScrollView.heightAnchor.constraint(lessThanOrEqualToConstant: 360).isActive = true
-
-            let gridSize = grid.fittingSize
-            grid.frame = NSRect(origin: .zero, size: gridSize)
-            gridScrollView.contentView.postsBoundsChangedNotifications = false
+            outer.addArrangedSubview(grid)
         }
 
         // Separator
@@ -192,7 +176,10 @@ final class QuickSettingsViewController: NSViewController {
         let fit = outer.fittingSize
         let popoverW = fit.width + 28
         let popoverH = fit.height + 28
-        self.preferredContentSize = NSSize(width: popoverW, height: popoverH)
+        self.preferredContentSize = NSSize(
+            width: min(max(popoverW, 260), 360),
+            height: min(popoverH, 420)
+        )
     }
 
     // MARK: - Helpers
