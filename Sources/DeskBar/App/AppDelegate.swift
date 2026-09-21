@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindowController: OnboardingWindowController?
     private var connectivityStatusItem: NSStatusItem?
     private var systemResourceStatusItem: NSStatusItem?
+    private var weatherStatusItem: NSStatusItem?
+    private var weatherService: WeatherService?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var restoreWindowsMenuItem: NSMenuItem?
@@ -85,6 +87,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let thumbnailService = ThumbnailService()
         self.thumbnailService = thumbnailService
+
+        let weatherService = WeatherService(settings: settings)
+        self.weatherService = weatherService
+        weatherService.start()
 
         let windowLayoutSnapshotManager = WindowLayoutSnapshotManager(windowManager: wm)
         self.windowLayoutSnapshotManager = windowLayoutSnapshotManager
@@ -241,10 +247,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let connectivityStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let systemResourceStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let weatherStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         self.statusItem = statusItem
         self.connectivityStatusItem = connectivityStatusItem
         self.systemResourceStatusItem = systemResourceStatusItem
+        self.weatherStatusItem = weatherStatusItem
 
         if let settings = self.settings {
             settings.$batteryWidgetLocation
@@ -296,6 +304,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     } else {
                         item.button?.subviews.forEach { $0.removeFromSuperview() }
                     }
+                }
+                .store(in: &cancellables)
+
+            settings.$weatherEnabled
+                .combineLatest(settings.$weatherWidgetLocation)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self, weak weatherStatusItem] enabled, location in
+                    guard let self, let item = weatherStatusItem else { return }
+                    item.isVisible = enabled && location == .menuBar
+                    item.button?.subviews.forEach { $0.removeFromSuperview() }
+                    guard item.isVisible, let service = self.weatherService else { return }
+                    let view = WeatherWidgetView(service: service, settings: settings)
+                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                    item.button?.addSubview(view)
+                    item.length = view.preferredContentWidth()
                 }
                 .store(in: &cancellables)
         }
@@ -545,7 +568,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let smPluginService,
             let systemResourceMonitor,
             let blacklistManager,
-            let pinnedAppManager
+            let pinnedAppManager,
+            let weatherService
         else {
             return
         }
@@ -573,6 +597,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 blacklistManager: blacklistManager,
                 pinnedAppManager: pinnedAppManager,
                 systemResourceMonitor: systemResourceMonitor,
+                weatherService: weatherService,
                 thumbnailService: thumbnailService,
                 displayID: displayID,
                 openSettingsHandler: { [weak self] in
