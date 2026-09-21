@@ -72,6 +72,10 @@ final class CalendarTrayButton: NSView {
         let dateNumFormatter = DateFormatter()
         dateNumFormatter.dateFormat = "d" // e.g., "17"
         calendarIconView.dateString = dateNumFormatter.string(from: date)
+
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "MMM"
+        calendarIconView.monthString = monthFormatter.string(from: date)
     }
     
     override func updateTrackingAreas() {
@@ -101,6 +105,13 @@ final class CalendarTrayButton: NSView {
 }
 
 final class CalendarIconView: NSView {
+    var monthString: String = "Jan" {
+        didSet {
+            guard monthString != oldValue else { return }
+            needsDisplay = true
+        }
+    }
+
     var dateString: String = "1" {
         didSet {
             guard dateString != oldValue else { return }
@@ -129,12 +140,13 @@ final class CalendarIconView: NSView {
         let cornerRadius: CGFloat = 3.0
         let path = NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius)
         
-        // White background (or light adaptive background)
+        // The lower page follows the current appearance while the header keeps
+        // the familiar calendar red.
         NSColor.controlBackgroundColor.setFill()
         path.fill()
         
         // Red header
-        let headerHeight: CGFloat = 6.0
+        let headerHeight: CGFloat = 8.0
         let headerRect = NSRect(x: 0, y: bounds.height - headerHeight, width: bounds.width, height: headerHeight)
         let headerPath = NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius)
         // Clip to the header rect so we only draw the top part
@@ -149,10 +161,20 @@ final class CalendarIconView: NSView {
         path.lineWidth = 2.0
         path.stroke()
         
-        // Text inside
+        let monthParagraph = NSMutableParagraphStyle()
+        monthParagraph.alignment = .center
+        let monthAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 5.5, weight: .bold),
+            .foregroundColor: NSColor.white,
+            .paragraphStyle: monthParagraph
+        ]
+        let monthRect = NSRect(x: 0, y: bounds.height - headerHeight + 1.0, width: bounds.width, height: headerHeight - 1.0)
+        monthString.draw(in: monthRect, withAttributes: monthAttributes)
+
+        // Date inside the page
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
-        let fontSize: CGFloat = dateString.count > 1 ? 10 : 11
+        let fontSize: CGFloat = dateString.count > 1 ? 9 : 10
         let font = NSFont.systemFont(ofSize: fontSize, weight: .bold)
         
         let attributes: [NSAttributedString.Key: Any] = [
@@ -164,7 +186,7 @@ final class CalendarIconView: NSView {
         let textSize = dateString.size(withAttributes: attributes)
         let textRect = NSRect(
             x: 0,
-            y: (bounds.height - headerHeight - textSize.height) / 2.0 - 0.5, // Center in the white area
+            y: (bounds.height - headerHeight - textSize.height) / 2.0 - 0.5,
             width: bounds.width,
             height: textSize.height
         )

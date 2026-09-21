@@ -11,7 +11,7 @@ struct SystemResourceDashboardView: View {
     private let borderDark = Color.white.opacity(0.05)
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             
             // 2. Antigravity Activity
             if let smPluginService = smPluginService {
@@ -29,7 +29,7 @@ struct SystemResourceDashboardView: View {
             
         }
         .padding(16)
-        .frame(width: 280)
+        .frame(width: 320)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(NSColor.windowBackgroundColor))
@@ -49,17 +49,61 @@ struct AgentActivitySectionView: View {
     @ObservedObject var service: SMPluginService
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Antigravity Activity")
-                .font(.system(size: 14, weight: .semibold))
-            
-            HStack(spacing: 8) {
-                AgentBadge(title: "ACT", value: service.watchSummary.workingCount, color: Color(nsColor: NSColor(red: 0.42, green: 0.8, blue: 0.67, alpha: 1.0))) // Soft Green
-                AgentBadge(title: "THK", value: service.watchSummary.thinkingCount, color: Color(nsColor: NSColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0))) // Soft Yellow
-                AgentBadge(title: "PRM", value: service.watchSummary.waitingPermissionCount, color: Color.orange)
-                AgentBadge(title: "IDL", value: service.watchSummary.idleCount, color: Color.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Antigravity Activity", systemImage: "sparkles")
+                    .font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Text(service.isMonitoring ? "Monitoring" : "Paused")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(service.isMonitoring ? .green : .secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    AgentBadge(title: "ACT", value: service.watchSummary.workingCount, color: .green)
+                    AgentBadge(title: "THK", value: service.watchSummary.thinkingCount, color: .yellow)
+                    AgentBadge(title: "PRM", value: service.watchSummary.waitingPermissionCount, color: .orange)
+                    AgentBadge(title: "IDL", value: service.watchSummary.idleCount, color: .secondary)
+                }
+
+                HStack(spacing: 8) {
+                    TrackerBadge(title: "SM Plugin Manager", value: service.watchSummary.totalCount > 0 ? "Active" : "Ready", icon: "puzzlepiece.extension")
+                    TrackerBadge(title: "AI Tokens", value: formattedTokenCount(service.totalTokensUsed), icon: "number")
+                }
+            }
+            .padding(12)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    private func formattedTokenCount(_ count: Int) -> String {
+        count >= 1_000_000 ? String(format: "%.1fM", Double(count) / 1_000_000) :
+        count >= 1_000 ? String(format: "%.1fk", Double(count) / 1_000) : "\(count)"
+    }
+}
+
+private struct TrackerBadge: View {
+    let title: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text(value)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .monospacedDigit()
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -92,11 +136,11 @@ struct SystemResourcesSectionView: View {
     @StateObject private var samples = ResourceSamples()
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("System Resources")
-                .font(.system(size: 14, weight: .semibold))
-            
-            VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("System Resources", systemImage: "chart.bar.xaxis")
+                .font(.system(size: 13, weight: .semibold))
+
+            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 2) {
                 ResourceRow(
                     title: "Memory",
                     valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
@@ -141,6 +185,8 @@ struct SystemResourcesSectionView: View {
                     maximum: max(networkMonitor.uploadSamples.max() ?? 1, 1)
                 )
             }
+            .padding(12)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .onReceive(monitor.$snapshot) { snapshot in
             if let cpu = snapshot.cpuPercent {
@@ -181,24 +227,27 @@ struct ResourceRow: View {
     var maximum: Double? = 100
     
     var body: some View {
-        VStack(spacing: 6) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                Spacer()
-                Text(valueText)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundColor(color)
-            }
-            
+        GridRow {
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .gridColumnAlignment(.leading)
+
             MetricGraphView(
                 samples: samples.isEmpty ? [percent] : samples,
                 accent: color,
                 style: .filledWave,
                 maximum: maximum
             )
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(width: 108, alignment: .leading)
+
+            Text(valueText)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .monospacedDigit()
+                .foregroundColor(color)
+                .gridColumnAlignment(.trailing)
         }
+        .frame(height: 28)
     }
 }
 
@@ -209,8 +258,8 @@ struct BackgroundProcessesSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Background Apps")
-                    .font(.system(size: 14, weight: .semibold))
+                Label("Background Apps", systemImage: "square.stack.3d.up")
+                    .font(.system(size: 13, weight: .semibold))
                 Spacer()
                 if viewModel.isRefreshing {
                     ProgressView()
@@ -224,7 +273,7 @@ struct BackgroundProcessesSectionView: View {
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: 0) {
                     ForEach(viewModel.apps.prefix(6), id: \.processIdentifier) { app in
                         HStack(spacing: 10) {
                             if let icon = app.icon {
@@ -241,6 +290,7 @@ struct BackgroundProcessesSectionView: View {
                             Text(app.localizedName ?? "Unknown")
                                 .font(.system(size: 12))
                                 .lineLimit(1)
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                             
                             Spacer()
                             
@@ -261,6 +311,7 @@ struct BackgroundProcessesSectionView: View {
                                     .font(.system(size: 12))
                             }
                             .buttonStyle(.plain)
+                            .frame(width: 18, height: 18)
                             .onHover { hovering in
                                 if hovering {
                                     NSCursor.pointingHand.push()
@@ -269,8 +320,14 @@ struct BackgroundProcessesSectionView: View {
                                 }
                             }
                         }
+                        .frame(height: 30)
+                        if app.processIdentifier != viewModel.apps.prefix(6).last?.processIdentifier {
+                            Divider()
+                        }
                     }
                 }
+                .padding(.horizontal, 10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .onAppear {

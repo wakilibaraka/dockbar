@@ -417,6 +417,14 @@ final class SMPluginService: ObservableObject {
     @Published private(set) var watchWindows: [SMWatchWindowAnnotation] = []
     @Published private(set) var terminalTabCountByWindowID: [CGWindowID: Int] = [:]
 
+    var isMonitoring: Bool {
+        isEnabled
+    }
+
+    var totalTokensUsed: Int {
+        agentTabs.compactMap(\.tokensUsed).reduce(0, +)
+    }
+
     private let pollInterval: TimeInterval
     private var pollLoopTask: Task<Void, Never>?
     private var eventStreamTask: Task<Void, Never>?
