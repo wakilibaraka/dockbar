@@ -89,9 +89,7 @@ struct AgentBadge: View {
 struct SystemResourcesSectionView: View {
     @ObservedObject var monitor: SystemResourceMonitor
     @StateObject private var networkMonitor = NetworkThroughputMonitor()
-    @State private var cpuSamples: [Double] = []
-    @State private var gpuSamples: [Double] = []
-    @State private var memorySamples: [Double] = []
+    @StateObject private var samples = ResourceSamples()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -104,7 +102,7 @@ struct SystemResourcesSectionView: View {
                     valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
                     percent: monitor.snapshot.memoryPressurePercent ?? 0,
                     color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)),
-                    samples: memorySamples
+                    samples: samples.memory
                 )
                 
                 ResourceRow(
@@ -112,7 +110,7 @@ struct SystemResourcesSectionView: View {
                     valueText: String(format: "%.1f%%", monitor.snapshot.cpuPercent ?? 0),
                     percent: monitor.snapshot.cpuPercent ?? 0,
                     color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)),
-                    samples: cpuSamples
+                    samples: samples.cpu
                 )
                 
                 if let gpu = monitor.snapshot.gpuPercent {
@@ -121,7 +119,7 @@ struct SystemResourcesSectionView: View {
                         valueText: String(format: "%.1f%%", gpu),
                         percent: gpu,
                         color: Color.purple.opacity(0.7),
-                        samples: gpuSamples
+                        samples: samples.gpu
                     )
                 }
 
@@ -146,13 +144,13 @@ struct SystemResourcesSectionView: View {
         }
         .onReceive(monitor.$snapshot) { snapshot in
             if let cpu = snapshot.cpuPercent {
-                cpuSamples = Array((cpuSamples + [cpu]).suffix(60))
+                samples.cpu = Array((samples.cpu + [cpu]).suffix(60))
             }
             if let gpu = snapshot.gpuPercent {
-                gpuSamples = Array((gpuSamples + [gpu]).suffix(60))
+                samples.gpu = Array((samples.gpu + [gpu]).suffix(60))
             }
             if let memory = snapshot.memoryUsedPercent {
-                memorySamples = Array((memorySamples + [memory]).suffix(60))
+                samples.memory = Array((samples.memory + [memory]).suffix(60))
             }
         }
     }
@@ -166,6 +164,12 @@ struct SystemResourcesSectionView: View {
         let megabits = bytesPerSecond * 8 / 1_000_000
         return String(format: "%.1f Mbps", megabits)
     }
+}
+
+private final class ResourceSamples: ObservableObject {
+    @Published var cpu: [Double] = []
+    @Published var gpu: [Double] = []
+    @Published var memory: [Double] = []
 }
 
 struct ResourceRow: View {

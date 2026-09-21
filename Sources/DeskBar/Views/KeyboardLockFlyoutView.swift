@@ -3,7 +3,7 @@ import SwiftUI
 struct KeyboardLockFlyoutView: View {
     @ObservedObject var setting: KeyboardLockQuickSetting
     var onChange: (() -> Void)?
-    @State private var now = Date()
+    @StateObject private var state = KeyboardLockFlyoutState()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -33,12 +33,16 @@ struct KeyboardLockFlyoutView: View {
         }
         .padding(16)
         .frame(width: 220)
-        .onReceive(timer) { now = $0 }
+        .onReceive(timer) { state.now = $0 }
     }
 
     private var remainingText: String {
         guard let unlockDate = setting.unlockDate else { return "less than 5 minutes" }
-        let seconds = max(0, Int(unlockDate.timeIntervalSince(now).rounded(.up)))
+        let seconds = max(0, Int(unlockDate.timeIntervalSince(state.now).rounded(.up)))
         return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
+}
+
+private final class KeyboardLockFlyoutState: ObservableObject {
+    @Published var now = Date()
 }
