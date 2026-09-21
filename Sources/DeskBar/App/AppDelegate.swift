@@ -268,29 +268,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.weatherStatusItem = weatherStatusItem
 
         if let settings = self.settings {
-            if let item = calendarStatusItem {
-                let view = CalendarWidgetView()
-                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                item.button?.addSubview(view)
-                item.length = view.preferredContentWidth()
-                calendarMenuBarView = view
-            }
-            if let item = quickSettingsStatusItem {
-                let view = QuickSettingsWidgetView(settings: settings)
-                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                item.button?.addSubview(view)
-                item.length = view.preferredContentWidth()
-                quickSettingsMenuBarView = view
-            }
-            if let item = connectivityStatusItem {
-                let view = ConnectivityTrayView(settings: settings)
-                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                item.button?.addSubview(view)
-                item.length = view.preferredContentWidth()
-                connectivityMenuBarView = view
-            }
-            if let item = systemResourceStatusItem,
-               let monitor = self.systemResourceMonitor,
+            let calendarView = CalendarWidgetView()
+            calendarView.frame = NSRect(x: 0, y: 0, width: calendarView.preferredContentWidth(), height: 22)
+            calendarStatusItem.button?.addSubview(calendarView)
+            calendarStatusItem.length = calendarView.preferredContentWidth()
+            calendarMenuBarView = calendarView
+
+            let quickSettingsView = QuickSettingsWidgetView(settings: settings)
+            quickSettingsView.frame = NSRect(x: 0, y: 0, width: quickSettingsView.preferredContentWidth(), height: 22)
+            quickSettingsStatusItem.button?.addSubview(quickSettingsView)
+            quickSettingsStatusItem.length = quickSettingsView.preferredContentWidth()
+            quickSettingsMenuBarView = quickSettingsView
+
+            let connectivityView = ConnectivityTrayView(settings: settings)
+            connectivityView.frame = NSRect(x: 0, y: 0, width: connectivityView.preferredContentWidth(), height: 22)
+            connectivityStatusItem.button?.addSubview(connectivityView)
+            connectivityStatusItem.length = connectivityView.preferredContentWidth()
+            connectivityMenuBarView = connectivityView
+
+            if let monitor = self.systemResourceMonitor,
                let plugin = self.smPluginService {
                 let view = SystemResourceWidgetView(
                     settings: settings,
@@ -299,8 +295,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     displayID: CGMainDisplayID()
                 )
                 view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                item.button?.addSubview(view)
-                item.length = view.preferredContentWidth()
+                systemResourceStatusItem.button?.addSubview(view)
+                systemResourceStatusItem.length = view.preferredContentWidth()
                 systemResourceMenuBarView = view
             }
 

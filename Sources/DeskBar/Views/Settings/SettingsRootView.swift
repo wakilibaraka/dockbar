@@ -134,15 +134,15 @@ private struct GeneralSettingsPage: View {
             }
 
             Section("Permissions") {
-                PermissionRow(title: "Accessibility", granted: permissionsManager.isAccessibilityGranted) {
+                SettingsPermissionRow(title: "Accessibility", granted: permissionsManager.isAccessibilityGranted) {
                     permissionsManager.requestAccessibilityPermission()
                 }
-                PermissionRow(title: "Screen Recording", granted: thumbnailService.isScreenRecordingGranted) {
+                SettingsPermissionRow(title: "Screen Recording", granted: thumbnailService.isScreenRecordingGranted) {
                     if !thumbnailService.requestScreenRecordingPermission() {
                         openSystemSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
                     }
                 }
-                PermissionRow(title: "Calendar", granted: calendarService.isAuthorized) {
+                SettingsPermissionRow(title: "Calendar", granted: calendarService.isAuthorized) {
                     calendarService.checkPermission()
                     openSystemSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")
                 }
@@ -489,7 +489,7 @@ private struct TraySettingsPage: View {
     }
 }
 
-private struct PermissionRow: View {
+private struct SettingsPermissionRow: View {
     let title: String
     let granted: Bool
     let action: () -> Void
