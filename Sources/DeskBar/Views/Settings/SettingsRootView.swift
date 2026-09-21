@@ -1,8 +1,9 @@
 import SwiftUI
 import AppKit
+import Combine
 import UniformTypeIdentifiers
 
-private enum SettingsSection: String, CaseIterable, Identifiable {
+enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case commandLauncher
     case startMenu
@@ -38,17 +39,37 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     }
 }
 
+final class SettingsNavigationModel: ObservableObject {
+    @Published var selection: SettingsSection? = .general
+}
+
 struct SettingsRootView: View {
     @ObservedObject var settings: TaskbarSettings
     @ObservedObject var blacklistManager: BlacklistManager
     @ObservedObject var pinnedAppManager: PinnedAppManager
     @ObservedObject var permissionsManager: PermissionsManager
     @ObservedObject var thumbnailService: ThumbnailService
-    @State private var selection: SettingsSection? = .general
+    @ObservedObject private var navigation: SettingsNavigationModel
+
+    init(
+        settings: TaskbarSettings,
+        blacklistManager: BlacklistManager,
+        pinnedAppManager: PinnedAppManager,
+        permissionsManager: PermissionsManager,
+        thumbnailService: ThumbnailService,
+        navigation: SettingsNavigationModel = SettingsNavigationModel()
+    ) {
+        self.settings = settings
+        self.blacklistManager = blacklistManager
+        self.pinnedAppManager = pinnedAppManager
+        self.permissionsManager = permissionsManager
+        self.thumbnailService = thumbnailService
+        self.navigation = navigation
+    }
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsSection.allCases, selection: $selection) { section in
+            List(SettingsSection.allCases, selection: $navigation.selection) { section in
                 Label(section.title, systemImage: section.symbol)
                     .tag(section)
             }
@@ -57,7 +78,7 @@ struct SettingsRootView: View {
             .frame(minWidth: 210)
         } detail: {
             Group {
-                switch selection ?? .general {
+                switch navigation.selection ?? .general {
                 case .general:
                     GeneralSettingsPage(settings: settings, blacklistManager: blacklistManager, permissionsManager: permissionsManager, thumbnailService: thumbnailService)
                 case .commandLauncher:
