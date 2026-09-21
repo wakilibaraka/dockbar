@@ -92,7 +92,10 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
             conditions = WeatherConditions(state: .noLocation, conditionText: "Location permission required")
             locationManager.requestWhenInUseAuthorization()
         default:
-            conditions = WeatherConditions(state: .noLocation, conditionText: "Set a manual location")
+            conditions = WeatherConditions(
+                state: .noLocation,
+                conditionText: "Allow Location Services or set a manual location"
+            )
         }
     }
 

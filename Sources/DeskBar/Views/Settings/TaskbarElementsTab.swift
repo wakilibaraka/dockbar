@@ -103,6 +103,9 @@ struct TaskbarElementsTab: View {
                     VStack(alignment: .leading, spacing: 12) {
                         sectionHeader("Weather", symbol: "cloud.sun")
                         Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
+                        Text("Shows the current temperature and conditions in the Dock or menu bar.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         Picker("Location:", selection: $settings.weatherWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
@@ -125,6 +128,11 @@ struct TaskbarElementsTab: View {
                                 Text(mode.displayName).tag(mode)
                             }
                         }
+                        Text(settings.weatherLocationMode == .automatic
+                             ? "Automatic uses macOS Location Services."
+                             : "Manual uses the latitude and longitude below.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         if settings.weatherLocationMode == .manual {
                             HStack {
                                 TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)

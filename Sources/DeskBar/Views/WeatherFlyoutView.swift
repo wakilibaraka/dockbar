@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @MainActor
@@ -36,6 +37,14 @@ struct WeatherFlyoutView: View {
             case .noLocation:
                 Text(service.conditions.conditionText)
                     .foregroundStyle(.secondary)
+                if settings.weatherLocationMode == .automatic {
+                    Button("Open Location Settings") {
+                        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") else {
+                            return
+                        }
+                        NSWorkspace.shared.open(url)
+                    }
+                }
             case .error(let message):
                 Text(message)
                     .foregroundStyle(.secondary)

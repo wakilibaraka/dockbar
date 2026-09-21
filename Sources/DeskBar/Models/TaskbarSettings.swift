@@ -503,7 +503,7 @@ class TaskbarSettings: ObservableObject {
         quickSettingsLocation = WidgetLocation(rawValue: defaults.string(forKey: "quickSettingsLocation") ?? "") ?? .menuBar
         systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .menuBar
         batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
-        weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? false
+        weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? true
         weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .menuBar
         weatherUnit = WeatherUnit(rawValue: defaults.string(forKey: "weatherUnit") ?? "") ?? .celsius
         weatherPollingInterval = defaults.object(forKey: "weatherPollingInterval") as? TimeInterval ?? 900
