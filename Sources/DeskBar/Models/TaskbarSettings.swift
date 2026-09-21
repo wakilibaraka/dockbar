@@ -141,6 +141,20 @@ enum WeatherLocationMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum ResourceDisplayStyle: String, CaseIterable, Identifiable {
+    case bar
+    case graph
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .bar: return "Bar"
+        case .graph: return "Graph"
+        }
+    }
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -265,6 +279,10 @@ class TaskbarSettings: ObservableObject {
 
     @Published var showSystemResourceWidget: Bool {
         didSet { defaults.set(showSystemResourceWidget, forKey: "showSystemResourceWidget") }
+    }
+
+    @Published var resourceDisplayStyle: ResourceDisplayStyle {
+        didSet { defaults.set(resourceDisplayStyle.rawValue, forKey: "resourceDisplayStyle") }
     }
     
     @Published var systemResourceWidgetPinnedDisplayID: CGDirectDisplayID? {
@@ -441,6 +459,9 @@ class TaskbarSettings: ObservableObject {
         showProgressIndicators = defaults.object(forKey: "showProgressIndicators") as? Bool ?? true
         enableActivityMode = defaults.object(forKey: "enableActivityMode") as? Bool ?? true
         showSystemResourceWidget = defaults.object(forKey: "showSystemResourceWidget") as? Bool ?? true
+        resourceDisplayStyle = ResourceDisplayStyle(
+            rawValue: defaults.string(forKey: "resourceDisplayStyle") ?? ""
+        ) ?? .bar
         if let pinnedDisplayID = defaults.object(forKey: "systemResourceWidgetPinnedDisplayID") as? NSNumber {
             systemResourceWidgetPinnedDisplayID = CGDirectDisplayID(pinnedDisplayID.uint32Value)
         } else {

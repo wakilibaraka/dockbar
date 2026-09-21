@@ -122,6 +122,14 @@ struct TaskbarElementsTab: View {
                         Divider()
 
                         Toggle("Show system resource widget", isOn: $settings.showSystemResourceWidget)
+
+                        Picker("Display:", selection: $settings.resourceDisplayStyle) {
+                            ForEach(ResourceDisplayStyle.allCases) { style in
+                                Text(style.displayName).tag(style)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 200)
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)

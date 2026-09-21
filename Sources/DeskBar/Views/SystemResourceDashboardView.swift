@@ -88,6 +88,10 @@ struct AgentBadge: View {
 // MARK: - System Resources
 struct SystemResourcesSectionView: View {
     @ObservedObject var monitor: SystemResourceMonitor
+    @StateObject private var networkMonitor = NetworkThroughputMonitor()
+    @State private var cpuSamples: [Double] = []
+    @State private var gpuSamples: [Double] = []
+    @State private var memorySamples: [Double] = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -99,14 +103,16 @@ struct SystemResourcesSectionView: View {
                     title: "Memory",
                     valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
                     percent: monitor.snapshot.memoryPressurePercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)) // Muted Blue
+                    color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)),
+                    samples: memorySamples
                 )
                 
                 ResourceRow(
                     title: "CPU",
                     valueText: String(format: "%.1f%%", monitor.snapshot.cpuPercent ?? 0),
                     percent: monitor.snapshot.cpuPercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)) // Light Accent Blue
+                    color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)),
+                    samples: cpuSamples
                 )
                 
                 if let gpu = monitor.snapshot.gpuPercent {
@@ -114,9 +120,39 @@ struct SystemResourcesSectionView: View {
                         title: "GPU",
                         valueText: String(format: "%.1f%%", gpu),
                         percent: gpu,
-                        color: Color.purple.opacity(0.7)
+                        color: Color.purple.opacity(0.7),
+                        samples: gpuSamples
                     )
                 }
+
+                ResourceRow(
+                    title: "Download",
+                    valueText: formatRate(networkMonitor.downloadRate),
+                    percent: 0,
+                    color: .green,
+                    samples: networkMonitor.downloadSamples,
+                    maximum: max(networkMonitor.downloadSamples.max() ?? 1, 1)
+                )
+
+                ResourceRow(
+                    title: "Upload",
+                    valueText: formatRate(networkMonitor.uploadRate),
+                    percent: 0,
+                    color: .orange,
+                    samples: networkMonitor.uploadSamples,
+                    maximum: max(networkMonitor.uploadSamples.max() ?? 1, 1)
+                )
+            }
+        }
+        .onReceive(monitor.$snapshot) { snapshot in
+            if let cpu = snapshot.cpuPercent {
+                cpuSamples = Array((cpuSamples + [cpu]).suffix(60))
+            }
+            if let gpu = snapshot.gpuPercent {
+                gpuSamples = Array((gpuSamples + [gpu]).suffix(60))
+            }
+            if let memory = snapshot.memoryUsedPercent {
+                memorySamples = Array((memorySamples + [memory]).suffix(60))
             }
         }
     }
@@ -125,6 +161,11 @@ struct SystemResourcesSectionView: View {
         let gb = Double(bytes) / 1_073_741_824
         return String(format: "%.1f GB", gb)
     }
+
+    private func formatRate(_ bytesPerSecond: Double) -> String {
+        let megabits = bytesPerSecond * 8 / 1_000_000
+        return String(format: "%.1f Mbps", megabits)
+    }
 }
 
 struct ResourceRow: View {
@@ -132,6 +173,8 @@ struct ResourceRow: View {
     let valueText: String
     let percent: Double
     let color: Color
+    let samples: [Double]
+    var maximum: Double? = 100
     
     var body: some View {
         VStack(spacing: 6) {
@@ -144,18 +187,13 @@ struct ResourceRow: View {
                     .foregroundColor(color)
             }
             
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.primary.opacity(0.05))
-                    
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(color)
-                        .frame(width: max(0, geo.size.width * CGFloat(percent / 100.0)))
-                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: percent)
-                }
-            }
-            .frame(height: 6)
+            MetricGraphView(
+                samples: samples.isEmpty ? [percent] : samples,
+                accent: color,
+                style: .filledWave,
+                maximum: maximum
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
