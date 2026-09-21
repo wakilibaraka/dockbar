@@ -311,14 +311,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .combineLatest(settings.$weatherWidgetLocation)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self, weak weatherStatusItem] enabled, location in
-                    guard let self, let item = weatherStatusItem else { return }
-                    item.isVisible = enabled && location == .menuBar
-                    item.button?.subviews.forEach { $0.removeFromSuperview() }
-                    guard item.isVisible, let service = self.weatherService else { return }
-                    let view = WeatherWidgetView(service: service, settings: settings)
-                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                    item.button?.addSubview(view)
-                    item.length = view.preferredContentWidth()
+                    MainActor.assumeIsolated {
+                        guard let self, let item = weatherStatusItem else { return }
+                        item.isVisible = enabled && location == .menuBar
+                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                        guard item.isVisible, let service = self.weatherService else { return }
+                        let view = WeatherWidgetView(service: service, settings: settings)
+                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                        item.button?.addSubview(view)
+                        item.length = view.preferredContentWidth()
+                    }
                 }
                 .store(in: &cancellables)
         }
