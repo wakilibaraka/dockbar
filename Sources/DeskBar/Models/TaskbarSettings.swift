@@ -447,7 +447,14 @@ class TaskbarSettings: ObservableObject {
         fuzzySearch = defaults.object(forKey: "fuzzySearch") as? Bool ?? true
         
         showWindowCountBadges = defaults.object(forKey: "showWindowCountBadges") as? Bool ?? true
-                enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? ["darkMode", "mute", "muteMic", "keepAwake", "bluetooth", "hideDesktop", "hiddenFiles"]
+        enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? [
+            "wifi", "bluetooth", "darkMode", "truetone", "mute", "muteMic",
+            "keepAwake", "autohideDock", "autohideMenuBar", "hiddenFiles",
+            "finderPathBar", "showExtensions", "showUserLibrary", "dockRecentApps",
+            "screenshot", "restartFinder", "emptyTrash", "emptyPasteboard",
+            "ejectDiscs", "screenSaver", "hideDesktop", "smallLaunchpad",
+            "xcodeCache", "pomodoro", "keyboardLock", "speedTest"
+        ]
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth

@@ -45,7 +45,12 @@ final class CalendarEventService: ObservableObject {
         let now = Date()
         let thirtyDaysLater = Calendar.current.date(byAdding: .day, value: 30, to: now)!
         
-        let predicate = store.predicateForEvents(withStart: now, end: thirtyDaysLater, calendars: nil)
+        let calendars = store.defaultCalendarForNewEvents.map { [$0] }
+        let predicate = store.predicateForEvents(
+            withStart: now,
+            end: thirtyDaysLater,
+            calendars: calendars
+        )
         let ekEvents = store.events(matching: predicate)
         
         var mappedEvents = ekEvents.map { ev -> CalendarEvent in

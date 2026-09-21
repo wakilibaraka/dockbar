@@ -136,7 +136,23 @@ final class QuickSettingsViewController: NSViewController {
             let grid = NSGridView(views: rows)
             grid.rowSpacing = 8
             grid.columnSpacing = 12
-            outer.addArrangedSubview(grid)
+            grid.translatesAutoresizingMaskIntoConstraints = false
+
+            let gridScrollView = NSScrollView()
+            gridScrollView.hasVerticalScroller = true
+            gridScrollView.hasHorizontalScroller = false
+            gridScrollView.borderType = .noBorder
+            gridScrollView.drawsBackground = false
+            gridScrollView.scrollerStyle = .overlay
+            gridScrollView.translatesAutoresizingMaskIntoConstraints = false
+            gridScrollView.documentView = grid
+            outer.addArrangedSubview(gridScrollView)
+            gridScrollView.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
+            gridScrollView.heightAnchor.constraint(lessThanOrEqualToConstant: 360).isActive = true
+
+            let gridSize = grid.fittingSize
+            grid.frame = NSRect(origin: .zero, size: gridSize)
+            gridScrollView.contentView.postsBoundsChangedNotifications = false
         }
 
         // Separator

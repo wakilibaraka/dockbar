@@ -191,11 +191,15 @@ struct BatteryStatusRenderer {
             // Calculate total width to perfectly center the group (text + optional icon)
             let totalWidth = textSize.width + iconSpacing + iconWidth
             
-            let startX = cx - (totalWidth / 2.0)
+            // Center against the battery body rather than the full canvas; the
+            // horizontal terminal is intentionally excluded from this balance.
+            let visualCenterX = isHorizontal ? cx - (0.75 * scale) : cx
+            let startX = visualCenterX - (totalWidth / 2.0)
             
             // Draw Text
             let yOffset = (font.ascender - font.capHeight) / 2.0
-            let textRect = NSRect(x: startX, y: cy - textSize.height / 2.0 - yOffset, width: textSize.width, height: textSize.height)
+            let visualCenterY = cy + (0.25 * scale)
+            let textRect = NSRect(x: startX, y: visualCenterY - textSize.height / 2.0 - yOffset, width: textSize.width, height: textSize.height)
             attrString.draw(in: textRect)
             
             // Draw Icon if needed

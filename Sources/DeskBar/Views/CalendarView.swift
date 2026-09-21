@@ -71,6 +71,8 @@ struct CalendarView: View {
                     }
                 }
             }
+
+            UpcomingEventsView(events: upcomingEvents)
             
             Divider()
                 .padding(.top, 2)
@@ -89,23 +91,6 @@ struct CalendarView: View {
                                     .foregroundStyle(.secondary)
                             }
                             
-                            let nextDate = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: state.selectedDay)!)
-                            let upcoming = eventService.events
-                                .filter { $0.startDate >= nextDate }
-                                .sorted { $0.startDate < $1.startDate }
-                                .prefix(2)
-                            
-                            if !upcoming.isEmpty {
-                                Text("Upcoming")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .textCase(.uppercase)
-                                    .padding(.top, 4)
-                                
-                                ForEach(Array(upcoming)) { ev in
-                                    EventRow(event: ev, showDate: true)
-                                }
-                            }
                             Spacer(minLength: 0)
                         }
                         .padding(.trailing, 4)
@@ -135,6 +120,14 @@ struct CalendarView: View {
                 endPoint: .bottomTrailing
             )
         }
+    }
+
+    private var upcomingEvents: [CalendarEvent] {
+        eventService.events
+            .filter { $0.startDate >= Date() }
+            .sorted { $0.startDate < $1.startDate }
+            .prefix(3)
+            .map { $0 }
     }
     
     private func changeMonth(by value: Int) {
@@ -166,6 +159,49 @@ struct CalendarView: View {
         }
         
         return dates
+    }
+}
+
+private struct UpcomingEventsView: View {
+    let events: [CalendarEvent]
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d  h:mm a"
+        return formatter
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("UPCOMING")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.secondary)
+                .tracking(0.5)
+
+            if events.isEmpty {
+                Label("No upcoming events", systemImage: "calendar.badge.clock")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(events) { event in
+                    HStack(spacing: 7) {
+                        Circle()
+                            .fill(event.color)
+                            .frame(width: 6, height: 6)
+                        Text(event.title)
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                        Spacer(minLength: 6)
+                        Text(event.isAllDay ? "All day" : Self.timeFormatter.string(from: event.startDate))
+                            .font(.system(size: 10, design: .monospaced))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
     }
 }
 
