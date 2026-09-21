@@ -88,6 +88,7 @@ struct AgentBadge: View {
 // MARK: - System Resources
 struct SystemResourcesSectionView: View {
     @ObservedObject var monitor: SystemResourceMonitor
+    @ObservedObject var networkMonitor = NetworkThroughputMonitor.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -99,14 +100,16 @@ struct SystemResourcesSectionView: View {
                     title: "Memory",
                     valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
                     percent: monitor.snapshot.memoryPressurePercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)) // Muted Blue
+                    color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)),
+                    buffer: monitor.memoryBuffer
                 )
                 
                 ResourceRow(
                     title: "CPU",
                     valueText: String(format: "%.1f%%", monitor.snapshot.cpuPercent ?? 0),
                     percent: monitor.snapshot.cpuPercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)) // Light Accent Blue
+                    color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)),
+                    buffer: monitor.cpuBuffer
                 )
                 
                 if let gpu = monitor.snapshot.gpuPercent {
@@ -114,9 +117,26 @@ struct SystemResourcesSectionView: View {
                         title: "GPU",
                         valueText: String(format: "%.1f%%", gpu),
                         percent: gpu,
-                        color: Color.purple.opacity(0.7)
+                        color: Color.purple.opacity(0.7),
+                        buffer: monitor.gpuBuffer
                     )
                 }
+
+                ResourceRow(
+                    title: "Net ↓",
+                    valueText: formatBytes(networkMonitor.downRate) + "/s",
+                    percent: 0,
+                    color: .cyan,
+                    buffer: networkMonitor.downBuffer
+                )
+
+                ResourceRow(
+                    title: "Net ↑",
+                    valueText: formatBytes(networkMonitor.upRate) + "/s",
+                    percent: 0,
+                    color: .green,
+                    buffer: networkMonitor.upBuffer
+                )
             }
         }
     }

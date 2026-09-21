@@ -6,6 +6,9 @@ import IOKit
 @MainActor
 final class SystemResourceMonitor: ObservableObject {
     @Published private(set) var snapshot: SystemResourceSnapshot = .empty
+    @Published private(set) var memoryBuffer: [Double] = Array(repeating: 0, count: 60)
+    @Published private(set) var cpuBuffer: [Double] = Array(repeating: 0, count: 60)
+    @Published private(set) var gpuBuffer: [Double] = Array(repeating: 0, count: 60)
 
     private let sampleInterval: TimeInterval
     private var cancellables = Set<AnyCancellable>()
@@ -19,15 +22,33 @@ final class SystemResourceMonitor: ObservableObject {
 
     func refresh() {
         let memory = sampleMemoryPressure()
+        let usedPercent: Double
+        if let used = memory.usedBytes, let total = memory.totalBytes, total > 0 {
+            usedPercent = min(max((Double(used) / Double(total)) * 100, 0), 100)
+        } else {
+            usedPercent = memory.pressurePercent ?? 0
+        }
+        let cpu = sampleCPUPercent() ?? 0
+        let gpu = sampleGPUPercent() ?? 0
+
         snapshot = SystemResourceSnapshot(
             memoryPressureLevel: memory.level,
             memoryPressurePercent: memory.pressurePercent,
             memoryFreePercent: memory.freePercent,
             memoryUsedBytes: memory.usedBytes,
             memoryTotalBytes: memory.totalBytes,
-            cpuPercent: sampleCPUPercent(),
-            gpuPercent: sampleGPUPercent()
+            cpuPercent: cpu,
+            gpuPercent: gpu
         )
+
+        memoryBuffer.removeFirst()
+        memoryBuffer.append(usedPercent)
+
+        cpuBuffer.removeFirst()
+        cpuBuffer.append(cpu)
+
+        gpuBuffer.removeFirst()
+        gpuBuffer.append(gpu)
     }
 
     private func startTimer() {

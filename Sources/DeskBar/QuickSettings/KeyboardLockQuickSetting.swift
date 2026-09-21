@@ -1,7 +1,7 @@
 import AppKit
 
 @MainActor
-final class KeyboardLockQuickSetting: QuickSetting {
+final class KeyboardLockQuickSetting: QuickSetting, ObservableObject {
     let id = "keyboardLock"
     var title: String {
         return isOn ? "Keyboard Locked" : "Keyboard Lock"
@@ -9,14 +9,19 @@ final class KeyboardLockQuickSetting: QuickSetting {
     var symbolName: String {
         return isOn ? "lock.fill" : "keyboard"
     }
-    var isOn: Bool = false
+    @Published var isOn: Bool = false
 
     // We'll just toggle it and use an event tap to block all keyboard events
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    nonisolated(unsafe) private var eventTap: CFMachPort?
+    nonisolated(unsafe) private var runLoopSource: CFRunLoopSource?
 
     deinit {
-        disableLock()
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+            }
+        }
     }
 
     func refreshState() {

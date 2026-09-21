@@ -115,6 +115,20 @@ enum WidgetLocation: String, CaseIterable, Identifiable {
     }
 }
 
+
+enum ResourceDisplayStyle: String, CaseIterable, Identifiable {
+    case bar
+    case graph
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .bar: return "Bar"
+        case .graph: return "Graph"
+        }
+    }
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -308,6 +322,11 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(connectivityTrayLocation.rawValue, forKey: "connectivityTrayLocation") }
     }
 
+
+    @Published var resourceDisplayStyle: ResourceDisplayStyle {
+        didSet { defaults.set(resourceDisplayStyle.rawValue, forKey: "resourceDisplayStyle") }
+    }
+
     @Published var systemResourceWidgetLocation: WidgetLocation {
         didSet { defaults.set(systemResourceWidgetLocation.rawValue, forKey: "systemResourceWidgetLocation") }
     }
@@ -407,6 +426,8 @@ class TaskbarSettings: ObservableObject {
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
 
         connectivityTrayLocation = WidgetLocation(rawValue: defaults.string(forKey: "connectivityTrayLocation") ?? "") ?? .dock
+
+        resourceDisplayStyle = ResourceDisplayStyle(rawValue: defaults.string(forKey: "resourceDisplayStyle") ?? "") ?? .bar
         systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .dock
         batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true

@@ -8,7 +8,10 @@ final class SystemResourceWidgetView: NSView {
     private let smPluginService: SMPluginService?
     
     private let containerView = NSView()
+
     private let textLabel = NSTextField(labelWithString: "")
+    private let graphHostingView = NSHostingView(rootView: AnyView(EmptyView()))
+
     private var cancellables = Set<AnyCancellable>()
     
     var preferredWidthDidChange: (() -> Void)?
@@ -57,9 +60,13 @@ final class SystemResourceWidgetView: NSView {
         textLabel.isEditable = false
         textLabel.isSelectable = false
         textLabel.drawsBackground = false
+
         textLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(textLabel)
         
+        graphHostingView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(graphHostingView)
+
         NSLayoutConstraint.activate([
             containerView.centerYAnchor.constraint(equalTo: centerYAnchor),
             containerView.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -67,8 +74,14 @@ final class SystemResourceWidgetView: NSView {
             containerView.heightAnchor.constraint(equalToConstant: 22),
             
             textLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor)
+            textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+
+            graphHostingView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            graphHostingView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            graphHostingView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            graphHostingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
+
     }
     
     private func bindState() {
@@ -112,8 +125,24 @@ final class SystemResourceWidgetView: NSView {
             color = NSColor.systemGreen
         }
         
-        textLabel.textColor = color
-        containerView.layer?.backgroundColor = color.withAlphaComponent(0.15).cgColor
+        if settings.resourceDisplayStyle == .bar {
+            textLabel.isHidden = false
+            graphHostingView.isHidden = true
+            textLabel.textColor = color
+            containerView.layer?.backgroundColor = color.withAlphaComponent(0.15).cgColor
+        } else {
+            textLabel.isHidden = true
+            graphHostingView.isHidden = false
+            containerView.layer?.backgroundColor = NSColor.clear.cgColor
+
+            let graphView = MetricGraphView(
+                samples: monitor.memoryBuffer,
+                color: Color(nsColor: color),
+                style: .filledWave,
+                maxValue: 100.0
+            )
+            graphHostingView.rootView = AnyView(graphView)
+        }
     }
     
     // MARK: - Interaction

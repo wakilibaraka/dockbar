@@ -1,7 +1,8 @@
 import Foundation
 
+@MainActor
 final class QuickSettingsManager {
-    static let shared = QuickSettingsManager()
+    nonisolated(unsafe) static let shared = QuickSettingsManager()
     
     /// All available quick settings, indexed by id
     let allSettings: [QuickSetting] = [
