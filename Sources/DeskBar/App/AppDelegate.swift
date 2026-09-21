@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var weatherStatusItem: NSStatusItem?
     private var weatherService: WeatherService?
     private var weatherMenuBarView: WeatherWidgetView?  // created once; never recreated on location/enabled changes
+    private var calendarMenuBarView: CalendarWidgetView?
+    private var quickSettingsMenuBarView: QuickSettingsWidgetView?
+    private var connectivityMenuBarView: ConnectivityTrayView?
+    private var systemResourceMenuBarView: SystemResourceWidgetView?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var restoreWindowsMenuItem: NSMenuItem?
@@ -264,6 +268,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.weatherStatusItem = weatherStatusItem
 
         if let settings = self.settings {
+            if let item = calendarStatusItem {
+                let view = CalendarWidgetView()
+                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                item.button?.addSubview(view)
+                item.length = view.preferredContentWidth()
+                calendarMenuBarView = view
+            }
+            if let item = quickSettingsStatusItem {
+                let view = QuickSettingsWidgetView(settings: settings)
+                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                item.button?.addSubview(view)
+                item.length = view.preferredContentWidth()
+                quickSettingsMenuBarView = view
+            }
+            if let item = connectivityStatusItem {
+                let view = ConnectivityTrayView(settings: settings)
+                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                item.button?.addSubview(view)
+                item.length = view.preferredContentWidth()
+                connectivityMenuBarView = view
+            }
+            if let item = systemResourceStatusItem,
+               let monitor = self.systemResourceMonitor,
+               let plugin = self.smPluginService {
+                let view = SystemResourceWidgetView(
+                    settings: settings,
+                    monitor: monitor,
+                    smPluginService: plugin,
+                    displayID: CGMainDisplayID()
+                )
+                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                item.button?.addSubview(view)
+                item.length = view.preferredContentWidth()
+                systemResourceMenuBarView = view
+            }
+
             settings.$batteryWidgetLocation
                 .receive(on: DispatchQueue.main)
                 .sink { [weak statusItem] location in
@@ -276,39 +316,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self, weak connectivityStatusItem, weak calendarStatusItem, weak quickSettingsStatusItem] split, trayLocation, calendarLocation, quickSettingsLocation in
                     MainActor.assumeIsolated {
-                        guard let self, let validSettings = self.settings else { return }
-                        [connectivityStatusItem, calendarStatusItem, quickSettingsStatusItem].forEach {
-                            $0?.button?.subviews.forEach { $0.removeFromSuperview() }
-                            $0?.isVisible = false
-                        }
+                        guard let self else { return }
+                        connectivityStatusItem?.isVisible = false
+                        calendarStatusItem?.isVisible = false
+                        quickSettingsStatusItem?.isVisible = false
 
                         if split {
                             if let item = calendarStatusItem {
                                 item.isVisible = calendarLocation == .menuBar
-                                if item.isVisible {
-                                    let view = CalendarWidgetView()
-                                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                                    item.button?.addSubview(view)
-                                    item.length = view.preferredContentWidth()
-                                }
+                                item.length = self.calendarMenuBarView?.preferredContentWidth() ?? item.length
                             }
                             if let item = quickSettingsStatusItem {
                                 item.isVisible = quickSettingsLocation == .menuBar
-                                if item.isVisible {
-                                    let view = QuickSettingsWidgetView(settings: validSettings)
-                                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                                    item.button?.addSubview(view)
-                                    item.length = view.preferredContentWidth()
-                                }
+                                item.length = self.quickSettingsMenuBarView?.preferredContentWidth() ?? item.length
                             }
                         } else if let item = connectivityStatusItem {
                             item.isVisible = trayLocation == .menuBar
-                            if item.isVisible {
-                                let view = ConnectivityTrayView(settings: validSettings)
-                                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                                item.button?.addSubview(view)
-                                item.length = view.preferredContentWidth()
-                            }
+                            item.length = self.connectivityMenuBarView?.preferredContentWidth() ?? item.length
                         }
                     }
                 }
@@ -319,24 +343,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .sink { [weak self, weak systemResourceStatusItem] location in
                     guard let self = self, let item = systemResourceStatusItem else { return }
                     item.isVisible = location == .menuBar
-                    if location == .menuBar {
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        guard let validSettings = self.settings,
-                              let validMonitor = self.systemResourceMonitor,
-                              let validSMPlugin = self.smPluginService else { return }
-                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, smPluginService: validSMPlugin, displayID: CGMainDisplayID())
-                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                        item.button?.addSubview(view)
+                    if let view = self.systemResourceMenuBarView {
                         item.length = view.preferredContentWidth()
-
-                        view.preferredWidthDidChange = { [weak item, weak view] in
-                            if let item = item, let view = view {
-                                item.length = view.preferredContentWidth()
-                                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                            }
-                        }
-                    } else {
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
                     }
                 }
                 .store(in: &cancellables)

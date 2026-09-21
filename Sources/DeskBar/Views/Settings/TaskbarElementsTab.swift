@@ -17,9 +17,15 @@ struct TaskbarElementsTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                Text("Choose what appears in the Dock and menu bar. Changes apply immediately.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 // Battery Widget
-                GroupBox(label: Text("Battery Widget").font(.headline)) {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("Battery", symbol: "battery.100")
                         Picker("Location:", selection: $settings.batteryWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
@@ -57,8 +63,12 @@ struct TaskbarElementsTab: View {
                 }
                 
 
-                GroupBox(label: Text("Calendar & Quick Settings").font(.headline)) {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("Calendar & Quick Settings", symbol: "calendar.badge.clock")
+                        Text("Keep them together, or place each control independently.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         Toggle("Split Calendar & Quick Settings", isOn: $settings.splitCalendarAndQuickSettings)
                         if settings.splitCalendarAndQuickSettings {
                             Picker("Calendar location:", selection: $settings.calendarLocation) {
@@ -89,8 +99,9 @@ struct TaskbarElementsTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                GroupBox(label: Text("Weather Widget").font(.headline)) {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("Weather", symbol: "cloud.sun")
                         Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
                         Picker("Location:", selection: $settings.weatherWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
@@ -127,8 +138,9 @@ struct TaskbarElementsTab: View {
                 }
 
                 // System Resources
-                GroupBox(label: Text("System Resources Widget").font(.headline)) {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("System Resources", symbol: "chart.xyaxis.line")
                         Picker("Location:", selection: $settings.systemResourceWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
@@ -154,13 +166,18 @@ struct TaskbarElementsTab: View {
                 }
                 
                 // Session Manager Plugin
-                GroupBox(label: Text("Session Manager Plugin").font(.headline)) {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 8) {
+                        sectionHeader("Session Manager", symbol: "terminal")
+                        Text("Show live agent state and usage details on terminal-backed tasks.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         Toggle("Enable Session Manager plugin", isOn: $settings.enableSessionManagerPlugin)
                         
                         Group {
                             Toggle("Show agent titles", isOn: $settings.showSessionManagerAgentTitles)
                             Toggle("Show activity indicators", isOn: $settings.showSessionManagerActivityIndicators)
+                            Toggle("Show AI token usage", isOn: $settings.showSessionManagerTokenUsage)
                             Toggle("Animate activity", isOn: $settings.animateSessionManagerActivity)
                                 .disabled(!settings.showSessionManagerActivityIndicators)
                             Toggle("Enable terminal actions", isOn: $settings.enableSessionManagerTerminalActions)
@@ -176,5 +193,11 @@ struct TaskbarElementsTab: View {
             }
             .padding(20)
         }
+    }
+
+    private func sectionHeader(_ title: String, symbol: String) -> some View {
+        Label(title, systemImage: symbol)
+            .font(.headline)
+            .symbolRenderingMode(.hierarchical)
     }
 }

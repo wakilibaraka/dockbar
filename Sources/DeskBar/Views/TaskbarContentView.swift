@@ -1542,7 +1542,8 @@ final class TaskbarContentView: NSView {
                 SMPluginAgentMenuFactory.makeMenu(
                     annotation: annotation,
                     target: self,
-                    action: #selector(TaskbarContentView.handleSMPluginMenuCommand(_:))
+                    action: #selector(TaskbarContentView.handleSMPluginMenuCommand(_:)),
+                    showsTokenUsage: settings.showSessionManagerTokenUsage
                 )
             }
         )

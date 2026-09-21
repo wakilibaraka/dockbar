@@ -19,6 +19,7 @@ final class TaskbarPanel: NSPanel {
     private var cancellables = Set<AnyCancellable>()
     private var pendingNormalizationFrame: NSRect?
     private var frameNormalizationScheduled = false
+    private var layoutUpdateScheduled = false
 
     init(
         permissionsManager: PermissionsManager,
@@ -108,7 +109,19 @@ final class TaskbarPanel: NSPanel {
     }
 
     func requestLayoutUpdate(animated: Bool) {
-        updateFrameForCurrentState(animated: animated)
+        guard !layoutUpdateScheduled else {
+            return
+        }
+
+        layoutUpdateScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                return
+            }
+
+            self.layoutUpdateScheduled = false
+            self.updateFrameForCurrentState(animated: animated)
+        }
     }
 
     func updateCollectionBehavior(showOverFullScreenApps: Bool) {

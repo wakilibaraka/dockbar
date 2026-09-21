@@ -13,19 +13,22 @@ class SettingsWindowController: NSWindowController {
         thumbnailService: ThumbnailService
     ) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1000, height: 800),
+            contentRect: NSRect(x: 0, y: 0, width: 860, height: 640),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "DeskBar Settings"
+        window.minSize = NSSize(width: 760, height: 520)
+        window.toolbarStyle = .unified
+        window.titlebarAppearsTransparent = false
         window.center()
         
         self.init(window: window as NSWindow?)
         
         // Configure NSTabViewController
         tabViewController.tabStyle = .toolbar
-        tabViewController.transitionOptions = [.crossfade, .slideDown]
+        tabViewController.transitionOptions = [.crossfade]
         
         // 1. General
         let generalTab = NSHostingController(rootView: GeneralSettingsTab(

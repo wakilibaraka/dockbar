@@ -408,6 +408,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showSessionManagerActivityIndicators, forKey: "showSessionManagerActivityIndicators") }
     }
 
+    @Published var showSessionManagerTokenUsage: Bool {
+        didSet { defaults.set(showSessionManagerTokenUsage, forKey: "showSessionManagerTokenUsage") }
+    }
+
     @Published var animateSessionManagerActivity: Bool {
         didSet { defaults.set(animateSessionManagerActivity, forKey: "animateSessionManagerActivity") }
     }
@@ -508,6 +512,7 @@ class TaskbarSettings: ObservableObject {
         weatherManualLongitude = defaults.object(forKey: "weatherManualLongitude") as? Double ?? 0
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
+        showSessionManagerTokenUsage = defaults.object(forKey: "showSessionManagerTokenUsage") as? Bool ?? true
         animateSessionManagerActivity = defaults.object(forKey: "animateSessionManagerActivity") as? Bool ?? false
                 enableHoldToQuit = defaults.object(forKey: "enableHoldToQuit") as? Bool ?? true
         holdToQuitDuration = defaults.object(forKey: "holdToQuitDuration") as? Double ?? 2.0

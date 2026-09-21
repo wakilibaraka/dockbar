@@ -320,7 +320,8 @@ enum SMPluginAgentMenuFactory {
     static func makeMenu(
         annotation: SMAgentWindowAnnotation,
         target: AnyObject?,
-        action: Selector
+        action: Selector,
+        showsTokenUsage: Bool = true
     ) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -340,7 +341,7 @@ enum SMPluginAgentMenuFactory {
         } else if let lastToolName = trimmed(annotation.lastToolName) {
             menu.addItem(metadataItem("Tool: \(lastToolName)"))
         }
-        if let tokensUsed = annotation.tokensUsed, tokensUsed > 0 {
+        if showsTokenUsage, let tokensUsed = annotation.tokensUsed, tokensUsed > 0 {
             menu.addItem(metadataItem("Tokens: \(tokensUsed)"))
         }
         menu.addItem(metadataItem("Dir: \(abbreviatedPath(annotation.workingDirectory))"))

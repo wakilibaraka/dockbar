@@ -742,7 +742,9 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
             } else if let lastToolName = trimmed(agentAnnotation.lastToolName) {
                 lines.append("Tool: \(lastToolName)")
             }
-            if let tokensUsed = agentAnnotation.tokensUsed, tokensUsed > 0 {
+            if settings.showSessionManagerTokenUsage,
+               let tokensUsed = agentAnnotation.tokensUsed,
+               tokensUsed > 0 {
                 lines.append("Tokens: \(tokensUsed)")
             }
             lines.append(agentAnnotation.workingDirectory)
