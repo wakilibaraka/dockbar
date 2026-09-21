@@ -1,6 +1,8 @@
 import AppKit
 
 final class CalendarWidgetView: NSView {
+    /// Fixed width matching CalendarTrayButton's natural size — never varies with content.
+    private static let fixedWidth: CGFloat = 80
     private let calendarButton = CalendarTrayButton()
 
     init() {
@@ -18,12 +20,12 @@ final class CalendarWidgetView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    func preferredContentWidth() -> CGFloat {
-        calendarButton.fittingSize.width + 8
-    }
+    func preferredContentWidth() -> CGFloat { Self.fixedWidth }
 }
 
 final class QuickSettingsWidgetView: NSView {
+    /// Fixed width for the gear icon button — never varies with content.
+    private static let fixedWidth: CGFloat = 32
     private let button = NSButton()
     private let settings: TaskbarSettings
     private let manager = QuickSettingsManager.shared
@@ -54,9 +56,7 @@ final class QuickSettingsWidgetView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    func preferredContentWidth() -> CGFloat {
-        max(button.fittingSize.width, 24) + 8
-    }
+    func preferredContentWidth() -> CGFloat { Self.fixedWidth }
 
     @objc private func toggleQuickSettings() {
         if let popover, popover.isShown {
