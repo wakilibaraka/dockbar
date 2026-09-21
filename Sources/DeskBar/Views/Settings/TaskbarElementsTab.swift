@@ -59,51 +59,69 @@ struct TaskbarElementsTab: View {
 
                 GroupBox(label: Text("Calendar & Quick Settings").font(.headline)) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Picker("Location:", selection: $settings.connectivityTrayLocation) {
+                        Toggle("Split Calendar & Quick Settings", isOn: $settings.splitCalendarAndQuickSettings)
+                        if settings.splitCalendarAndQuickSettings {
+                            Picker("Calendar location:", selection: $settings.calendarLocation) {
+                                ForEach(WidgetLocation.allCases) { loc in
+                                    Text(loc.displayName).tag(loc)
+                                }
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(maxWidth: 240)
+                            Picker("Quick Settings location:", selection: $settings.quickSettingsLocation) {
+                                ForEach(WidgetLocation.allCases) { loc in
+                                    Text(loc.displayName).tag(loc)
+                                }
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(maxWidth: 240)
+                        } else {
+                            Picker("Location:", selection: $settings.connectivityTrayLocation) {
+                                ForEach(WidgetLocation.allCases) { loc in
+                                    Text(loc.displayName).tag(loc)
+                                }
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(maxWidth: 200)
+                        }
+                    }
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                GroupBox(label: Text("Weather Widget").font(.headline)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
+                        Picker("Location:", selection: $settings.weatherWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
-                            }
-
-                            GroupBox(label: Text("Weather Widget").font(.headline)) {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
-                                    Picker("Location:", selection: $settings.weatherWidgetLocation) {
-                                        ForEach(WidgetLocation.allCases) { loc in
-                                            Text(loc.displayName).tag(loc)
-                                        }
-                                    }
-                                    .pickerStyle(SegmentedPickerStyle())
-                                    .frame(maxWidth: 200)
-                                    Picker("Units:", selection: $settings.weatherUnit) {
-                                        ForEach(WeatherUnit.allCases) { unit in
-                                            Text(unit.displayName).tag(unit)
-                                        }
-                                    }
-                                    Picker("Refresh:", selection: $settings.weatherPollingInterval) {
-                                        Text("15 minutes").tag(TimeInterval(900))
-                                        Text("30 minutes").tag(TimeInterval(1800))
-                                        Text("1 hour").tag(TimeInterval(3600))
-                                    }
-                                    Picker("Location mode:", selection: $settings.weatherLocationMode) {
-                                        ForEach(WeatherLocationMode.allCases) { mode in
-                                            Text(mode.displayName).tag(mode)
-                                        }
-                                    }
-                                    if settings.weatherLocationMode == .manual {
-                                        HStack {
-                                            TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
-                                            TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
-                                        }
-                                    }
-                                }
-                                .disabled(!settings.weatherEnabled)
-                                .padding(.top, 8)
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
                         .frame(maxWidth: 200)
+                        Picker("Units:", selection: $settings.weatherUnit) {
+                            ForEach(WeatherUnit.allCases) { unit in
+                                Text(unit.displayName).tag(unit)
+                            }
+                        }
+                        Picker("Refresh:", selection: $settings.weatherPollingInterval) {
+                            Text("15 minutes").tag(TimeInterval(900))
+                            Text("30 minutes").tag(TimeInterval(1800))
+                            Text("1 hour").tag(TimeInterval(3600))
+                        }
+                        Picker("Location mode:", selection: $settings.weatherLocationMode) {
+                            ForEach(WeatherLocationMode.allCases) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        if settings.weatherLocationMode == .manual {
+                            HStack {
+                                TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
+                                TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
+                            }
+                        }
                     }
+                    .disabled(!settings.weatherEnabled)
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

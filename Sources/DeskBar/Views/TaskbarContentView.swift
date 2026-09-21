@@ -22,6 +22,8 @@ final class TaskbarContentView: NSView {
     private let launcherZoneView: LauncherZoneView
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
+    private let calendarWidgetView: CalendarWidgetView
+    private let quickSettingsWidgetView: QuickSettingsWidgetView
     private let weatherWidgetView: WeatherWidgetView
     
         private let clusterDivider = NSView()
@@ -118,7 +120,9 @@ final class TaskbarContentView: NSView {
             smPluginService: smPluginService,
             displayID: displayID
         )
-                self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+        self.connectivityTrayView = ConnectivityTrayView(settings: settings)
+        self.calendarWidgetView = CalendarWidgetView()
+        self.quickSettingsWidgetView = QuickSettingsWidgetView(settings: settings)
         self.weatherWidgetView = WeatherWidgetView(service: weatherService, settings: settings)
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
@@ -175,7 +179,10 @@ final class TaskbarContentView: NSView {
     /// plus the 1pt cluster-divider pixel. Use this at every layout budget site.
     private var dockWidgetFixedWidth: CGFloat {
         (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0)
-            + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0)
+            + (settings.splitCalendarAndQuickSettings
+                ? (settings.calendarLocation == .dock ? calendarWidgetView.preferredContentWidth() : 0)
+                    + (settings.quickSettingsLocation == .dock ? quickSettingsWidgetView.preferredContentWidth() : 0)
+                : (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0))
             + (settings.weatherEnabled && settings.weatherWidgetLocation == .dock ? weatherWidgetView.preferredContentWidth() : 0)
             + 1
     }
@@ -254,6 +261,8 @@ final class TaskbarContentView: NSView {
             launcherZoneView,
             systemResourceWidgetView,
             connectivityTrayView,
+            calendarWidgetView,
+            quickSettingsWidgetView,
             weatherWidgetView,
             leftTaskZoneSeparatorView,
             rightTaskZoneSeparatorView
@@ -368,13 +377,17 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(clusterDivider)
         
         zonesStackView.addArrangedSubview(connectivityTrayView)
+        zonesStackView.addArrangedSubview(calendarWidgetView)
+        zonesStackView.addArrangedSubview(quickSettingsWidgetView)
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
         zonesStackView.addArrangedSubview(weatherWidgetView)
     }
 
 
     private func updateClusterDividerVisibility() {
-        let hasRightWidgets = settings.connectivityTrayLocation == .dock
+        let hasRightWidgets = (settings.splitCalendarAndQuickSettings
+            ? settings.calendarLocation == .dock || settings.quickSettingsLocation == .dock
+            : settings.connectivityTrayLocation == .dock)
             || settings.systemResourceWidgetLocation == .dock
             || (settings.weatherEnabled && settings.weatherWidgetLocation == .dock)
         clusterDivider.isHidden = !hasRightWidgets
@@ -382,10 +395,13 @@ final class TaskbarContentView: NSView {
 
     private func bindState() {
 
-        settings.$connectivityTrayLocation
+        settings.$splitCalendarAndQuickSettings
+            .combineLatest(settings.$connectivityTrayLocation, settings.$calendarLocation, settings.$quickSettingsLocation)
             .receive(on: RunLoop.main)
-            .sink { [weak self] location in
-                self?.connectivityTrayView.isHidden = location != .dock
+            .sink { [weak self] split, trayLocation, calendarLocation, quickSettingsLocation in
+                self?.connectivityTrayView.isHidden = split || trayLocation != .dock
+                self?.calendarWidgetView.isHidden = !split || calendarLocation != .dock
+                self?.quickSettingsWidgetView.isHidden = !split || quickSettingsLocation != .dock
                 self?.updateClusterDividerVisibility()
                 self?.schedulePreferredWidthNotification()
             }
