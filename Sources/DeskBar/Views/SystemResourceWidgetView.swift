@@ -3,6 +3,7 @@ import Combine
 import SwiftUI
 
 final class SystemResourceWidgetView: NSView {
+    private static let fixedWidth: CGFloat = 56
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
     private let smPluginService: SMPluginService?
@@ -39,10 +40,9 @@ final class SystemResourceWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
     
     func preferredContentWidth() -> CGFloat {
-        // Fixed width to prevent layout glitches
-        return isHidden ? 0 : 56
+        Self.fixedWidth
     }
-    
+
     override var intrinsicContentSize: NSSize {
         NSSize(width: preferredContentWidth(), height: NSView.noIntrinsicMetric)
     }
@@ -111,7 +111,6 @@ final class SystemResourceWidgetView: NSView {
         let shouldShow = settings.showSystemResourceWidget
         if isHidden != !shouldShow {
             isHidden = !shouldShow
-            invalidateIntrinsicContentSize()
             preferredWidthDidChange?()
         }
     }

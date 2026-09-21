@@ -804,7 +804,7 @@ final class TaskbarContentView: NSView {
 
     private func updateTaskbarLayout() {
         zonesStackView.edgeInsets = zoneEdgeInsets(usesCompactOuterInsets: lastAppliedUsesCompactOuterInsets)
-        layoutSubtreeIfNeeded()
+        needsLayout = true
         schedulePreferredWidthNotification()
     }
 
