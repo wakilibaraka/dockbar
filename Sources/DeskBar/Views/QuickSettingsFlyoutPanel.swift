@@ -27,7 +27,6 @@ class DisplayBrightnessService {
 }
 
 import AppKit
-import SwiftUI
 import CoreAudio
 
 final class QuickSettingsViewController: NSViewController {
@@ -71,17 +70,6 @@ final class QuickSettingsViewController: NSViewController {
         outer.spacing = 12
         outer.translatesAutoresizingMaskIntoConstraints = false
         blurView.addSubview(outer)
-
-        let hostingView = NSHostingView(rootView: CalendarView())
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        hostingView.widthAnchor.constraint(equalToConstant: 312).isActive = true
-        outer.addArrangedSubview(hostingView)
-
-        let sep2 = NSBox()
-        sep2.boxType = .separator
-        sep2.translatesAutoresizingMaskIntoConstraints = false
-        outer.addArrangedSubview(sep2)
-        sep2.widthAnchor.constraint(equalTo: outer.widthAnchor).isActive = true
 
         // Header
         let headerStack = NSStackView()

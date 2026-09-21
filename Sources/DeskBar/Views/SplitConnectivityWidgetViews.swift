@@ -1,19 +1,23 @@
 import AppKit
+import SwiftUI
 
 final class CalendarWidgetView: NSView {
-    /// Fixed width matching CalendarTrayButton's natural size — never varies with content.
     private static let fixedWidth: CGFloat = 80
     private let calendarButton = CalendarTrayButton()
+    private var popover: NSPopover?
 
     init() {
         super.init(frame: .zero)
+        calendarButton.target = self
+        calendarButton.action = #selector(toggleCalendar)
         addSubview(calendarButton)
         calendarButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             calendarButton.leadingAnchor.constraint(equalTo: leadingAnchor),
             calendarButton.trailingAnchor.constraint(equalTo: trailingAnchor),
             calendarButton.topAnchor.constraint(equalTo: topAnchor),
-            calendarButton.bottomAnchor.constraint(equalTo: bottomAnchor)
+            calendarButton.bottomAnchor.constraint(equalTo: bottomAnchor),
+            widthAnchor.constraint(equalToConstant: Self.fixedWidth)
         ])
     }
 
@@ -21,6 +25,20 @@ final class CalendarWidgetView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     func preferredContentWidth() -> CGFloat { Self.fixedWidth }
+
+    @objc private func toggleCalendar() {
+        if let popover, popover.isShown {
+            popover.performClose(nil)
+            self.popover = nil
+            return
+        }
+
+        let newPopover = NSPopover()
+        newPopover.behavior = .transient
+        newPopover.contentViewController = NSHostingController(rootView: CalendarView())
+        newPopover.show(relativeTo: calendarButton.bounds, of: calendarButton, preferredEdge: .maxY)
+        popover = newPopover
+    }
 }
 
 final class QuickSettingsWidgetView: NSView {
@@ -49,7 +67,8 @@ final class QuickSettingsWidgetView: NSView {
             button.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             button.topAnchor.constraint(equalTo: topAnchor),
             button.bottomAnchor.constraint(equalTo: bottomAnchor),
-            heightAnchor.constraint(equalToConstant: 24)
+            heightAnchor.constraint(equalToConstant: 24),
+            widthAnchor.constraint(equalToConstant: Self.fixedWidth)
         ])
     }
 

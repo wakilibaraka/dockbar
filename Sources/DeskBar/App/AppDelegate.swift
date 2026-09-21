@@ -93,7 +93,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let weatherService = WeatherService(settings: settings)
         self.weatherService = weatherService
-        weatherService.start()
+        MainActor.assumeIsolated {
+            weatherService.start()
+        }
 
         let windowLayoutSnapshotManager = WindowLayoutSnapshotManager(windowManager: wm)
         self.windowLayoutSnapshotManager = windowLayoutSnapshotManager

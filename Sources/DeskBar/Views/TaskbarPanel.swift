@@ -121,7 +121,19 @@ final class TaskbarPanel: NSPanel {
     }
 
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
-        frameRect
+        guard let screen else {
+            return frameRect
+        }
+
+        let visibleFrame = screen.visibleFrame
+        let width = min(frameRect.width, visibleFrame.width)
+        let x = min(max(frameRect.minX, visibleFrame.minX), visibleFrame.maxX - width)
+        return NSRect(
+            x: x,
+            y: frameRect.minY,
+            width: width,
+            height: frameRect.height
+        )
     }
 
     private func updateFrameForCurrentState(animated: Bool, screen: NSScreen? = nil) {
@@ -183,10 +195,11 @@ final class TaskbarPanel: NSPanel {
         let contentHeight = max(taskbarHeight, minimumContentHeight)
         let height = contentHeight
 
+        let visibleFrame = screen.visibleFrame
         return NSRect(
-            x: screen.frame.origin.x,
-            y: screen.frame.origin.y,
-            width: screen.frame.width,
+            x: visibleFrame.minX,
+            y: screen.frame.minY,
+            width: visibleFrame.width,
             height: height
         )
     }

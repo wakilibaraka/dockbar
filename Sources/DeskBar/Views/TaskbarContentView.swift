@@ -1792,7 +1792,11 @@ final class TaskbarContentView: NSView {
 
     private var availableContentWidth: CGFloat {
         let contentWidth = bounds.width > 0 ? bounds.width : zonesStackView.bounds.width
-        return max(0, contentWidth)
+        let visibleWidth = window?.screen?.visibleFrame.width
+            ?? NSScreen.screens.first?.visibleFrame.width
+            ?? contentWidth
+        let widthBudget = max(0, visibleWidth - zoneEdgeInsetsWidth(regularZoneEdgeInsets))
+        return max(0, min(contentWidth, widthBudget))
     }
 
     private func taskZoneWidthMeasurement(
