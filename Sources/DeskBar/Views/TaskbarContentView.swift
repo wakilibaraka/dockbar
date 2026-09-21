@@ -1543,7 +1543,7 @@ final class TaskbarContentView: NSView {
                     annotation: annotation,
                     target: self,
                     action: #selector(TaskbarContentView.handleSMPluginMenuCommand(_:)),
-                    showsTokenUsage: self.settings.showSessionManagerTokenUsage
+                    showsTokenUsage: self?.settings.showSessionManagerTokenUsage ?? false
                 )
             }
         )

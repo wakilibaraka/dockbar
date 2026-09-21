@@ -1,5 +1,5 @@
-import AppKit
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
