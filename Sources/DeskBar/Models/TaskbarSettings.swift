@@ -115,6 +115,32 @@ enum WidgetLocation: String, CaseIterable, Identifiable {
     }
 }
 
+enum WeatherUnit: String, CaseIterable, Identifiable {
+    case celsius
+    case fahrenheit
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .celsius: return "Celsius (°C)"
+        case .fahrenheit: return "Fahrenheit (°F)"
+        }
+    }
+}
+
+enum WeatherLocationMode: String, CaseIterable, Identifiable {
+    case automatic
+    case manual
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .automatic: return "Automatic"
+        case .manual: return "Manual"
+        }
+    }
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -316,6 +342,34 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(batteryWidgetLocation.rawValue, forKey: "batteryWidgetLocation") }
     }
 
+    @Published var weatherEnabled: Bool {
+        didSet { defaults.set(weatherEnabled, forKey: "weatherEnabled") }
+    }
+
+    @Published var weatherWidgetLocation: WidgetLocation {
+        didSet { defaults.set(weatherWidgetLocation.rawValue, forKey: "weatherWidgetLocation") }
+    }
+
+    @Published var weatherUnit: WeatherUnit {
+        didSet { defaults.set(weatherUnit.rawValue, forKey: "weatherUnit") }
+    }
+
+    @Published var weatherPollingInterval: TimeInterval {
+        didSet { defaults.set(weatherPollingInterval, forKey: "weatherPollingInterval") }
+    }
+
+    @Published var weatherLocationMode: WeatherLocationMode {
+        didSet { defaults.set(weatherLocationMode.rawValue, forKey: "weatherLocationMode") }
+    }
+
+    @Published var weatherManualLatitude: Double {
+        didSet { defaults.set(weatherManualLatitude, forKey: "weatherManualLatitude") }
+    }
+
+    @Published var weatherManualLongitude: Double {
+        didSet { defaults.set(weatherManualLongitude, forKey: "weatherManualLongitude") }
+    }
+
     @Published var showSessionManagerAgentTitles: Bool {
         didSet { defaults.set(showSessionManagerAgentTitles, forKey: "showSessionManagerAgentTitles") }
     }
@@ -409,6 +463,13 @@ class TaskbarSettings: ObservableObject {
         connectivityTrayLocation = WidgetLocation(rawValue: defaults.string(forKey: "connectivityTrayLocation") ?? "") ?? .dock
         systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .dock
         batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
+        weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? false
+        weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .menuBar
+        weatherUnit = WeatherUnit(rawValue: defaults.string(forKey: "weatherUnit") ?? "") ?? .celsius
+        weatherPollingInterval = defaults.object(forKey: "weatherPollingInterval") as? TimeInterval ?? 900
+        weatherLocationMode = WeatherLocationMode(rawValue: defaults.string(forKey: "weatherLocationMode") ?? "") ?? .automatic
+        weatherManualLatitude = defaults.object(forKey: "weatherManualLatitude") as? Double ?? 0
+        weatherManualLongitude = defaults.object(forKey: "weatherManualLongitude") as? Double ?? 0
         showSessionManagerAgentTitles = defaults.object(forKey: "showSessionManagerAgentTitles") as? Bool ?? true
         showSessionManagerActivityIndicators = defaults.object(forKey: "showSessionManagerActivityIndicators") as? Bool ?? true
         animateSessionManagerActivity = defaults.object(forKey: "animateSessionManagerActivity") as? Bool ?? false

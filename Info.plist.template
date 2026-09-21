@@ -24,6 +24,8 @@
     <string>DockBar uses Terminal window metadata to show Session Manager agent names and activity on terminal task buttons.</string>
     <key>NSCalendarsFullAccessUsageDescription</key>
     <string>DockBar integrates with your calendar to display upcoming events and holidays in the Quick Settings menu.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>DockBar uses your location to show local weather conditions.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsLocalNetworking</key>
