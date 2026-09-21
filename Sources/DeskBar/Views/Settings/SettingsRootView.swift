@@ -400,6 +400,22 @@ private struct WidgetsSettingsPage: View {
                     TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
                 }
             }
+            Section("Widget order") {
+                Text("Drag widgets to choose their order in the Dock. The order is preserved when widgets move between Dock and Menu Bar.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                List {
+                    ForEach(settings.dockWidgetOrder, id: \.self) { rawValue in
+                        if let widget = DockWidgetID(rawValue: rawValue) {
+                            Label(widget.displayName, systemImage: "line.3.horizontal")
+                        }
+                    }
+                    .onMove { source, destination in
+                        settings.dockWidgetOrder.move(fromOffsets: source, toOffset: destination)
+                    }
+                }
+                .frame(height: 150)
+            }
         }
     }
 }
@@ -408,7 +424,7 @@ private struct CalendarPluginsSettingsPage: View {
     @ObservedObject var settings: TaskbarSettings
 
     var body: some View {
-        SettingsPage(title: "Calendar & Plugins", subtitle: "Place Calendar and Quick Settings independently, then tune Session Manager.") {
+        SettingsPage(title: "Calendar & Plugins", subtitle: "Use one combined Calendar and Quick Settings control, or place each widget independently.") {
             Section("Calendar & Quick Settings") {
                 Toggle("Split Calendar and Quick Settings", isOn: $settings.splitCalendarAndQuickSettings)
                 if settings.splitCalendarAndQuickSettings {
@@ -421,6 +437,9 @@ private struct CalendarPluginsSettingsPage: View {
                     }
                     .pickerStyle(.segmented)
                 } else {
+                    Text("Combined mode uses the Calendar & Quick Settings tray as one dock or menu-bar widget. The separate Quick Settings menu-bar item is hidden.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Picker("Location", selection: $settings.connectivityTrayLocation) {
                         ForEach(WidgetLocation.allCases) { Text($0.displayName).tag($0) }
                     }

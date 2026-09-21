@@ -115,6 +115,28 @@ enum WidgetLocation: String, CaseIterable, Identifiable {
     }
 }
 
+enum DockWidgetID: String, CaseIterable, Identifiable {
+    case connectivity
+    case calendar
+    case quickSettings
+    case systemResources
+    case battery
+    case weather
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .connectivity: return "Calendar & Quick Settings"
+        case .calendar: return "Calendar"
+        case .quickSettings: return "Quick Settings"
+        case .systemResources: return "System Resources"
+        case .battery: return "Battery"
+        case .weather: return "Weather"
+        }
+    }
+}
+
 enum WeatherUnit: String, CaseIterable, Identifiable {
     case celsius
     case fahrenheit
@@ -380,6 +402,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(weatherWidgetLocation.rawValue, forKey: "weatherWidgetLocation") }
     }
 
+    @Published var dockWidgetOrder: [String] {
+        didSet { defaults.set(dockWidgetOrder, forKey: "dockWidgetOrder") }
+    }
+
     @Published var weatherUnit: WeatherUnit {
         didSet { defaults.set(weatherUnit.rawValue, forKey: "weatherUnit") }
     }
@@ -511,7 +537,8 @@ class TaskbarSettings: ObservableObject {
         systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .menuBar
         batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
         weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? true
-        weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .menuBar
+        weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .dock
+        dockWidgetOrder = Self.loadDockWidgetOrder(from: defaults)
         weatherUnit = WeatherUnit(rawValue: defaults.string(forKey: "weatherUnit") ?? "") ?? .celsius
         weatherPollingInterval = defaults.object(forKey: "weatherPollingInterval") as? TimeInterval ?? 900
         weatherLocationMode = WeatherLocationMode(rawValue: defaults.string(forKey: "weatherLocationMode") ?? "") ?? .automatic
@@ -533,5 +560,13 @@ class TaskbarSettings: ObservableObject {
         titleFontSize = Self.defaultTitleFontSize
         maxTaskWidth = Self.defaultMaxTaskWidth
         thumbnailSize = Self.defaultThumbnailSize
+    }
+
+    private static func loadDockWidgetOrder(from defaults: UserDefaults) -> [String] {
+        let saved = defaults.stringArray(forKey: "dockWidgetOrder") ?? []
+        let valid = Set(DockWidgetID.allCases.map(\.rawValue))
+        var result = saved.filter { valid.contains($0) }
+        result.append(contentsOf: DockWidgetID.allCases.map(\.rawValue).filter { !result.contains($0) })
+        return result
     }
 }

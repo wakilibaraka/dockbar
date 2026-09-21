@@ -1,5 +1,77 @@
 import AppKit
 import SwiftUI
+import Combine
+
+final class BatteryWidgetView: NSView {
+    private static let fixedWidth: CGFloat = 72
+    private let button = NSButton()
+    private let settings: TaskbarSettings
+    private var cancellables = Set<AnyCancellable>()
+    private var popover: NSPopover?
+
+    init(settings: TaskbarSettings) {
+        self.settings = settings
+        super.init(frame: .zero)
+        button.isBordered = false
+        button.bezelStyle = .texturedRounded
+        button.imagePosition = .imageLeft
+        button.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+        button.target = self
+        button.action = #selector(toggleBattery)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(button)
+        NSLayoutConstraint.activate([
+            button.leadingAnchor.constraint(equalTo: leadingAnchor),
+            button.trailingAnchor.constraint(equalTo: trailingAnchor),
+            button.topAnchor.constraint(equalTo: topAnchor),
+            button.bottomAnchor.constraint(equalTo: bottomAnchor),
+            widthAnchor.constraint(equalToConstant: Self.fixedWidth),
+            heightAnchor.constraint(equalToConstant: 24)
+        ])
+        BatteryMonitor.shared.$state
+            .receive(on: RunLoop.main)
+            .sink { [weak self] state in self?.update(state) }
+            .store(in: &cancellables)
+        settings.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.update(BatteryMonitor.shared.state)
+            }
+            .store(in: &cancellables)
+        update(BatteryMonitor.shared.state)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    func preferredContentWidth() -> CGFloat { Self.fixedWidth }
+
+    private func update(_ state: BatteryState) {
+        button.image = BatteryStatusRenderer.renderImage(
+            for: state,
+            style: settings.batteryIconStyle,
+            size: settings.batteryIconSize,
+            showTextInside: settings.showPercentageInsideIcon
+        )
+        button.title = settings.showBatteryPercentage ? " \(state.percentage)%" : ""
+    }
+
+    @objc private func toggleBattery() {
+        if let popover, popover.isShown {
+            popover.performClose(nil)
+            self.popover = nil
+            return
+        }
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(
+            rootView: BatteryFlyoutView().environmentObject(settings)
+        )
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+        self.popover = popover
+    }
+}
 
 final class CalendarWidgetView: NSView {
     private static let fixedWidth: CGFloat = 80

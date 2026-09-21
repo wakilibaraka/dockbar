@@ -24,6 +24,7 @@ final class TaskbarContentView: NSView {
     private let connectivityTrayView: ConnectivityTrayView
     private let calendarWidgetView: CalendarWidgetView
     private let quickSettingsWidgetView: QuickSettingsWidgetView
+    private let batteryWidgetView: BatteryWidgetView
     private let weatherWidgetView: WeatherWidgetView
     
         private let clusterDivider = NSView()
@@ -124,6 +125,7 @@ final class TaskbarContentView: NSView {
         self.connectivityTrayView = ConnectivityTrayView(settings: settings)
         self.calendarWidgetView = CalendarWidgetView()
         self.quickSettingsWidgetView = QuickSettingsWidgetView(settings: settings)
+        self.batteryWidgetView = BatteryWidgetView(settings: settings)
         self.weatherWidgetView = WeatherWidgetView(service: weatherService, settings: settings)
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
@@ -198,6 +200,9 @@ final class TaskbarContentView: NSView {
         }
         if settings.systemResourceWidgetLocation == .dock {
             widths.append(systemResourceWidgetView.preferredContentWidth())
+        }
+        if settings.batteryWidgetLocation == .dock {
+            widths.append(batteryWidgetView.preferredContentWidth())
         }
         if settings.weatherEnabled && settings.weatherWidgetLocation == .dock {
             widths.append(weatherWidgetView.preferredContentWidth())
@@ -394,11 +399,7 @@ final class TaskbarContentView: NSView {
         ])
         zonesStackView.addArrangedSubview(clusterDivider)
         
-        zonesStackView.addArrangedSubview(connectivityTrayView)
-        zonesStackView.addArrangedSubview(calendarWidgetView)
-        zonesStackView.addArrangedSubview(quickSettingsWidgetView)
-        zonesStackView.addArrangedSubview(systemResourceWidgetView)
-        zonesStackView.addArrangedSubview(weatherWidgetView)
+        addOrderedDockWidgets()
 
         let fixedViews: [NSView] = [
             launcherZoneView,
@@ -406,6 +407,7 @@ final class TaskbarContentView: NSView {
             calendarWidgetView,
             quickSettingsWidgetView,
             systemResourceWidgetView,
+            batteryWidgetView,
             weatherWidgetView
         ]
         fixedViews.forEach { view in
@@ -422,12 +424,42 @@ final class TaskbarContentView: NSView {
         zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: systemResourceWidgetView)
     }
 
+    private func addOrderedDockWidgets() {
+        let viewsByID: [DockWidgetID: NSView] = [
+            .connectivity: connectivityTrayView,
+            .calendar: calendarWidgetView,
+            .quickSettings: quickSettingsWidgetView,
+            .systemResources: systemResourceWidgetView,
+            .battery: batteryWidgetView,
+            .weather: weatherWidgetView
+        ]
+        let orderedIDs = settings.dockWidgetOrder.compactMap(DockWidgetID.init(rawValue:))
+        for widgetID in orderedIDs {
+            guard let view = viewsByID[widgetID], view.superview == nil else { continue }
+            zonesStackView.addArrangedSubview(view)
+        }
+    }
+
+    private func applyDockWidgetOrder() {
+        [connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView, weatherWidgetView]
+            .forEach { view in
+                zonesStackView.removeArrangedSubview(view)
+                view.removeFromSuperview()
+            }
+        addOrderedDockWidgets()
+        [clusterDivider, connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView]
+            .forEach { view in
+                zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: view)
+            }
+    }
+
 
     private func updateClusterDividerVisibility() {
         let hasRightWidgets = (settings.splitCalendarAndQuickSettings
             ? settings.calendarLocation == .dock || settings.quickSettingsLocation == .dock
             : settings.connectivityTrayLocation == .dock)
             || settings.systemResourceWidgetLocation == .dock
+            || settings.batteryWidgetLocation == .dock
             || (settings.weatherEnabled && settings.weatherWidgetLocation == .dock)
         clusterDivider.isHidden = !hasRightWidgets
     }
@@ -441,6 +473,15 @@ final class TaskbarContentView: NSView {
                 self?.connectivityTrayView.isHidden = split || trayLocation != .dock
                 self?.calendarWidgetView.isHidden = !split || calendarLocation != .dock
                 self?.quickSettingsWidgetView.isHidden = !split || quickSettingsLocation != .dock
+                self?.updateClusterDividerVisibility()
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$batteryWidgetLocation
+            .receive(on: RunLoop.main)
+            .sink { [weak self] location in
+                self?.batteryWidgetView.isHidden = location != .dock
                 self?.updateClusterDividerVisibility()
                 self?.schedulePreferredWidthNotification()
             }
@@ -461,6 +502,14 @@ final class TaskbarContentView: NSView {
             .sink { [weak self] enabled, location in
                 self?.weatherWidgetView.isHidden = !enabled || location != .dock
                 self?.updateClusterDividerVisibility()
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$dockWidgetOrder
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.applyDockWidgetOrder()
                 self?.schedulePreferredWidthNotification()
             }
             .store(in: &cancellables)
