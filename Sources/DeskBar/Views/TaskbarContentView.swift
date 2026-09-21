@@ -43,7 +43,6 @@ final class TaskbarContentView: NSView {
     private let minimumZoneContentHeight: CGFloat = 32
     private let taskZoneItemSpacing: CGFloat = 8
     private let taskZoneGroupSpacing: CGFloat = 12
-    private let fixedWidgetSpacing: CGFloat = 4
     private let compactTaskZoneSpacerWidth: CGFloat = 8
     static let minimumResponsiveContentWidth: CGFloat = 320
     static let compactOuterInsetContentWidthThreshold: CGFloat = 2200
@@ -179,31 +178,13 @@ final class TaskbarContentView: NSView {
     /// Width contributed by right-cluster widgets that are currently in the Dock,
     /// plus the 1pt cluster-divider pixel. Use this at every layout budget site.
     private var dockWidgetFixedWidth: CGFloat {
-        let widths = dockWidgetWidths
-        return widths.reduce(0, +) +
-            1 +
-            fixedWidgetSpacing * CGFloat(widths.count)
-    }
-
-    private var dockWidgetWidths: [CGFloat] {
-        var widths: [CGFloat] = []
-        if settings.splitCalendarAndQuickSettings {
-            if settings.calendarLocation == .dock {
-                widths.append(calendarWidgetView.preferredContentWidth())
-            }
-            if settings.quickSettingsLocation == .dock {
-                widths.append(quickSettingsWidgetView.preferredContentWidth())
-            }
-        } else if settings.connectivityTrayLocation == .dock {
-            widths.append(connectivityTrayView.preferredContentWidth())
-        }
-        if settings.systemResourceWidgetLocation == .dock {
-            widths.append(systemResourceWidgetView.preferredContentWidth())
-        }
-        if settings.weatherEnabled && settings.weatherWidgetLocation == .dock {
-            widths.append(weatherWidgetView.preferredContentWidth())
-        }
-        return widths
+        (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0)
+            + (settings.splitCalendarAndQuickSettings
+                ? (settings.calendarLocation == .dock ? calendarWidgetView.preferredContentWidth() : 0)
+                    + (settings.quickSettingsLocation == .dock ? quickSettingsWidgetView.preferredContentWidth() : 0)
+                : (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0))
+            + (settings.weatherEnabled && settings.weatherWidgetLocation == .dock ? weatherWidgetView.preferredContentWidth() : 0)
+            + 1
     }
 
     func preferredCompactWidth() -> CGFloat {
@@ -400,29 +381,6 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(quickSettingsWidgetView)
         zonesStackView.addArrangedSubview(systemResourceWidgetView)
         zonesStackView.addArrangedSubview(weatherWidgetView)
-
-        // Keep the fixed zones visually balanced and non-compressible. The
-        // task container remains the only region allowed to yield width.
-        let fixedViews: [NSView] = [
-            launcherZoneView,
-            connectivityTrayView,
-            calendarWidgetView,
-            quickSettingsWidgetView,
-            systemResourceWidgetView,
-            weatherWidgetView
-        ]
-        fixedViews.forEach { view in
-            view.setContentHuggingPriority(.required, for: .horizontal)
-            view.setContentCompressionResistancePriority(.required, for: .horizontal)
-        }
-        taskZoneContainer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        taskZoneContainer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: clusterDivider)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: connectivityTrayView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: calendarWidgetView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: quickSettingsWidgetView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: systemResourceWidgetView)
     }
 
 
@@ -1646,6 +1604,7 @@ final class TaskbarContentView: NSView {
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
             dockWidgetFixedWidth +
+            0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
@@ -1661,6 +1620,7 @@ final class TaskbarContentView: NSView {
         let fixedZoneWidth =
             launcherZoneView.preferredContentWidth() +
             dockWidgetFixedWidth +
+            0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
@@ -1681,13 +1641,17 @@ final class TaskbarContentView: NSView {
             usesAdaptiveTaskWidth: usesAdaptiveTaskLayout,
             includesEdgeSpacers: usesTaskZoneEdgeSpacers
         )
+        let taskMinimumWidth = measurement.fixedWidth + measurement.taskButtonItems.reduce(0) {
+            $0 + $1.minimumWidth
+        }
         let effectiveFixedZoneWidth: CGFloat
 
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
                 launcherZoneView.preferredContentWidth() +
                 dockWidgetFixedWidth +
-                zoneEdgeInsetsWidth(compactZoneEdgeInsets)
+                zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
+            let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
             effectiveFixedZoneWidth =
                 nonTrayFixedWidth +
                 0
@@ -1695,6 +1659,7 @@ final class TaskbarContentView: NSView {
             effectiveFixedZoneWidth =
                 launcherZoneView.preferredContentWidth() +
                 dockWidgetFixedWidth +
+                0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 
@@ -2830,7 +2795,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     }
 
     func widthPlanItem(usesAdaptiveWidth: Bool) -> TaskbarWidthPlanItem {
-        let preferred = min(TaskButtonView.maximumTaskButtonWidth, TaskButtonView.preferredWidth(
+        let preferred = TaskButtonView.preferredWidth(
             title: appGroup.appName,
             font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
             maxWidth: settings.maxTaskWidth,
@@ -2838,7 +2803,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             showsTitles: settings.showTitles,
             showsPluginActionButton: false,
             isAgentWindow: false
-        ))
+        )
         return TaskbarWidthPlanItem(
             preferredWidth: usesAdaptiveWidth ? preferred : preferred,
             minimumWidth: settings.showTitles ? TaskButtonView.minimumTaskWidth : settings.taskbarHeight + 8
@@ -2872,7 +2837,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         titleTrailingConstraint?.isActive = showsTitle
         
         if showsTitle {
-            let preferred = min(TaskButtonView.maximumTaskButtonWidth, TaskButtonView.preferredWidth(
+            let preferred = TaskButtonView.preferredWidth(
                 title: title,
                 font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
                 maxWidth: settings.maxTaskWidth,
@@ -2880,7 +2845,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
                 showsTitles: true,
                 showsPluginActionButton: false,
                 isAgentWindow: false
-            ))
+            )
             let cappedWidth = widthCap.map { min(preferred, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferred
             maxWidthConstraint?.constant = cappedWidth
         } else {
