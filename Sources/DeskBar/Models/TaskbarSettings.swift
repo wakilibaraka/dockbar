@@ -352,6 +352,18 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(connectivityTrayLocation.rawValue, forKey: "connectivityTrayLocation") }
     }
 
+    @Published var splitCalendarAndQuickSettings: Bool {
+        didSet { defaults.set(splitCalendarAndQuickSettings, forKey: "splitCalendarAndQuickSettings") }
+    }
+
+    @Published var calendarLocation: WidgetLocation {
+        didSet { defaults.set(calendarLocation.rawValue, forKey: "calendarLocation") }
+    }
+
+    @Published var quickSettingsLocation: WidgetLocation {
+        didSet { defaults.set(quickSettingsLocation.rawValue, forKey: "quickSettingsLocation") }
+    }
+
     @Published var systemResourceWidgetLocation: WidgetLocation {
         didSet { defaults.set(systemResourceWidgetLocation.rawValue, forKey: "systemResourceWidgetLocation") }
     }
@@ -482,7 +494,10 @@ class TaskbarSettings: ObservableObject {
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
 
         connectivityTrayLocation = WidgetLocation(rawValue: defaults.string(forKey: "connectivityTrayLocation") ?? "") ?? .dock
-        systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .dock
+        splitCalendarAndQuickSettings = defaults.object(forKey: "splitCalendarAndQuickSettings") as? Bool ?? false
+        calendarLocation = WidgetLocation(rawValue: defaults.string(forKey: "calendarLocation") ?? "") ?? .dock
+        quickSettingsLocation = WidgetLocation(rawValue: defaults.string(forKey: "quickSettingsLocation") ?? "") ?? .menuBar
+        systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .menuBar
         batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
         weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? false
         weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .menuBar

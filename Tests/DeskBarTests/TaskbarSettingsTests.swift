@@ -33,6 +33,40 @@ struct TaskbarSettingsTests {
     }
 
     @Test
+    func widgetLocationsUseNewDefaultsOnFreshInstall() {
+        let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = TaskbarSettings(defaults: defaults)
+
+        #expect(settings.splitCalendarAndQuickSettings == false)
+        #expect(settings.connectivityTrayLocation == .dock)
+        #expect(settings.calendarLocation == .dock)
+        #expect(settings.quickSettingsLocation == .menuBar)
+        #expect(settings.systemResourceWidgetLocation == .menuBar)
+        #expect(settings.batteryWidgetLocation == .menuBar)
+    }
+
+    @Test
+    func widgetLocationMigrationPreservesExistingValues() {
+        let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defaults.set(WidgetLocation.menuBar.rawValue, forKey: "connectivityTrayLocation")
+        defaults.set(WidgetLocation.dock.rawValue, forKey: "systemResourceWidgetLocation")
+        defaults.set(WidgetLocation.dock.rawValue, forKey: "batteryWidgetLocation")
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = TaskbarSettings(defaults: defaults)
+
+        #expect(settings.connectivityTrayLocation == .menuBar)
+        #expect(settings.systemResourceWidgetLocation == .dock)
+        #expect(settings.batteryWidgetLocation == .dock)
+    }
+
+    @Test
     func migratesLegacyGroupByAppSetting() {
         let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

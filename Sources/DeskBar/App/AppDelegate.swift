@@ -25,6 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var onboardingWindowController: OnboardingWindowController?
     private var connectivityStatusItem: NSStatusItem?
+    private var calendarStatusItem: NSStatusItem?
+    private var quickSettingsStatusItem: NSStatusItem?
     private var systemResourceStatusItem: NSStatusItem?
     private var weatherStatusItem: NSStatusItem?
     private var weatherService: WeatherService?
@@ -246,11 +248,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let connectivityStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let calendarStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let quickSettingsStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let systemResourceStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let weatherStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         self.statusItem = statusItem
         self.connectivityStatusItem = connectivityStatusItem
+        self.calendarStatusItem = calendarStatusItem
+        self.quickSettingsStatusItem = quickSettingsStatusItem
         self.systemResourceStatusItem = systemResourceStatusItem
         self.weatherStatusItem = weatherStatusItem
 
@@ -262,20 +268,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 .store(in: &cancellables)
 
-            settings.$connectivityTrayLocation
+            settings.$splitCalendarAndQuickSettings
+                .combineLatest(settings.$connectivityTrayLocation, settings.$calendarLocation, settings.$quickSettingsLocation)
                 .receive(on: DispatchQueue.main)
-                .sink { [weak self, weak connectivityStatusItem] location in
-                    guard let self = self, let item = connectivityStatusItem else { return }
-                    item.isVisible = location == .menuBar
-                    if location == .menuBar {
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        guard let validSettings = self.settings else { return }
-                        let view = ConnectivityTrayView(settings: validSettings)
-                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                        item.button?.addSubview(view)
-                        item.length = view.preferredContentWidth()
-                    } else {
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
+                .sink { [weak self, weak connectivityStatusItem, weak calendarStatusItem, weak quickSettingsStatusItem] split, trayLocation, calendarLocation, quickSettingsLocation in
+                    MainActor.assumeIsolated {
+                        guard let self, let validSettings = self.settings else { return }
+                        [connectivityStatusItem, calendarStatusItem, quickSettingsStatusItem].forEach {
+                            $0?.button?.subviews.forEach { $0.removeFromSuperview() }
+                            $0?.isVisible = false
+                        }
+
+                        if split {
+                            if let item = calendarStatusItem {
+                                item.isVisible = calendarLocation == .menuBar
+                                if item.isVisible {
+                                    let view = CalendarWidgetView()
+                                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                                    item.button?.addSubview(view)
+                                    item.length = view.preferredContentWidth()
+                                }
+                            }
+                            if let item = quickSettingsStatusItem {
+                                item.isVisible = quickSettingsLocation == .menuBar
+                                if item.isVisible {
+                                    let view = QuickSettingsWidgetView(settings: validSettings)
+                                    view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                                    item.button?.addSubview(view)
+                                    item.length = view.preferredContentWidth()
+                                }
+                            }
+                        } else if let item = connectivityStatusItem {
+                            item.isVisible = trayLocation == .menuBar
+                            if item.isVisible {
+                                let view = ConnectivityTrayView(settings: validSettings)
+                                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
+                                item.button?.addSubview(view)
+                                item.length = view.preferredContentWidth()
+                            }
+                        }
                     }
                 }
                 .store(in: &cancellables)
