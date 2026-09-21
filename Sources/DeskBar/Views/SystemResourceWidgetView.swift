@@ -9,7 +9,9 @@ final class SystemResourceWidgetView: NSView {
     
     private let containerView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
+    private let graphView: NSHostingView<MetricGraphView>
     private var cancellables = Set<AnyCancellable>()
+    private var memorySamples: [Double] = []
     
     var preferredWidthDidChange: (() -> Void)?
     
@@ -20,6 +22,9 @@ final class SystemResourceWidgetView: NSView {
         self.monitor = monitor
         self.smPluginService = smPluginService
         self.isCollapsedInstance = isCollapsedInstance
+        graphView = NSHostingView(
+            rootView: MetricGraphView(samples: [], accent: .green, style: .filledWave, maximum: 100)
+        )
         super.init(frame: .zero)
         
         setContentHuggingPriority(.required, for: .horizontal)
@@ -59,6 +64,8 @@ final class SystemResourceWidgetView: NSView {
         textLabel.drawsBackground = false
         textLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(textLabel)
+        graphView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(graphView)
         
         NSLayoutConstraint.activate([
             containerView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -67,7 +74,11 @@ final class SystemResourceWidgetView: NSView {
             containerView.heightAnchor.constraint(equalToConstant: 22),
             
             textLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor)
+            textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            graphView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            graphView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            graphView.widthAnchor.constraint(equalToConstant: 44),
+            graphView.heightAnchor.constraint(equalToConstant: 22)
         ])
     }
     
@@ -85,6 +96,13 @@ final class SystemResourceWidgetView: NSView {
                 self?.updateVisibility()
             }
             .store(in: &cancellables)
+
+        settings.$resourceDisplayStyle
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateDisplayStyle()
+            }
+            .store(in: &cancellables)
     }
     
     private func updateVisibility() {
@@ -100,6 +118,7 @@ final class SystemResourceWidgetView: NSView {
     
     private func update(with snapshot: SystemResourceSnapshot) {
         let percent = snapshot.memoryUsedPercent ?? 0
+        memorySamples = Array((memorySamples + [percent]).suffix(60))
         textLabel.stringValue = String(format: "%.0f%%", percent)
         
         let color: NSColor
@@ -114,6 +133,18 @@ final class SystemResourceWidgetView: NSView {
         
         textLabel.textColor = color
         containerView.layer?.backgroundColor = color.withAlphaComponent(0.15).cgColor
+        graphView.rootView = MetricGraphView(
+            samples: memorySamples,
+            accent: Color(nsColor: color),
+            style: .filledWave,
+            maximum: 100
+        )
+    }
+
+    private func updateDisplayStyle() {
+        let showingGraph = settings.resourceDisplayStyle == .graph
+        textLabel.isHidden = showingGraph
+        graphView.isHidden = !showingGraph
     }
     
     // MARK: - Interaction

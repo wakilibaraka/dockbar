@@ -22,10 +22,12 @@ final class SpeedTestQuickSetting: QuickSetting {
     }
 
     let controller: SpeedTestController
+    let throughputMonitor: NetworkThroughputMonitor
     private var observer: Any?
 
     init() {
         controller = SpeedTestController()
+        throughputMonitor = NetworkThroughputMonitor()
         observer = controller.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async {
                 self?.refreshState()

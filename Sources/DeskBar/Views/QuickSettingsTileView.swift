@@ -1,9 +1,11 @@
 import AppKit
+import SwiftUI
 
 final class QuickSettingsTileView: NSView {
     private let setting: QuickSetting
     private let iconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
+    private var flyout: NSPopover?
     var onToggle: (() -> Void)?
     
     init(setting: QuickSetting) {
@@ -90,6 +92,10 @@ final class QuickSettingsTileView: NSView {
     }
     
     override func mouseDown(with event: NSEvent) {
+        if showFlyoutIfAvailable() {
+            return
+        }
+
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.1
             layer?.opacity = 0.7
@@ -100,6 +106,48 @@ final class QuickSettingsTileView: NSView {
             self.refresh()
             self.onToggle?()
         }
+    }
+
+    private func showFlyoutIfAvailable() -> Bool {
+        let rootView: AnyView
+        switch setting {
+        case let speedTest as SpeedTestQuickSetting:
+            rootView = AnyView(
+                NetworkFlyoutView(
+                    monitor: speedTest.throughputMonitor,
+                    speedTest: speedTest.controller,
+                    onChange: { [weak self] in
+                        self?.refresh()
+                        self?.onToggle?()
+                    }
+                )
+            )
+        case let keyboardLock as KeyboardLockQuickSetting:
+            rootView = AnyView(
+                KeyboardLockFlyoutView(
+                    setting: keyboardLock,
+                    onChange: { [weak self] in
+                        self?.refresh()
+                        self?.onToggle?()
+                    }
+                )
+            )
+        default:
+            return false
+        }
+
+        if let flyout, flyout.isShown {
+            flyout.performClose(nil)
+            self.flyout = nil
+            return true
+        }
+
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(rootView: rootView)
+        popover.show(relativeTo: bounds, of: self, preferredEdge: .maxY)
+        flyout = popover
+        return true
     }
     
     override func rightMouseDown(with event: NSEvent) {

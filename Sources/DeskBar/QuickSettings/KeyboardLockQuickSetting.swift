@@ -1,7 +1,8 @@
 import AppKit
+import Combine
 
 @MainActor
-final class KeyboardLockQuickSetting: QuickSetting {
+final class KeyboardLockQuickSetting: QuickSetting, ObservableObject {
     let id = "keyboardLock"
     var title: String {
         return isOn ? "Keyboard Locked" : "Keyboard Lock"
@@ -9,7 +10,8 @@ final class KeyboardLockQuickSetting: QuickSetting {
     var symbolName: String {
         return isOn ? "lock.fill" : "keyboard"
     }
-    var isOn: Bool = false
+    @Published private(set) var isOn: Bool = false
+    @Published private(set) var unlockDate: Date?
 
     // We'll just toggle it and use an event tap to block all keyboard events
     nonisolated(unsafe) private var eventTap: CFMachPort?
@@ -75,6 +77,7 @@ final class KeyboardLockQuickSetting: QuickSetting {
         CGEvent.tapEnable(tap: tap, enable: true)
 
         // Auto-unlock after 5 minutes
+        unlockDate = Date().addingTimeInterval(5 * 60)
         Task {
             try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
             if self.eventTap != nil {
@@ -94,5 +97,6 @@ final class KeyboardLockQuickSetting: QuickSetting {
             self.eventTap = nil
             self.runLoopSource = nil
         }
+        unlockDate = nil
     }
 }
