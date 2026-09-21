@@ -165,9 +165,116 @@ final class LaunchpickManager {
     }
     
     private func launch(item: LaunchpickItem) {
+        if let bundleIdentifier = item.bundleIdentifier,
+           let applicationURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            guard NSWorkspace.shared.open(applicationURL) else {
+                NSLog("Launchpick: failed to open application with bundle identifier %@", bundleIdentifier)
+            }
+            return
+        }
+
+        if let applicationPath = item.applicationPath,
+           applicationPath.hasSuffix(".app") {
+            guard NSWorkspace.shared.open(URL(fileURLWithPath: applicationPath)) else {
+                NSLog("Launchpick: failed to open application at %@", applicationPath)
+            }
+            return
+        }
+
+        guard let arguments = splitCommandLine(item.exec),
+              let executable = arguments.first
+        else {
+            NSLog("Launchpick: could not parse launcher command for %@", item.name)
+            return
+        }
+
+        if executable.hasSuffix(".app") {
+            guard NSWorkspace.shared.open(URL(fileURLWithPath: executable)) else {
+                NSLog("Launchpick: failed to open application at %@", executable)
+            }
+            return
+        }
+
+        guard let executableURL = resolveExecutable(named: executable) else {
+            NSLog("Launchpick: executable not found for %@", item.name)
+            return
+        }
+
         let task = Process()
-        task.launchPath = "/bin/sh"
-        task.arguments = ["-c", item.exec]
-        try? task.run()
+        task.executableURL = executableURL
+        task.arguments = Array(arguments.dropFirst())
+
+        do {
+            try task.run()
+        } catch {
+            NSLog("Launchpick: failed to launch %@: %@", executableURL.path, error.localizedDescription)
+        }
+    }
+
+    private func resolveExecutable(named executable: String) -> URL? {
+        if executable.contains("/") {
+            let url = URL(fileURLWithPath: executable)
+            return FileManager.default.isExecutableFile(atPath: url.path) ? url : nil
+        }
+
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"
+        for directory in path.split(separator: ":").map(String.init) {
+            let candidate = URL(fileURLWithPath: directory).appendingPathComponent(executable)
+            if FileManager.default.isExecutableFile(atPath: candidate.path) {
+                return candidate
+            }
+        }
+
+        return nil
+    }
+
+    private func splitCommandLine(_ command: String) -> [String]? {
+        var arguments: [String] = []
+        var argument = ""
+        var quote: Character?
+        var escaping = false
+
+        for character in command {
+            if escaping {
+                argument.append(character)
+                escaping = false
+                continue
+            }
+
+            if character == "\\" {
+                escaping = true
+                continue
+            }
+
+            if let activeQuote = quote {
+                if character == activeQuote {
+                    quote = nil
+                } else {
+                    argument.append(character)
+                }
+                continue
+            }
+
+            if character == "'" || character == "\"" {
+                quote = character
+            } else if character.isWhitespace {
+                if !argument.isEmpty {
+                    arguments.append(argument)
+                    argument = ""
+                }
+            } else {
+                argument.append(character)
+            }
+        }
+
+        guard !escaping, quote == nil else {
+            return nil
+        }
+
+        if !argument.isEmpty {
+            arguments.append(argument)
+        }
+
+        return arguments.isEmpty ? nil : arguments
     }
 }

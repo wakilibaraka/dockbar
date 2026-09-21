@@ -719,12 +719,6 @@ final class WindowManager: ObservableObject {
         )
     }
 
-    private func regularRunningApplications() -> [NSRunningApplication] {
-        NSWorkspace.shared.runningApplications.filter {
-            $0.activationPolicy == .regular
-        }
-    }
-
     private func provisionalKey(for pid: pid_t, element: AXUIElement) -> String {
         "\(pid)-\(Unmanaged.passUnretained(element).toOpaque())"
     }

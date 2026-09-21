@@ -32,7 +32,9 @@ class LaunchpickState: ObservableObject {
                 name: app.name,
                 exec: "open -a '\(app.name)'",
                 icon: app.icon,
-                category: app.category
+                category: app.category,
+                bundleIdentifier: app.bundleIdentifier,
+                applicationPath: app.path
             )
         }
     }
@@ -90,6 +92,8 @@ struct LaunchpickItem: Identifiable {
     let exec: String
     let icon: NSImage
     let category: String
+    let bundleIdentifier: String? = nil
+    let applicationPath: String? = nil
 }
 
 struct ContentView: View {
