@@ -69,7 +69,6 @@ final class TaskbarContentView: NSView {
     private var lastNotifiedPreferredCompactWidth: CGFloat?
     private var lastAppliedUsesAdaptiveTaskLayout = false
     private var lastAppliedTaskWidthCap: CGFloat?
-    private var lastAppliedTrayVisibleApplicationCapacity: Int?
     private var lastAppliedUsesCompactOuterInsets = false
     private var lastAppliedTaskZoneContainerWidth: CGFloat?
     private var responsiveWidthUpdateScheduled = false
@@ -202,42 +201,6 @@ final class TaskbarContentView: NSView {
     override func viewWillDraw() {
         super.viewWillDraw()
         applyResponsiveWidthCapsNowOrSchedule()
-    }
-
-    private func preferredTaskZoneWidth() -> CGFloat {
-        let leftWidth = preferredWidth(forArrangedSubviewsIn: leftTaskZoneStackView, spacing: taskZoneItemSpacing)
-        let neutralWidth = preferredWidth(forArrangedSubviewsIn: neutralTaskZoneStackView, spacing: taskZoneItemSpacing)
-        let rightWidth = preferredWidth(forArrangedSubviewsIn: rightTaskZoneStackView, spacing: taskZoneItemSpacing)
-        let hasTaskContent = leftWidth > 0 || neutralWidth > 0 || rightWidth > 0
-
-        guard hasTaskContent else {
-            return 0
-        }
-
-        var componentWidths: [CGFloat] = [compactTaskZoneSpacerWidth]
-        if leftWidth > 0 {
-            componentWidths.append(leftWidth)
-        }
-
-        if !leftTaskZoneSeparatorView.isHidden {
-            componentWidths.append(preferredWidth(for: leftTaskZoneSeparatorView))
-        }
-
-        if neutralWidth > 0 {
-            componentWidths.append(neutralWidth)
-        }
-
-        if !rightTaskZoneSeparatorView.isHidden {
-            componentWidths.append(preferredWidth(for: rightTaskZoneSeparatorView))
-        }
-
-        if rightWidth > 0 {
-            componentWidths.append(rightWidth)
-        }
-        componentWidths.append(compactTaskZoneSpacerWidth)
-
-        let spacing = CGFloat(max(componentWidths.count - 1, 0)) * taskZoneGroupSpacing
-        return componentWidths.reduce(0, +) + spacing
     }
 
     private func preferredWidth(forArrangedSubviewsIn stackView: NSStackView, spacing: CGFloat) -> CGFloat {
@@ -1453,10 +1416,6 @@ final class TaskbarContentView: NSView {
         return smPluginService?.windowAnnotations[cgWindowID]
     }
 
-    private func smVirtualWindowID(for annotation: SMAgentWindowAnnotation) -> String {
-        SMTaskWindowPlanner.virtualWindowID(for: annotation)
-    }
-
     private func smPluginMenuConfiguration(for window: WindowInfo) -> TaskButtonPluginMenuConfiguration? {
         guard
             settings.enableSessionManagerPlugin,
@@ -2247,10 +2206,6 @@ final class TaskbarContentView: NSView {
         return isMinimized
     }
 
-    @objc
-    private func openAccessibilitySettings() {
-        permissionsManager.requestAccessibilityPermission()
-    }
 }
 
 private enum TaskZoneItem {
