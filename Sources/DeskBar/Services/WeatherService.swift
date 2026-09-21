@@ -129,7 +129,11 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
     private func fetchWeather(for location: CLLocation, name: String) {
         guard !requestInFlight else { return }
         requestInFlight = true
-        conditions.state = .loading
+        // Only show the loading indicator when we have no temperature to display yet.
+        // On subsequent refreshes the stale value stays visible — no "--" flash.
+        if conditions.temperature == nil {
+            conditions.state = .loading
+        }
 
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         components.queryItems = [

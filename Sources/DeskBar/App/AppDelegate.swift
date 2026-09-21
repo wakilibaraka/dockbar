@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var systemResourceStatusItem: NSStatusItem?
     private var weatherStatusItem: NSStatusItem?
     private var weatherService: WeatherService?
+    private var weatherMenuBarView: WeatherWidgetView?  // created once; never recreated on location/enabled changes
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var restoreWindowsMenuItem: NSMenuItem?
@@ -338,19 +339,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 .store(in: &cancellables)
 
+            // Create the weather view once at startup — it self-updates via its own
+            // WeatherService.$conditions subscription.  The sink here only controls
+            // visibility and item length; never removes/recreates the view.
+            if let service = self.weatherService {
+                MainActor.assumeIsolated {
+                let weatherView = WeatherWidgetView(service: service, settings: settings)
+                weatherView.frame = NSRect(x: 0, y: 0, width: weatherView.preferredContentWidth(), height: 22)
+                weatherStatusItem.button?.addSubview(weatherView)
+                weatherStatusItem.length = weatherView.preferredContentWidth()
+                self.weatherMenuBarView = weatherView
+                }
+            }
+
             settings.$weatherEnabled
                 .combineLatest(settings.$weatherWidgetLocation)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self, weak weatherStatusItem] enabled, location in
                     MainActor.assumeIsolated {
-                        guard let self, let item = weatherStatusItem else { return }
+                        guard let item = weatherStatusItem else { return }
                         item.isVisible = enabled && location == .menuBar
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        guard item.isVisible, let service = self.weatherService else { return }
-                        let view = WeatherWidgetView(service: service, settings: settings)
-                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                        item.button?.addSubview(view)
-                        item.length = view.preferredContentWidth()
                     }
                 }
                 .store(in: &cancellables)
