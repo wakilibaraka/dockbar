@@ -92,8 +92,8 @@ struct LaunchpickItem: Identifiable {
     let exec: String
     let icon: NSImage
     let category: String
-    let bundleIdentifier: String? = nil
-    let applicationPath: String? = nil
+    var bundleIdentifier: String? = nil
+    var applicationPath: String? = nil
 }
 
 struct ContentView: View {

@@ -167,7 +167,7 @@ final class LaunchpickManager {
     private func launch(item: LaunchpickItem) {
         if let bundleIdentifier = item.bundleIdentifier,
            let applicationURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-            guard NSWorkspace.shared.open(applicationURL) else {
+            if !NSWorkspace.shared.open(applicationURL) {
                 NSLog("Launchpick: failed to open application with bundle identifier %@", bundleIdentifier)
             }
             return
@@ -175,7 +175,7 @@ final class LaunchpickManager {
 
         if let applicationPath = item.applicationPath,
            applicationPath.hasSuffix(".app") {
-            guard NSWorkspace.shared.open(URL(fileURLWithPath: applicationPath)) else {
+            if !NSWorkspace.shared.open(URL(fileURLWithPath: applicationPath)) {
                 NSLog("Launchpick: failed to open application at %@", applicationPath)
             }
             return
@@ -189,7 +189,7 @@ final class LaunchpickManager {
         }
 
         if executable.hasSuffix(".app") {
-            guard NSWorkspace.shared.open(URL(fileURLWithPath: executable)) else {
+            if !NSWorkspace.shared.open(URL(fileURLWithPath: executable)) {
                 NSLog("Launchpick: failed to open application at %@", executable)
             }
             return
