@@ -65,7 +65,7 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
     }
     
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        defaultUsesCompactWidth
+        true
     }
     
     func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
@@ -139,6 +139,190 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
             layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
         } else {
             layer?.backgroundColor = NSColor.clear.cgColor
+        }
+    }
+}
+
+struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
+    var visualEffectMaterial: NSVisualEffectView.Material { .sidebar }
+    
+    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
+        .fullWidthGlass
+    }
+    
+    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
+        false
+    }
+    
+    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
+        originalWidths + [clusterWidth + 12]
+    }
+    
+    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String]) {
+        for widgetID in orderedIDs {
+            if let view = viewsByID[widgetID], view.superview == nil {
+                if let tray = windowsTrayClusterView as? WindowsTrayClusterView {
+                    tray.addWidget(view)
+                }
+            }
+        }
+        if windowsTrayClusterView.superview == nil {
+            zonesStackView.addArrangedSubview(windowsTrayClusterView)
+        }
+    }
+    
+    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
+        zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+        launcherZoneView.isHidden = true
+        startButtonView.isHidden = false
+    }
+    
+    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
+        true
+    }
+    
+    var combinesPinnedApps: Bool { true }
+    var groupsSingleWindows: Bool { false }
+    
+    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
+        if isActive {
+            if group.windows.count > 1 {
+                let axWindows = accessibilityService.enumerateWindows(for: app)
+                if let lastWindow = axWindows.last {
+                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
+                }
+            } else {
+                if let axWindow = TaskButtonView.resolveWindowElement(for: firstWindow, application: app, accessibilityService: accessibilityService) {
+                    accessibilityService.minimize(element: axWindow)
+                } else {
+                    defaultHide()
+                }
+            }
+        }
+    }
+    
+    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
+        if appGroup.windows.count > 1 {
+            activationHandler()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                showHoverPreview()
+            }
+        } else {
+            activationHandler()
+        }
+    }
+    
+    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
+        let title = appGroup.appName
+        let showsTitle = settings.showTitles && !title.isEmpty
+        titleLabel.isHidden = !showsTitle
+        titleLeadingConstraint?.isActive = showsTitle
+        titleTrailingConstraint?.isActive = showsTitle
+        windowsIconCenterConstraint?.isActive = !showsTitle
+        
+        if showsTitle {
+            let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
+            maxWidthConstraint?.constant = cappedWidth
+        } else {
+            maxWidthConstraint?.constant = 48
+        }
+    }
+    
+    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
+        windowsRunningIndicatorView.isHidden = appGroupWindowCount == 0
+        macRunningIndicatorView.isHidden = true
+        
+        if isActive {
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
+        } else if needsAttention {
+            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
+        } else if isHovered {
+            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
+        } else {
+            layer?.backgroundColor = NSColor.clear.cgColor
+        }
+    }
+}
+
+
+
+struct MacTaskbarStrategy: TaskbarLayoutStrategy {
+    var visualEffectMaterial: NSVisualEffectView.Material { .popover }
+    
+    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
+        .compactGlass
+    }
+    
+    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
+        true
+    }
+    
+    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
+        []
+    }
+    
+    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String]) {
+        windowsTrayClusterView.removeFromSuperview()
+        for widgetID in orderedIDs {
+            viewsByID[widgetID]?.removeFromSuperview()
+        }
+    }
+    
+    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
+        zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+        launcherZoneView.isHidden = true
+        startButtonView.isHidden = true
+    }
+    
+    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
+        true
+    }
+    
+    var combinesPinnedApps: Bool { true }
+    var groupsSingleWindows: Bool { true }
+    
+    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
+        if isActive {
+            // Mac dock does not minimize or hide on click.
+        }
+    }
+    
+    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
+        activationHandler()
+        if appGroup.windows.count > 1 {
+            if !popover.isShown {
+                showHoverPreview()
+            }
+        }
+    }
+    
+    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
+        titleLabel.isHidden = true
+        titleLeadingConstraint?.isActive = false
+        titleTrailingConstraint?.isActive = false
+        windowsIconCenterConstraint?.isActive = true
+        
+        maxWidthConstraint?.constant = 48
+    }
+    
+    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
+        windowsRunningIndicatorView.isHidden = true
+        macRunningIndicatorView.isHidden = appGroupWindowCount == 0
+        
+        if isHovered {
+            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
+        } else {
+            layer?.backgroundColor = NSColor.clear.cgColor
+        }
+    }
+}
+
+extension TaskbarMode {
+    var strategy: TaskbarLayoutStrategy {
+        switch self {
+        case .custom: return CustomTaskbarStrategy()
+        case .windows: return WindowsTaskbarStrategy()
+        case .mac: return MacTaskbarStrategy()
         }
     }
 }

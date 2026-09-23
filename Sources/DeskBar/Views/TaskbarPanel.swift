@@ -63,7 +63,7 @@ final class TaskbarPanel: NSPanel {
         chromeShadowView.wantsLayer = true
         chromeShadowView.layer?.backgroundColor = NSColor.clear.cgColor
 
-        visualEffectView.material = settings.windows11Mode ? .sidebar : .popover
+        visualEffectView.material = settings.taskbarMode.strategy.visualEffectMaterial
         visualEffectView.blendingMode = .behindWindow
         visualEffectView.state = .active
         visualEffectView.autoresizingMask = [.width, .height]
@@ -94,7 +94,7 @@ final class TaskbarPanel: NSPanel {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.visualEffectView.material = self.settings.windows11Mode ? .sidebar : .popover
+                self.visualEffectView.material = self.settings.taskbarMode.strategy.visualEffectMaterial
                 self.updateFrameForCurrentState(animated: true)
             }
             .store(in: &cancellables)
@@ -182,23 +182,13 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func updateChromeLayout(animated: Bool) {
-        let isMacMode = settings.taskbarMode == .mac
-        let compactContentWidth = (settings.windows11Mode || (isMacMode && !settings.layoutMode.usesCompactWidth))
-            ? nil
-            : compactContentWidth()
-            
-        let layoutMode: DeskBarLayoutMode
-        if isMacMode {
-            layoutMode = .compactGlass
-        } else if settings.windows11Mode {
-            layoutMode = .fullWidthGlass
-        } else {
-            layoutMode = settings.layoutMode
-        }
-        
+        let strategy = settings.taskbarMode.strategy
+        let layoutMode = strategy.layoutMode(defaultLayoutMode: settings.layoutMode)
+        let compactWidth: CGFloat? = strategy.usesCompactContentWidth(defaultUsesCompactWidth: settings.layoutMode.usesCompactWidth) ? compactContentWidth() : nil
+
         let chromeFrame = Self.chromeFrame(
             layoutMode: layoutMode,
-            compactContentWidth: isMacMode ? self.compactContentWidth() : compactContentWidth,
+            compactContentWidth: compactWidth,
             bounds: rootView.bounds
         )
 

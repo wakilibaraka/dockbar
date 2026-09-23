@@ -267,10 +267,7 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(taskbarMode.rawValue, forKey: "dockMode_system") }
     }
     
-    var windows11Mode: Bool {
-        get { taskbarMode == .windows }
-        set { taskbarMode = newValue ? .windows : .custom }
-    }
+
 
     @Published var taskTitleSource: TaskTitleSource {
         didSet { defaults.set(taskTitleSource.rawValue, forKey: "taskTitleSource") }
