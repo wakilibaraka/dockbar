@@ -20,6 +20,8 @@ final class TaskbarContentView: NSView {
     private let blacklistManager: BlacklistManager
     private let displayID: CGDirectDisplayID
     private let launcherZoneView: LauncherZoneView
+    private let startButtonView: StartButtonView
+    private let windowsTrayClusterView = WindowsTrayClusterView()
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
     private let calendarWidgetView: CalendarWidgetView
@@ -109,6 +111,7 @@ final class TaskbarContentView: NSView {
         self.thumbnailService = thumbnailService
         self.displayID = displayID
         self.openSettingsHandler = openSettingsHandler
+        self.startButtonView = StartButtonView(settings: settings, pinnedAppManager: pinnedAppManager)
         launcherZoneView = LauncherZoneView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,
@@ -206,6 +209,13 @@ final class TaskbarContentView: NSView {
         }
         if settings.weatherEnabled && settings.weatherWidgetLocation == .dock {
             widths.append(weatherWidgetView.preferredContentWidth())
+        }
+        
+        if settings.windows11Mode {
+            let innerSum = widths.reduce(0, +)
+            let innerSpacing = CGFloat(max(0, widths.count - 1)) * 4
+            let clusterWidth = windowsTrayClusterView.baseWidth() + innerSum + innerSpacing
+            return [clusterWidth]
         }
         return widths
     }
@@ -387,6 +397,7 @@ final class TaskbarContentView: NSView {
         ])
 
         zonesStackView.addArrangedSubview(launcherZoneView)
+        zonesStackView.addArrangedSubview(startButtonView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
         // Vertical divider separating apps from right-hand widgets
@@ -435,23 +446,38 @@ final class TaskbarContentView: NSView {
             .weather: weatherWidgetView
         ]
         let orderedIDs = settings.dockWidgetOrder.compactMap(DockWidgetID.init(rawValue:))
-        for widgetID in orderedIDs {
-            guard let view = viewsByID[widgetID], view.superview == nil else { continue }
-            zonesStackView.addArrangedSubview(view)
+        
+        if settings.windows11Mode {
+            if windowsTrayClusterView.superview == nil {
+                zonesStackView.addArrangedSubview(windowsTrayClusterView)
+            }
+            for widgetID in orderedIDs {
+                guard let view = viewsByID[widgetID], view.superview == nil else { continue }
+                windowsTrayClusterView.addWidget(view)
+            }
+        } else {
+            windowsTrayClusterView.removeFromSuperview()
+            for widgetID in orderedIDs {
+                guard let view = viewsByID[widgetID], view.superview == nil else { continue }
+                zonesStackView.addArrangedSubview(view)
+            }
         }
-
     }
 
     private func applyWindowsModeLayout() {
         zonesStackView.edgeInsets = settings.windows11Mode
             ? NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
             : zoneEdgeInsets(usesCompactOuterInsets: false)
+            
+        launcherZoneView.isHidden = settings.windows11Mode
+        startButtonView.isHidden = !settings.windows11Mode
     }
 
     private func applyDockWidgetOrder() {
         [connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView, weatherWidgetView]
             .forEach { view in
                 zonesStackView.removeArrangedSubview(view)
+                windowsTrayClusterView.removeWidget(view)
                 view.removeFromSuperview()
             }
         addOrderedDockWidgets()
@@ -526,6 +552,7 @@ final class TaskbarContentView: NSView {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.applyWindowsModeLayout()
+                self?.applyDockWidgetOrder()
                 self?.scheduleRebuildTaskZone()
                 self?.schedulePreferredWidthNotification()
             }
