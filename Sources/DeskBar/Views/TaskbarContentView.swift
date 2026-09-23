@@ -190,7 +190,7 @@ final class TaskbarContentView: NSView {
     }
 
     private var dockWidgetWidths: [CGFloat] {
-        if settings.dockMode == .mac {
+        if settings.taskbarMode == .mac {
             return []
         }
         
@@ -451,7 +451,7 @@ final class TaskbarContentView: NSView {
         ]
         let orderedIDs = settings.dockWidgetOrder.compactMap(DockWidgetID.init(rawValue:))
         
-        if settings.dockMode == .mac {
+        if settings.taskbarMode == .mac {
             windowsTrayClusterView.removeFromSuperview()
             for widgetID in orderedIDs {
                 viewsByID[widgetID]?.removeFromSuperview()
@@ -474,7 +474,7 @@ final class TaskbarContentView: NSView {
     }
 
     private func applyModeLayout() {
-        if settings.dockMode == .mac {
+        if settings.taskbarMode == .mac {
             zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
             launcherZoneView.isHidden = true
             startButtonView.isHidden = true
@@ -563,7 +563,7 @@ final class TaskbarContentView: NSView {
             }
             .store(in: &cancellables)
 
-        settings.$dockMode
+        settings.$taskbarMode
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.applyModeLayout()
@@ -1173,7 +1173,7 @@ final class TaskbarContentView: NSView {
         var groups: [AppGroup] = []
         var groupIndexes: [String: Int] = [:]
         
-        let macMode = settings.dockMode == .mac
+        let macMode = settings.taskbarMode == .mac
         let combinePinned = settings.windows11Mode || macMode
 
         // Get the list of pinned bundle identifiers
@@ -1745,7 +1745,7 @@ final class TaskbarContentView: NSView {
     }
 
     private func shouldGroupWindows(_ windows: [WindowInfo]) -> Bool {
-        if settings.windows11Mode || settings.dockMode == .mac {
+        if settings.windows11Mode || settings.taskbarMode == .mac {
             return true
         }
         switch settings.groupingMode {
@@ -2135,7 +2135,7 @@ final class TaskbarContentView: NSView {
         }
         
         if isActive {
-            if settings.dockMode == .mac {
+            if settings.taskbarMode == .mac {
                 // Mac dock does not minimize or hide on click. 
                 // We just do nothing here since the app is already active,
                 // and the flyout is handled by TaskZoneGroupButtonView.
@@ -2818,7 +2818,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             return
         }
 
-        if settings.dockMode == .mac {
+        if settings.taskbarMode == .mac {
             activationHandler()
             if appGroup.windows.count > 1 {
                 if !popover.isShown {
@@ -3061,7 +3061,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         
         let showsTitle = settings.showTitles && !title.isEmpty
         let showsWindowsLabel = settings.windows11Mode && settings.showTitles && !title.isEmpty
-        let macMode = settings.dockMode == .mac
+        let macMode = settings.taskbarMode == .mac
         let effectiveShowsTitle = macMode ? false : (settings.windows11Mode ? showsWindowsLabel : showsTitle)
         titleLabel.isHidden = !effectiveShowsTitle
         titleLeadingConstraint?.isActive = effectiveShowsTitle
@@ -3109,7 +3109,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
 
     private func updateBackgroundColor() {
         let windowsMode = settings.windows11Mode
-        let macMode = settings.dockMode == .mac
+        let macMode = settings.taskbarMode == .mac
         
         windowsRunningIndicatorView.isHidden = !windowsMode || appGroup.windowCount == 0
         windowsRunningIndicatorView.layer?.backgroundColor = (isActive ? NSColor.controlAccentColor : NSColor.secondaryLabelColor).cgColor

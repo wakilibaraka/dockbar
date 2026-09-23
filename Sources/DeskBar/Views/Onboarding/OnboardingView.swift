@@ -97,28 +97,28 @@ struct OnboardingView: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 20) {
-                            ForEach(DockMode.allCases) { mode in
+                            ForEach(TaskbarMode.allCases) { mode in
                                 VStack(spacing: 12) {
                                     Image(systemName: mode == .custom ? "macwindow" : mode == .windows ? "window.cascading" : "dock.rectangle")
                                         .font(.system(size: 40))
-                                        .foregroundColor(settings.dockMode == mode ? .white : .secondary)
+                                        .foregroundColor(settings.taskbarMode == mode ? .white : .secondary)
                                     Text(mode.displayName)
                                         .font(.title3.bold())
                                     Text(mode.subtitle)
                                         .font(.caption)
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(settings.dockMode == mode ? .white.opacity(0.8) : .secondary)
+                                        .foregroundColor(settings.taskbarMode == mode ? .white.opacity(0.8) : .secondary)
                                 }
                                 .padding()
                                 .frame(width: 200, height: 180)
-                                .background(settings.dockMode == mode ? Color.blue : Color.white.opacity(0.05))
+                                .background(settings.taskbarMode == mode ? Color.blue : Color.white.opacity(0.05))
                                 .cornerRadius(16)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(settings.dockMode == mode ? Color.blue.opacity(0.5) : Color.white.opacity(0.1), lineWidth: 2)
+                                        .stroke(settings.taskbarMode == mode ? Color.blue.opacity(0.5) : Color.white.opacity(0.1), lineWidth: 2)
                                 )
                                 .onTapGesture {
-                                    withAnimation { settings.dockMode = mode }
+                                    withAnimation { settings.taskbarMode = mode }
                                 }
                             }
                         }

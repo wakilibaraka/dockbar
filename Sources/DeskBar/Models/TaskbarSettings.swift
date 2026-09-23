@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 
-enum DockMode: String, CaseIterable, Identifiable {
+enum TaskbarMode: String, CaseIterable, Identifiable {
     case custom
     case windows
     case mac
@@ -263,13 +263,13 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showTitles, forKey: "showTitles") }
     }
 
-    @Published var dockMode: DockMode {
-        didSet { defaults.set(dockMode.rawValue, forKey: "dockMode_system") }
+    @Published var taskbarMode: TaskbarMode {
+        didSet { defaults.set(taskbarMode.rawValue, forKey: "dockMode_system") }
     }
     
     var windows11Mode: Bool {
-        get { dockMode == .windows }
-        set { dockMode = newValue ? .windows : .custom }
+        get { taskbarMode == .windows }
+        set { taskbarMode = newValue ? .windows : .custom }
     }
 
     @Published var taskTitleSource: TaskTitleSource {
@@ -519,11 +519,11 @@ class TaskbarSettings: ObservableObject {
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
         showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
         
-        if let storedDockMode = defaults.string(forKey: "dockMode_system"), let mode = DockMode(rawValue: storedDockMode) {
-            dockMode = mode
+        if let storedDockMode = defaults.string(forKey: "dockMode_system"), let mode = TaskbarMode(rawValue: storedDockMode) {
+            taskbarMode = mode
         } else {
             let oldWindowsMode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
-            dockMode = oldWindowsMode ? .windows : .custom
+            taskbarMode = oldWindowsMode ? .windows : .custom
         }
 
         taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .windowTitle

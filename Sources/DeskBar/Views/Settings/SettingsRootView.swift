@@ -302,8 +302,8 @@ private struct TaskbarSettingsPage: View {
             }
             Toggle("Show over fullscreen windows", isOn: $settings.showOverFullScreenApps)
             Toggle("Show on all monitors", isOn: $settings.showOnAllMonitors)
-            Picker("Taskbar Style", selection: $settings.dockMode) {
-                ForEach(DockMode.allCases) { mode in
+            Picker("Taskbar Style", selection: $settings.taskbarMode) {
+                ForEach(TaskbarMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
             }
