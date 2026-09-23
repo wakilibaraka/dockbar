@@ -190,6 +190,10 @@ final class TaskbarContentView: NSView {
     }
 
     private var dockWidgetWidths: [CGFloat] {
+        if settings.dockMode == .mac {
+            return []
+        }
+        
         var widths: [CGFloat] = []
         if settings.splitCalendarAndQuickSettings {
             if settings.calendarLocation == .dock {
@@ -411,7 +415,7 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(clusterDivider)
         
         addOrderedDockWidgets()
-        applyWindowsModeLayout()
+        applyModeLayout()
 
         let fixedViews: [NSView] = [
             launcherZoneView,
@@ -447,7 +451,12 @@ final class TaskbarContentView: NSView {
         ]
         let orderedIDs = settings.dockWidgetOrder.compactMap(DockWidgetID.init(rawValue:))
         
-        if settings.windows11Mode {
+        if settings.dockMode == .mac {
+            windowsTrayClusterView.removeFromSuperview()
+            for widgetID in orderedIDs {
+                viewsByID[widgetID]?.removeFromSuperview()
+            }
+        } else if settings.windows11Mode {
             if windowsTrayClusterView.superview == nil {
                 zonesStackView.addArrangedSubview(windowsTrayClusterView)
             }
@@ -464,13 +473,19 @@ final class TaskbarContentView: NSView {
         }
     }
 
-    private func applyWindowsModeLayout() {
-        zonesStackView.edgeInsets = settings.windows11Mode
-            ? NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
-            : zoneEdgeInsets(usesCompactOuterInsets: false)
-            
-        launcherZoneView.isHidden = settings.windows11Mode
-        startButtonView.isHidden = !settings.windows11Mode
+    private func applyModeLayout() {
+        if settings.dockMode == .mac {
+            zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+            launcherZoneView.isHidden = true
+            startButtonView.isHidden = true
+        } else {
+            zonesStackView.edgeInsets = settings.windows11Mode
+                ? NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+                : zoneEdgeInsets(usesCompactOuterInsets: false)
+                
+            launcherZoneView.isHidden = settings.windows11Mode
+            startButtonView.isHidden = !settings.windows11Mode
+        }
     }
 
     private func applyDockWidgetOrder() {
@@ -548,10 +563,10 @@ final class TaskbarContentView: NSView {
             }
             .store(in: &cancellables)
 
-        settings.$windows11Mode
+        settings.$dockMode
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.applyWindowsModeLayout()
+                self?.applyModeLayout()
                 self?.applyDockWidgetOrder()
                 self?.scheduleRebuildTaskZone()
                 self?.schedulePreferredWidthNotification()
@@ -1157,13 +1172,16 @@ final class TaskbarContentView: NSView {
     private func groupedTaskItems(from windows: [WindowInfo]) -> [TaskZoneItem] {
         var groups: [AppGroup] = []
         var groupIndexes: [String: Int] = [:]
+        
+        let macMode = settings.dockMode == .mac
+        let combinePinned = settings.windows11Mode || macMode
 
-        // Get the list of pinned bundle identifiers to exclude them from the regular task zone
+        // Get the list of pinned bundle identifiers
         let pinnedIdentifiers = Set(pinnedAppManager.pinnedApps.map(\.bundleIdentifier))
 
         for window in windows {
-            // Skip windows belonging to pinned apps; they are rendered exclusively in LauncherZoneView
-            if let bundleIdentifier = window.bundleIdentifier, pinnedIdentifiers.contains(bundleIdentifier) {
+            // Skip windows belonging to pinned apps if they are rendered exclusively in LauncherZoneView
+            if !combinePinned, let bundleIdentifier = window.bundleIdentifier, pinnedIdentifiers.contains(bundleIdentifier) {
                 continue
             }
 
@@ -1184,18 +1202,37 @@ final class TaskbarContentView: NSView {
             }
         }
 
+        if combinePinned {
+            let runningIdentifiers = Set(groups.map(\.id))
+            for pinnedApp in pinnedAppManager.pinnedApps {
+                if !runningIdentifiers.contains(pinnedApp.bundleIdentifier) {
+                    groups.append(
+                        AppGroup(
+                            id: pinnedApp.bundleIdentifier,
+                            appName: pinnedApp.name,
+                            icon: pinnedApp.icon,
+                            windows: []
+                        )
+                    )
+                }
+            }
+            
+            // Optionally, we could sort groups so pinned apps are first, like in macOS dock.
+            // But groupedTaskOrderState already handles ordering, so we'll just append them.
+        }
+
         let multiWindowGroupIDs = Set(
             groups
                 .filter { $0.windowCount > 1 }
                 .map(\.id)
         )
-
+        
         if let expandedGroupID, !multiWindowGroupIDs.contains(expandedGroupID) {
             self.expandedGroupID = nil
         }
 
         return groups.map { group in
-            if group.windowCount == 1, let window = group.windows.first {
+            if !combinePinned && group.windowCount == 1, let window = group.windows.first {
                 return .window(window)
             }
 
@@ -1708,7 +1745,7 @@ final class TaskbarContentView: NSView {
     }
 
     private func shouldGroupWindows(_ windows: [WindowInfo]) -> Bool {
-        if settings.windows11Mode {
+        if settings.windows11Mode || settings.dockMode == .mac {
             return true
         }
         switch settings.groupingMode {
@@ -2098,7 +2135,11 @@ final class TaskbarContentView: NSView {
         }
         
         if isActive {
-            if windows.count > 1 {
+            if settings.dockMode == .mac {
+                // Mac dock does not minimize or hide on click. 
+                // We just do nothing here since the app is already active,
+                // and the flyout is handled by TaskZoneGroupButtonView.
+            } else if windows.count > 1 {
                 let axWindows = accessibilityService.enumerateWindows(for: app)
                 if let lastWindow = axWindows.last {
                     accessibilityService.raiseAndActivate(element: lastWindow, app: app)
@@ -2523,6 +2564,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     private var usesAdaptiveWidth = false
     private let statusIndicatorView = NSView()
     private let windowsRunningIndicatorView = NSView()
+    private let macRunningIndicatorView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
     private let badgeView = NSView()
@@ -2776,7 +2818,15 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             return
         }
 
-        if settings.windows11Mode, appGroup.windows.count > 1 {
+        if settings.dockMode == .mac {
+            activationHandler()
+            if appGroup.windows.count > 1 {
+                if !popover.isShown {
+                    showHoverPreview()
+                }
+            }
+            return
+        } else if settings.windows11Mode, appGroup.windows.count > 1 {
             if popover.isShown {
                 activationHandler()
             } else {
@@ -2852,9 +2902,15 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         dropIndicatorView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
         dropIndicatorView.layer?.cornerRadius = 1
         dropIndicatorView.isHidden = true
+        
+        macRunningIndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        macRunningIndicatorView.wantsLayer = true
+        macRunningIndicatorView.layer?.cornerRadius = 2
+        macRunningIndicatorView.isHidden = true
 
         addSubview(statusIndicatorView)
         addSubview(windowsRunningIndicatorView)
+        addSubview(macRunningIndicatorView)
         addSubview(iconView)
         addSubview(titleLabel)
         addSubview(activityBadgeView)
@@ -2917,6 +2973,11 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             windowsRunningIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
             windowsRunningIndicatorView.widthAnchor.constraint(equalToConstant: 12),
             windowsRunningIndicatorView.heightAnchor.constraint(equalToConstant: 3),
+            
+            macRunningIndicatorView.centerXAnchor.constraint(equalTo: iconView.centerXAnchor),
+            macRunningIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            macRunningIndicatorView.widthAnchor.constraint(equalToConstant: 4),
+            macRunningIndicatorView.heightAnchor.constraint(equalToConstant: 4),
 
             iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -3000,11 +3061,12 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         
         let showsTitle = settings.showTitles && !title.isEmpty
         let showsWindowsLabel = settings.windows11Mode && settings.showTitles && !title.isEmpty
-        let effectiveShowsTitle = settings.windows11Mode ? showsWindowsLabel : showsTitle
+        let macMode = settings.dockMode == .mac
+        let effectiveShowsTitle = macMode ? false : (settings.windows11Mode ? showsWindowsLabel : showsTitle)
         titleLabel.isHidden = !effectiveShowsTitle
         titleLeadingConstraint?.isActive = effectiveShowsTitle
         titleTrailingConstraint?.isActive = effectiveShowsTitle
-        windowsIconCenterConstraint?.isActive = settings.windows11Mode && !showsWindowsLabel
+        windowsIconCenterConstraint?.isActive = (settings.windows11Mode || macMode) && !effectiveShowsTitle
         
         if effectiveShowsTitle {
             let preferred = min(TaskButtonView.maximumTaskButtonWidth, TaskButtonView.preferredWidth(
@@ -3019,7 +3081,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             let cappedWidth = widthCap.map { min(preferred, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferred
             maxWidthConstraint?.constant = cappedWidth
         } else {
-            maxWidthConstraint?.constant = settings.windows11Mode ? 48 : settings.taskbarHeight + 8
+            maxWidthConstraint?.constant = (settings.windows11Mode || macMode) ? 48 : settings.taskbarHeight + 8
         }
         
         updateStatusIndicator()
@@ -3047,19 +3109,34 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
 
     private func updateBackgroundColor() {
         let windowsMode = settings.windows11Mode
-        windowsRunningIndicatorView.isHidden = !windowsMode
+        let macMode = settings.dockMode == .mac
+        
+        windowsRunningIndicatorView.isHidden = !windowsMode || appGroup.windowCount == 0
         windowsRunningIndicatorView.layer?.backgroundColor = (isActive ? NSColor.controlAccentColor : NSColor.secondaryLabelColor).cgColor
         windowsRunningIndicatorView.layer?.setAffineTransform(
             CGAffineTransform(scaleX: isActive ? 1.8 : 1, y: 1)
         )
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if runtimeState.needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
+        
+        macRunningIndicatorView.isHidden = !macMode || appGroup.windowCount == 0
+        macRunningIndicatorView.layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.8).cgColor
+        
+        if macMode {
+            // Mac dock doesn't highlight active/hovered items with a background pill
+            if runtimeState.needsAttention {
+                layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
+            } else {
+                layer?.backgroundColor = NSColor.clear.cgColor
+            }
         } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
+            if isActive {
+                layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
+            } else if runtimeState.needsAttention {
+                layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
+            } else if isHovered {
+                layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
+            } else {
+                layer?.backgroundColor = NSColor.clear.cgColor
+            }
         }
     }
 
