@@ -25,6 +25,21 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum DockPosition: String, CaseIterable, Identifiable {
+    case bottomCenter
+    case bottomLeft
+    case floatingCenter
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .bottomCenter: return "Bottom Center"
+        case .bottomLeft: return "Bottom Left"
+        case .floatingCenter: return "Floating Center"
+        }
+    }
+}
 enum NativeDockBehavior: String, CaseIterable {
     case independent
     case autoHide
@@ -265,6 +280,10 @@ class TaskbarSettings: ObservableObject {
 
     @Published var taskbarMode: TaskbarMode {
         didSet { defaults.set(taskbarMode.rawValue, forKey: "dockMode_system") }
+    }
+    
+    @Published var dockPosition: DockPosition {
+        didSet { defaults.set(dockPosition.rawValue, forKey: "dockPosition") }
     }
     
 
@@ -522,6 +541,8 @@ class TaskbarSettings: ObservableObject {
             let oldWindowsMode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
             taskbarMode = oldWindowsMode ? .windows : .custom
         }
+        
+        dockPosition = DockPosition(rawValue: defaults.string(forKey: "dockPosition") ?? "") ?? .bottomCenter
 
         taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .windowTitle
         taskTruncationStyle = TaskTruncationStyle(rawValue: defaults.string(forKey: "taskTruncationStyle") ?? "") ?? .tail

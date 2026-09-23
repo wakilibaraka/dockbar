@@ -2744,6 +2744,83 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
 
+    override func rightMouseDown(with event: NSEvent) {
+        let menu = makeContextMenu()
+        let localLocation = convert(event.locationInWindow, from: nil)
+        let point = NSPoint(x: localLocation.x, y: bounds.maxY + 4)
+        menu.popUp(positioning: nil, at: point, in: self)
+    }
+
+    private func makeContextMenu() -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+
+        for window in appGroup.windows {
+            let title = !window.title.isEmpty ? window.title : window.appName
+            let item = NSMenuItem(title: title, action: #selector(activateGroupWindow(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = window
+            item.image = NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)
+            item.image?.size = NSSize(width: 14, height: 14)
+            menu.addItem(item)
+        }
+
+        if !appGroup.windows.isEmpty {
+            menu.addItem(.separator())
+        }
+
+        let newWindowItem = NSMenuItem(title: "New Window", action: #selector(openGroupNewWindow(_:)), keyEquivalent: "")
+        newWindowItem.target = self
+        menu.addItem(newWindowItem)
+        
+        menu.addItem(.separator())
+
+        let closeAllItem = NSMenuItem(title: "Close All", action: #selector(closeGroupWindows(_:)), keyEquivalent: "")
+        closeAllItem.target = self
+        menu.addItem(closeAllItem)
+        
+        menu.addItem(.separator())
+
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(quitGroupApplication(_:)), keyEquivalent: "")
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        return menu
+    }
+
+    @objc private func activateGroupWindow(_ sender: NSMenuItem) {
+        guard let window = sender.representedObject as? WindowInfo else { return }
+        windowActivationHandler(window)
+    }
+
+    @objc private func openGroupNewWindow(_ sender: NSMenuItem) {
+        guard let pid = appGroup.windows.first?.pid,
+              let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == pid }),
+              let url = app.bundleURL else { return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
+    }
+
+    @objc private func closeGroupWindows(_ sender: NSMenuItem) {
+        guard let pid = appGroup.windows.first?.pid,
+              let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == pid }) else { return }
+              
+        for window in appGroup.windows {
+            if let elem = TaskButtonView.resolveWindowElement(for: window, application: app, accessibilityService: accessibilityService) {
+                accessibilityService.close(element: elem)
+            }
+        }
+    }
+
+    @objc private func quitGroupApplication(_ sender: NSMenuItem) {
+        guard let pid = appGroup.windows.first?.pid,
+              let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == pid }) else { return }
+        app.terminate()
+    }
+
     override func mouseDown(with event: NSEvent) {
         mouseDownLocation = convert(event.locationInWindow, from: nil)
         didBeginDraggingSession = false

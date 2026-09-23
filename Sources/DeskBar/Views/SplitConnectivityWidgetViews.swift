@@ -7,7 +7,7 @@ final class BatteryWidgetView: NSView {
     private let button = NSButton()
     private let settings: TaskbarSettings
     private var cancellables = Set<AnyCancellable>()
-    private var popover: NSPopover?
+    private var popover: BorderlessFlyout?
 
     init(settings: TaskbarSettings) {
         self.settings = settings
@@ -63,12 +63,10 @@ final class BatteryWidgetView: NSView {
             self.popover = nil
             return
         }
-        let popover = NSPopover()
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
+        let popover = BorderlessFlyout()
+        popover.show(contentViewController: NSHostingController(
             rootView: BatteryFlyoutView().environmentObject(settings)
-        )
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+        ), relativeTo: button.bounds, of: button)
         self.popover = popover
     }
 }
@@ -76,7 +74,7 @@ final class BatteryWidgetView: NSView {
 final class CalendarWidgetView: NSView {
     private static let fixedWidth: CGFloat = 80
     private let calendarButton = CalendarTrayButton()
-    private var popover: NSPopover?
+    private var popover: BorderlessFlyout?
 
     init() {
         super.init(frame: .zero)
@@ -105,10 +103,8 @@ final class CalendarWidgetView: NSView {
             return
         }
 
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        newPopover.contentViewController = NSHostingController(rootView: CalendarView())
-        newPopover.show(relativeTo: calendarButton.bounds, of: calendarButton, preferredEdge: .maxY)
+        let newPopover = BorderlessFlyout()
+        newPopover.show(contentViewController: NSHostingController(rootView: CalendarView()), relativeTo: calendarButton.bounds, of: calendarButton)
         popover = newPopover
     }
 }
@@ -119,7 +115,7 @@ final class QuickSettingsWidgetView: NSView {
     private let button = NSButton()
     private let settings: TaskbarSettings
     private let manager = QuickSettingsManager.shared
-    private var popover: NSPopover?
+    private var popover: BorderlessFlyout?
 
     init(settings: TaskbarSettings) {
         self.settings = settings
@@ -156,10 +152,8 @@ final class QuickSettingsWidgetView: NSView {
             return
         }
 
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        newPopover.contentViewController = QuickSettingsViewController(settings: settings, manager: manager)
-        newPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+        let newPopover = BorderlessFlyout()
+        newPopover.show(contentViewController: QuickSettingsViewController(settings: settings, manager: manager), relativeTo: button.bounds, of: button)
         popover = newPopover
     }
 }
