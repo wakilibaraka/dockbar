@@ -90,7 +90,7 @@ final class TaskbarPanel: NSPanel {
             }
             .store(in: &cancellables)
 
-        settings.$windows11Mode
+        settings.$dockMode
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
@@ -182,12 +182,23 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func updateChromeLayout(animated: Bool) {
-        let compactContentWidth = settings.windows11Mode
+        let isMacMode = settings.dockMode == .mac
+        let compactContentWidth = (settings.windows11Mode || (isMacMode && !settings.layoutMode.usesCompactWidth))
             ? nil
-            : (settings.layoutMode.usesCompactWidth ? compactContentWidth() : nil)
+            : compactContentWidth()
+            
+        let layoutMode: DeskBarLayoutMode
+        if isMacMode {
+            layoutMode = .compactGlass
+        } else if settings.windows11Mode {
+            layoutMode = .fullWidthGlass
+        } else {
+            layoutMode = settings.layoutMode
+        }
+        
         let chromeFrame = Self.chromeFrame(
-            layoutMode: settings.windows11Mode ? .fullWidthGlass : settings.layoutMode,
-            compactContentWidth: compactContentWidth,
+            layoutMode: layoutMode,
+            compactContentWidth: isMacMode ? self.compactContentWidth() : compactContentWidth,
             bounds: rootView.bounds
         )
 

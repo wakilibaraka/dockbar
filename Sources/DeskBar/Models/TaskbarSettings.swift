@@ -1,7 +1,31 @@
 import AppKit
 import Combine
 
-enum DockMode: String, CaseIterable {
+enum DockMode: String, CaseIterable, Identifiable {
+    case custom
+    case windows
+    case mac
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .custom: return "Custom"
+        case .windows: return "Windows"
+        case .mac: return "Mac"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .custom: return "The classic DeskBar experience."
+        case .windows: return "A Windows-style taskbar with Start button."
+        case .mac: return "A macOS-style floating dock."
+        }
+    }
+}
+
+enum NativeDockBehavior: String, CaseIterable {
     case independent
     case autoHide
     case hidden
@@ -239,8 +263,13 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showTitles, forKey: "showTitles") }
     }
 
-    @Published var windows11Mode: Bool {
-        didSet { defaults.set(windows11Mode, forKey: "windows11Mode") }
+    @Published var dockMode: DockMode {
+        didSet { defaults.set(dockMode.rawValue, forKey: "dockMode_system") }
+    }
+    
+    var windows11Mode: Bool {
+        get { dockMode == .windows }
+        set { dockMode = newValue ? .windows : .custom }
     }
 
     @Published var taskTitleSource: TaskTitleSource {
@@ -283,8 +312,8 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(hoverDelay, forKey: "hoverDelay") }
     }
 
-    @Published var dockMode: DockMode {
-        didSet { defaults.set(dockMode.rawValue, forKey: "dockMode") }
+    @Published var nativeDockBehavior: NativeDockBehavior {
+        didSet { defaults.set(nativeDockBehavior.rawValue, forKey: "nativeDockBehavior") }
     }
 
     @Published var showOverFullScreenApps: Bool {
@@ -489,7 +518,14 @@ class TaskbarSettings: ObservableObject {
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
         showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
-        windows11Mode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
+        
+        if let storedDockMode = defaults.string(forKey: "dockMode_system"), let mode = DockMode(rawValue: storedDockMode) {
+            dockMode = mode
+        } else {
+            let oldWindowsMode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
+            dockMode = oldWindowsMode ? .windows : .custom
+        }
+
         taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .windowTitle
         taskTruncationStyle = TaskTruncationStyle(rawValue: defaults.string(forKey: "taskTruncationStyle") ?? "") ?? .tail
         iconOnlySize = defaults.object(forKey: "iconOnlySize") as? CGFloat ?? 24
@@ -507,7 +543,7 @@ class TaskbarSettings: ObservableObject {
         middleClickCloses = defaults.object(forKey: "middleClickCloses") as? Bool ?? true
         thumbnailSize = defaults.object(forKey: "thumbnailSize") as? CGFloat ?? Self.defaultThumbnailSize
         hoverDelay = defaults.object(forKey: "hoverDelay") as? TimeInterval ?? 0.4
-        dockMode = DockMode(rawValue: defaults.string(forKey: "dockMode") ?? "") ?? .independent
+        nativeDockBehavior = NativeDockBehavior(rawValue: defaults.string(forKey: "nativeDockBehavior") ?? "") ?? .independent
         showOverFullScreenApps = defaults.object(forKey: "showOverFullScreenApps") as? Bool ?? false
         flashAttentionIndicators = defaults.object(forKey: "flashAttentionIndicators") as? Bool ?? true
         showProgressIndicators = defaults.object(forKey: "showProgressIndicators") as? Bool ?? true

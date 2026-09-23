@@ -160,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             thumbnailService: thumbnailService
         )
         configureStatusItem()
-        bindDockMode(settings: settings)
+        bindNativeDockBehavior(settings: settings)
         bindSessionManagerPlugin(settings: settings, smPluginService: smPluginService)
         configureSignalHandlers()
         DispatchQueue.main.async { HoldToQuitService.shared.start() }
@@ -203,10 +203,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func bindDockMode(settings: TaskbarSettings) {
-        dockManager?.apply(mode: settings.dockMode)
+    private func bindNativeDockBehavior(settings: TaskbarSettings) {
+        dockManager?.apply(mode: settings.nativeDockBehavior)
 
-        settings.$dockMode
+        settings.$nativeDockBehavior
             .dropFirst()
             .removeDuplicates()
             .receive(on: RunLoop.main)

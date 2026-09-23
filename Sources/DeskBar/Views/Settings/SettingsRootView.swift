@@ -279,10 +279,10 @@ private struct TaskbarSettingsPage: View {
     @ObservedObject var pinnedAppManager: PinnedAppManager
     var body: some View {
         SettingsPage(title: "Taskbar & Dock", subtitle: "Control the dock presentation, task buttons, and pinned apps.") {
-            Picker("Dock mode", selection: $settings.dockMode) {
-                Text("Independent").tag(DockMode.independent)
-                Text("Hide Native Dock").tag(DockMode.hidden)
-                Text("Replace (Autohide)").tag(DockMode.autoHide)
+            Picker("Dock mode", selection: $settings.nativeDockBehavior) {
+                Text("Independent").tag(NativeDockBehavior.independent)
+                Text("Hide Native Dock").tag(NativeDockBehavior.hidden)
+                Text("Replace (Autohide)").tag(NativeDockBehavior.autoHide)
             }
             Picker("Theme", selection: $settings.appTheme) {
                 ForEach(AppTheme.allCases) { Text($0.displayName).tag($0) }
@@ -302,7 +302,12 @@ private struct TaskbarSettingsPage: View {
             }
             Toggle("Show over fullscreen windows", isOn: $settings.showOverFullScreenApps)
             Toggle("Show on all monitors", isOn: $settings.showOnAllMonitors)
-            Toggle("Windows 11 Mode", isOn: $settings.windows11Mode)
+            Picker("Taskbar Style", selection: $settings.dockMode) {
+                ForEach(DockMode.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
             Section("Task items") {
                 Toggle("Show titles", isOn: $settings.showTitles)
                 Picker("Title source", selection: $settings.taskTitleSource) {

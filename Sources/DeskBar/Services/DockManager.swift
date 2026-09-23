@@ -53,7 +53,7 @@ final class DockManager {
             .appendingPathComponent("\(launchAgentLabel).plist")
     }
 
-    func apply(mode: DockMode) {
+    func apply(mode: NativeDockBehavior) {
         switch mode {
         case .independent:
             restoreDockState()

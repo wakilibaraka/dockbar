@@ -91,6 +91,41 @@ struct OnboardingView: View {
                     }
                 } else if state.step == 2 {
                     VStack(spacing: 16) {
+                        Text("Choose Your Style")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                        Text("Select how you want DeskBar to look and behave.")
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 20) {
+                            ForEach(DockMode.allCases) { mode in
+                                VStack(spacing: 12) {
+                                    Image(systemName: mode == .custom ? "macwindow" : mode == .windows ? "window.cascading" : "dock.rectangle")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(settings.dockMode == mode ? .white : .secondary)
+                                    Text(mode.displayName)
+                                        .font(.title3.bold())
+                                    Text(mode.subtitle)
+                                        .font(.caption)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(settings.dockMode == mode ? .white.opacity(0.8) : .secondary)
+                                }
+                                .padding()
+                                .frame(width: 200, height: 180)
+                                .background(settings.dockMode == mode ? Color.blue : Color.white.opacity(0.05))
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(settings.dockMode == mode ? Color.blue.opacity(0.5) : Color.white.opacity(0.1), lineWidth: 2)
+                                )
+                                .onTapGesture {
+                                    withAnimation { settings.dockMode = mode }
+                                }
+                            }
+                        }
+                        .padding(.top, 20)
+                    }
+                } else if state.step == 3 {
+                    VStack(spacing: 16) {
                         Text("Personalize Your DeskBar")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                         Text("Choose your preferred layout and window behavior.")
@@ -141,17 +176,17 @@ struct OnboardingView: View {
                         .frame(maxWidth: 400)
                         .padding(.top, 10)
                     }
-                } else if state.step == 3 {
+                } else if state.step == 4 {
                     VStack(spacing: 16) {
                         Text("Dock Integration")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                         Text("Choose how DeskBar interacts with the native macOS Dock.")
                             .foregroundColor(.secondary)
                         
-                        Picker("", selection: $settings.dockMode) {
-                            Text("Independent (Both visible)").tag(DockMode.independent)
-                            Text("Hide Native Dock").tag(DockMode.hidden)
-                            Text("Replace (Autohide)").tag(DockMode.autoHide)
+                        Picker("", selection: $settings.nativeDockBehavior) {
+                            Text("Independent (Both visible)").tag(NativeDockBehavior.independent)
+                            Text("Hide Native Dock").tag(NativeDockBehavior.hidden)
+                            Text("Replace (Autohide)").tag(NativeDockBehavior.autoHide)
                         }
                         .pickerStyle(.radioGroup)
                         .horizontalRadioGroupLayout()
@@ -176,8 +211,8 @@ struct OnboardingView: View {
                     
                     Spacer()
                     
-                    Button(state.step == 3 ? "Finish" : "Continue") {
-                        if state.step == 3 {
+                    Button(state.step == 4 ? "Finish" : "Continue") {
+                        if state.step == 4 {
                             completion()
                         } else {
                             withAnimation { state.step += 1 }

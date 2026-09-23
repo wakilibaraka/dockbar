@@ -9,10 +9,10 @@ struct DockSettingsTab: View {
                 
                 GroupBox(label: Text("Taskbar").font(.headline)) {
                     VStack(alignment: .leading, spacing: 16) {
-                        Picker("Dock mode", selection: $settings.dockMode) {
-                            Text("Independent").tag(DockMode.independent)
-                            Text("Hide Native Dock").tag(DockMode.hidden)
-                            Text("Replace (Autohide)").tag(DockMode.autoHide)
+                        Picker("Dock mode", selection: $settings.nativeDockBehavior) {
+                            Text("Independent").tag(NativeDockBehavior.independent)
+                            Text("Hide Native Dock").tag(NativeDockBehavior.hidden)
+                            Text("Replace (Autohide)").tag(NativeDockBehavior.autoHide)
                         }
                         .pickerStyle(MenuPickerStyle())
                         
