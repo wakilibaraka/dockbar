@@ -3,7 +3,7 @@ import AppKit
 final class StartButtonView: NSView {
     private let button = NSButton()
     private static let fixedWidth: CGFloat = 40
-    private var popover: NSPopover?
+    private var popover: BorderlessFlyout?
     private let settings: TaskbarSettings
     private let pinnedAppManager: PinnedAppManager
 
@@ -40,11 +40,9 @@ final class StartButtonView: NSView {
             return
         }
         
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        newPopover.contentViewController = StartMenuViewController(settings: settings, pinnedAppManager: pinnedAppManager)
-        // Anchor slightly above
-        newPopover.show(relativeTo: bounds, of: self, preferredEdge: .maxY)
+        let newPopover = BorderlessFlyout()
+        
+        newPopover.show(contentViewController: StartMenuViewController(settings: settings, pinnedAppManager: pinnedAppManager), relativeTo: bounds, of: self)
         popover = newPopover
     }
 }

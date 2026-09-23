@@ -8,7 +8,7 @@ final class WeatherWidgetView: NSView {
     private let service: WeatherService
     private let settings: TaskbarSettings
     private let button = NSButton()
-    private var popover: NSPopover?
+    private var popover: BorderlessFlyout?
     private var cancellables = Set<AnyCancellable>()
 
     init(service: WeatherService, settings: TaskbarSettings) {
@@ -53,12 +53,9 @@ final class WeatherWidgetView: NSView {
             popover.performClose(nil)
             return
         }
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        newPopover.contentViewController = NSHostingController(
-            rootView: WeatherFlyoutView(service: service, settings: settings)
-        )
-        newPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+        let newPopover = BorderlessFlyout()
+        
+        newPopover.show(contentViewController: NSHostingController(rootView: WeatherFlyoutView(service: service, settings: settings)), relativeTo: button.bounds, of: button)
         popover = newPopover
     }
 

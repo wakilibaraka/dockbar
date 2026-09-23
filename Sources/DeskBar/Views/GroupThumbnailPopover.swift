@@ -13,24 +13,16 @@ struct WindowThumbnailItem {
     let zoomHandler: () -> Void
 }
 
-final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
+final class GroupThumbnailPopover: BorderlessFlyout {
     private let popoverEdge: NSRectEdge = .maxY
     private let thumbnailViewController: GroupThumbnailPopoverViewController
     private var cancellables = Set<AnyCancellable>()
-    private var localMouseDownMonitor: Any?
-    private var globalMouseDownMonitor: Any?
-    private var localKeyboardMonitor: Any?
-    private var globalKeyboardMonitor: Any?
-
+    
     init(settings: TaskbarSettings) {
         thumbnailViewController = GroupThumbnailPopoverViewController(
             thumbnailSize: settings.thumbnailSize
         )
         super.init()
-        behavior = .applicationDefined
-        animates = true
-        contentViewController = thumbnailViewController
-        delegate = self
 
         settings.$thumbnailSize
             .receive(on: RunLoop.main)
@@ -40,18 +32,9 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
             .store(in: &cancellables)
     }
 
-    deinit {
-        removeDismissalMonitors()
-    }
-
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    override func close() {
-        removeDismissalMonitors()
-        super.close()
     }
 
     func show(items: [WindowThumbnailItem], screenRecordingMissing: Bool = false, relativeTo view: NSView) {
@@ -61,85 +44,19 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
         guard !items.isEmpty else { return }
 
         thumbnailViewController.show(items: items, screenRecordingMissing: screenRecordingMissing) { [weak self] in
-            self?.close()
+            self?.performClose(nil)
         }
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
             self.contentViewController?.view.alphaValue = 0
-            show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
+            show(contentViewController: thumbnailViewController, relativeTo: view.bounds, of: view)
             self.contentViewController?.view.animator().alphaValue = 1
         }, completionHandler: nil)
         
-        installDismissalMonitors()
     }
 
-    func popoverDidClose(_ notification: Notification) {
-        removeDismissalMonitors()
-    }
-
-    private func installDismissalMonitors() {
-        guard localMouseDownMonitor == nil, globalMouseDownMonitor == nil else {
-            return
-        }
-
-        let eventMask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
-        let keyboardEventMask: NSEvent.EventTypeMask = [.keyDown, .flagsChanged]
-
-        // If the workspace change was caused by a peek, don't close.
-        // However, we don't know easily. Let's just remove the workspaceActivateObserver and appResignActiveObserver
-        // because we WANT to stay open until mouse click or mouse out.
-        // Actually, if we just check if the mouse is still inside the popover bounds?
-        // Let's just rely on global/local mouse down and keyboard to close it!
-
-        localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: eventMask) { [weak self] event in
-            self?.closeUnlessEventTargetsPopover(event)
-            return event
-        }
-
-        globalMouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.close()
-            }
-        }
-
-        localKeyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: keyboardEventMask) { [weak self] event in
-            self?.close()
-            return event
-        }
-
-        globalKeyboardMonitor = NSEvent.addGlobalMonitorForEvents(matching: keyboardEventMask) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.close()
-            }
-        }
-    }
-
-    private func closeUnlessEventTargetsPopover(_ event: NSEvent) {
-        guard isShown else { return }
-        guard event.window !== contentViewController?.view.window else { return }
-        close()
-    }
-
-    private func removeDismissalMonitors() {
-        if let localMouseDownMonitor {
-            NSEvent.removeMonitor(localMouseDownMonitor)
-            self.localMouseDownMonitor = nil
-        }
-        if let globalMouseDownMonitor {
-            NSEvent.removeMonitor(globalMouseDownMonitor)
-            self.globalMouseDownMonitor = nil
-        }
-        if let localKeyboardMonitor {
-            NSEvent.removeMonitor(localKeyboardMonitor)
-            self.localKeyboardMonitor = nil
-        }
-        if let globalKeyboardMonitor {
-            NSEvent.removeMonitor(globalKeyboardMonitor)
-            self.globalKeyboardMonitor = nil
-        }
-    }
 }
 
 private final class GroupThumbnailPopoverViewController: NSViewController {

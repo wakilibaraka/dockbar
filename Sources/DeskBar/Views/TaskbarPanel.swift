@@ -33,6 +33,7 @@ final class TaskbarPanel: NSPanel {
         let frame = Self.panelFrame(
             isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
             taskbarHeight: settings.taskbarHeight,
+            dockPosition: settings.dockPosition,
             screen: screen
         )
 
@@ -84,6 +85,13 @@ final class TaskbarPanel: NSPanel {
             .store(in: &cancellables)
 
         settings.$layoutMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFrameForCurrentState(animated: true)
+            }
+            .store(in: &cancellables)
+
+        settings.$dockPosition
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.updateFrameForCurrentState(animated: true)
@@ -167,6 +175,7 @@ final class TaskbarPanel: NSPanel {
         let nextFrame = Self.panelFrame(
             isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
             taskbarHeight: settings.taskbarHeight,
+            dockPosition: settings.dockPosition,
             screen: resolvedScreen
         )
 
@@ -188,6 +197,7 @@ final class TaskbarPanel: NSPanel {
 
         let chromeFrame = Self.chromeFrame(
             layoutMode: layoutMode,
+            dockPosition: settings.dockPosition,
             compactContentWidth: compactWidth,
             bounds: rootView.bounds
         )
@@ -211,14 +221,16 @@ final class TaskbarPanel: NSPanel {
     private static func panelFrame(
         isAccessibilityGranted: Bool,
         taskbarHeight: CGFloat,
+        dockPosition: DockPosition,
         screen: NSScreen?
     ) -> NSRect {
-        guard let screen else {
-            return .zero
-        }
+        guard let screen else { return .zero }
+
+        let isFloating = dockPosition == .floatingCenter
+        let marginY: CGFloat = isFloating ? 8 : 0
 
         let contentHeight = max(taskbarHeight, minimumContentHeight)
-        let height = contentHeight
+        let height = contentHeight + marginY
 
         let visibleFrame = screen.visibleFrame
         return NSRect(
@@ -231,29 +243,37 @@ final class TaskbarPanel: NSPanel {
 
     private static func chromeFrame(
         layoutMode: DeskBarLayoutMode,
+        dockPosition: DockPosition,
         compactContentWidth: CGFloat?,
         bounds: NSRect
     ) -> NSRect {
-        let width: CGFloat
+        let isFloating = dockPosition == .floatingCenter
+        let marginX: CGFloat = isFloating ? 12 : 0
+        let marginY: CGFloat = isFloating ? 8 : 0
 
+        let width: CGFloat
         switch layoutMode {
-        case .fullWidth:
-            width = bounds.width
-        case .fullWidthGlass:
-            width = max(120, bounds.width - glassHorizontalMargin * 2)
+        case .fullWidth, .fullWidthGlass:
+            width = isFloating ? max(120, bounds.width - marginX * 2) : bounds.width
         case .compact, .compactGlass:
-            let maximumWidth = max(120, bounds.width - compactHorizontalMargin * 2)
+            let maximumWidth = max(120, bounds.width - marginX * 2)
             let minimumWidth = min(compactMinimumWidth, maximumWidth)
             let desiredWidth = compactContentWidth ?? min(compactFallbackWidth, maximumWidth)
             width = min(max(ceil(desiredWidth), minimumWidth), maximumWidth)
         }
 
-        let originX = bounds.minX + floor((bounds.width - width) / 2)
+        let originX: CGFloat
+        if dockPosition == .bottomLeft {
+            originX = bounds.minX + marginX
+        } else {
+            originX = bounds.minX + floor((bounds.width - width) / 2)
+        }
+
         return NSRect(
             x: originX,
-            y: bounds.minY,
+            y: bounds.minY + marginY,
             width: width,
-            height: bounds.height
+            height: bounds.height - marginY
         )
     }
 
@@ -266,8 +286,9 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func updateVisualStyle(for frame: NSRect) {
+        let isFloating = settings.dockPosition == .floatingCenter
         let usesGlassChrome = settings.layoutMode.usesGlassChrome
-        let cornerRadius = usesGlassChrome ? min(frame.height / 2, 18) : 0
+        let cornerRadius = (usesGlassChrome || isFloating) ? min(frame.height / 2, 18) : 0
 
         chromeShadowView.layer?.cornerRadius = cornerRadius
         chromeShadowView.layer?.masksToBounds = false
@@ -281,9 +302,15 @@ final class TaskbarPanel: NSPanel {
 
         visualEffectView.layer?.cornerRadius = cornerRadius
         visualEffectView.layer?.cornerCurve = .continuous
-        visualEffectView.layer?.masksToBounds = usesGlassChrome
-        visualEffectView.layer?.borderWidth = usesGlassChrome ? 1 : 0
-        visualEffectView.layer?.borderColor = usesGlassChrome ? NSColor.white.withAlphaComponent(0.12).cgColor : NSColor.clear.cgColor
+        visualEffectView.layer?.masksToBounds = usesGlassChrome || isFloating
+        visualEffectView.layer?.borderWidth = (usesGlassChrome || isFloating) ? 1 : 0
+        visualEffectView.layer?.borderColor = (usesGlassChrome || isFloating) ? NSColor.white.withAlphaComponent(0.12).cgColor : NSColor.clear.cgColor
+        
+        if isFloating {
+            visualEffectView.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        } else {
+            visualEffectView.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        }
     }
 
     private func scheduleFrameNormalization(to frame: NSRect) {

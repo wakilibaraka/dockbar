@@ -284,6 +284,9 @@ private struct TaskbarSettingsPage: View {
                 Text("Hide Native Dock").tag(NativeDockBehavior.hidden)
                 Text("Replace (Autohide)").tag(NativeDockBehavior.autoHide)
             }
+            Picker("Dock position", selection: $settings.dockPosition) {
+                ForEach(DockPosition.allCases) { Text($0.displayName).tag($0) }
+            }
             Picker("Theme", selection: $settings.appTheme) {
                 ForEach(AppTheme.allCases) { Text($0.displayName).tag($0) }
             }
