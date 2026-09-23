@@ -164,7 +164,7 @@ final class LaunchpickManager {
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
     }
     
-    private func launch(item: LaunchpickItem) {
+    func launch(item: LaunchpickItem) {
         if let bundleIdentifier = item.bundleIdentifier,
            let applicationURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             if !NSWorkspace.shared.open(applicationURL) {
