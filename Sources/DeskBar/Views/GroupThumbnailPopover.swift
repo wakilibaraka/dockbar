@@ -4,7 +4,7 @@ import Combine
 
 struct WindowThumbnailItem {
     let windowID: CGWindowID
-    let thumbnail: NSImage
+    let thumbnail: NSImage?
     let title: String
     let activationHandler: () -> Void
     let peekHandler: () -> Void
@@ -54,13 +54,13 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
         super.close()
     }
 
-    func show(items: [WindowThumbnailItem], relativeTo view: NSView) {
+    func show(items: [WindowThumbnailItem], screenRecordingMissing: Bool = false, relativeTo view: NSView) {
         guard view.window != nil else {
             return
         }
         guard !items.isEmpty else { return }
 
-        thumbnailViewController.show(items: items) { [weak self] in
+        thumbnailViewController.show(items: items, screenRecordingMissing: screenRecordingMissing) { [weak self] in
             self?.close()
         }
         
@@ -145,6 +145,8 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
 private final class GroupThumbnailPopoverViewController: NSViewController {
     private var thumbnailSize: CGFloat
     private let stackView = NSStackView()
+    private let thumbnailStack = NSStackView()
+    private let permissionButton = NSButton()
     private var dismissHandler: (() -> Void)?
 
     init(thumbnailSize: CGFloat) {
@@ -158,19 +160,31 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
     }
 
     override func loadView() {
-        stackView.orientation = .horizontal
+        stackView.orientation = .vertical
         stackView.alignment = .centerY
         stackView.spacing = 12
         stackView.edgeInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
-        
+        thumbnailStack.orientation = .horizontal
+        thumbnailStack.alignment = .centerY
+        thumbnailStack.spacing = 12
+
+        permissionButton.title = "Enable Screen Recording to see previews"
+        permissionButton.isBordered = false
+        permissionButton.contentTintColor = .secondaryLabelColor
+        permissionButton.isHidden = true
+        permissionButton.target = self
+        permissionButton.action = #selector(openScreenRecordingSettings)
+        stackView.addArrangedSubview(permissionButton)
+        stackView.addArrangedSubview(thumbnailStack)
         view = stackView
     }
 
-    func show(items: [WindowThumbnailItem], dismissHandler: @escaping () -> Void) {
+    func show(items: [WindowThumbnailItem], screenRecordingMissing: Bool, dismissHandler: @escaping () -> Void) {
         self.dismissHandler = dismissHandler
+        permissionButton.isHidden = !screenRecordingMissing
         
-        stackView.arrangedSubviews.forEach { view in
-            stackView.removeArrangedSubview(view)
+        thumbnailStack.arrangedSubviews.forEach { view in
+            thumbnailStack.removeArrangedSubview(view)
             view.removeFromSuperview()
         }
         
@@ -183,16 +197,23 @@ private final class GroupThumbnailPopoverViewController: NSViewController {
                 size: thumbnailSize,
                 dismissHandler: { [weak self] in self?.dismissHandler?() }
             )
-            stackView.addArrangedSubview(container)
+            thumbnailStack.addArrangedSubview(container)
             
             totalWidth += container.fittingSize.width
             maxHeight = max(maxHeight, container.fittingSize.height)
         }
-        totalWidth += CGFloat(items.count - 1) * stackView.spacing
+        totalWidth += CGFloat(items.count - 1) * thumbnailStack.spacing
         maxHeight += 24 // insets
+        if screenRecordingMissing {
+            maxHeight += permissionButton.fittingSize.height + stackView.spacing
+        }
         
         preferredContentSize = NSSize(width: totalWidth, height: maxHeight)
         view.setFrameSize(preferredContentSize)
+    }
+
+    @objc private func openScreenRecordingSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
 
     func updateThumbnailSize(_ thumbnailSize: CGFloat) {
@@ -230,8 +251,8 @@ private final class ClickableThumbnailView: NSView {
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.imageAlignment = .alignCenter
         imageView.image = item.thumbnail
-        
-        let resolvedSize = resolvedSize(for: item.thumbnail, boundingSize: size)
+
+        let resolvedSize = item.thumbnail.map { resolvedSize(for: $0, boundingSize: size) } ?? .zero
         
         actionBar.translatesAutoresizingMaskIntoConstraints = false
         actionBar.wantsLayer = true
@@ -276,18 +297,10 @@ private final class ClickableThumbnailView: NSView {
         addSubview(imageView)
         addSubview(actionBar)
         
-        NSLayoutConstraint.activate([
+        var constraints: [NSLayoutConstraint] = [
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-            
-            imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-            imageView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
-            
-            imageView.widthAnchor.constraint(equalToConstant: resolvedSize.width),
-            imageView.heightAnchor.constraint(equalToConstant: resolvedSize.height),
             widthAnchor.constraint(equalToConstant: max(resolvedSize.width + 8, 100)),
             
             actionStack.leadingAnchor.constraint(equalTo: actionBar.leadingAnchor),
@@ -297,7 +310,24 @@ private final class ClickableThumbnailView: NSView {
             
             actionBar.leadingAnchor.constraint(equalTo: imageView.leadingAnchor, constant: 8),
             actionBar.topAnchor.constraint(equalTo: imageView.topAnchor, constant: 8)
-        ])
+        ]
+        if item.thumbnail != nil {
+            constraints += [
+                imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+                imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+                imageView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+                imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
+                imageView.widthAnchor.constraint(equalToConstant: resolvedSize.width),
+                imageView.heightAnchor.constraint(equalToConstant: resolvedSize.height)
+            ]
+        } else {
+            imageView.isHidden = true
+            constraints += [
+                titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
+                heightAnchor.constraint(greaterThanOrEqualToConstant: 36)
+            ]
+        }
+        NSLayoutConstraint.activate(constraints)
         
         let trackingArea = NSTrackingArea(rect: NSRect(origin: .zero, size: NSSize(width: 1000, height: 1000)), options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
         addTrackingArea(trackingArea)

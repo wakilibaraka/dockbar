@@ -63,7 +63,7 @@ final class TaskbarPanel: NSPanel {
         chromeShadowView.wantsLayer = true
         chromeShadowView.layer?.backgroundColor = NSColor.clear.cgColor
 
-        visualEffectView.material = .popover
+        visualEffectView.material = settings.windows11Mode ? .sidebar : .popover
         visualEffectView.blendingMode = .behindWindow
         visualEffectView.state = .active
         visualEffectView.autoresizingMask = [.width, .height]
@@ -87,6 +87,15 @@ final class TaskbarPanel: NSPanel {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.updateFrameForCurrentState(animated: true)
+            }
+            .store(in: &cancellables)
+
+        settings.$windows11Mode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.visualEffectView.material = self.settings.windows11Mode ? .sidebar : .popover
+                self.updateFrameForCurrentState(animated: true)
             }
             .store(in: &cancellables)
     }
@@ -173,9 +182,11 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func updateChromeLayout(animated: Bool) {
-        let compactContentWidth = settings.layoutMode.usesCompactWidth ? compactContentWidth() : nil
+        let compactContentWidth = settings.windows11Mode
+            ? nil
+            : (settings.layoutMode.usesCompactWidth ? compactContentWidth() : nil)
         let chromeFrame = Self.chromeFrame(
-            layoutMode: settings.layoutMode,
+            layoutMode: settings.windows11Mode ? .fullWidthGlass : settings.layoutMode,
             compactContentWidth: compactContentWidth,
             bounds: rootView.bounds
         )
