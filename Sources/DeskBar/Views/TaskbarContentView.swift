@@ -1074,7 +1074,8 @@ final class TaskbarContentView: NSView {
                         windowID: windowID,
                         size: CGSize(width: self?.settings.thumbnailSize ?? 128 * 2, height: self?.settings.thumbnailSize ?? 128 * 2)
                     )
-                }
+                },
+                thumbnailService: thumbnailService
             )
             taskItemViews[itemID] = groupView
             return groupView
@@ -2479,6 +2480,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     private let dragConfiguration: TaskButtonDragConfiguration?
     private let windowActivationHandler: (WindowInfo) -> Void
     private let thumbnailProvider: (CGWindowID) async -> NSImage?
+    private let thumbnailService: ThumbnailService?
     private let accessibilityService = AccessibilityService()
     private let popover: GroupThumbnailPopover
     private var hoverWorkItem: DispatchWorkItem?
@@ -2530,7 +2532,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         dragConfiguration: TaskButtonDragConfiguration?,
         activationHandler: @escaping () -> Void,
         windowActivationHandler: @escaping (WindowInfo) -> Void,
-        thumbnailProvider: @escaping (CGWindowID) async -> NSImage?
+        thumbnailProvider: @escaping (CGWindowID) async -> NSImage?, thumbnailService: ThumbnailService?
     ) {
         self.appGroup = appGroup
         self.hasBadge = hasBadge
@@ -2542,6 +2544,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         self.activationHandler = activationHandler
         self.windowActivationHandler = windowActivationHandler
         self.thumbnailProvider = thumbnailProvider
+        self.thumbnailService = thumbnailService
         self.popover = GroupThumbnailPopover(settings: settings)
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
@@ -3238,6 +3241,7 @@ private final class TaskZoneGroupContainerView: NSView {
     private let windowActiveProvider: (WindowInfo, pid_t?, String?) -> Bool
     private let windowActivationHandler: (WindowInfo) -> Void
     private let thumbnailProvider: (CGWindowID) async -> NSImage?
+    private let thumbnailService: ThumbnailService?
     private let stackView = NSStackView()
     private let headerView: TaskZoneGroupButtonView
     private var childViews: [String: TaskButtonView] = [:]
@@ -3261,7 +3265,7 @@ private final class TaskZoneGroupContainerView: NSView {
         windowActiveProvider: @escaping (WindowInfo, pid_t?, String?) -> Bool,
         activationHandler: @escaping () -> Void,
         windowActivationHandler: @escaping (WindowInfo) -> Void,
-        thumbnailProvider: @escaping (CGWindowID) async -> NSImage?
+        thumbnailProvider: @escaping (CGWindowID) async -> NSImage?, thumbnailService: ThumbnailService?
     ) {
         self.settings = settings
         self.blacklistManager = blacklistManager
@@ -3271,6 +3275,7 @@ private final class TaskZoneGroupContainerView: NSView {
         self.windowActiveProvider = windowActiveProvider
         self.windowActivationHandler = windowActivationHandler
         self.thumbnailProvider = thumbnailProvider
+        self.thumbnailService = thumbnailService
         headerView = TaskZoneGroupButtonView(
             appGroup: group,
             hasBadge: hasBadge,
@@ -3281,7 +3286,8 @@ private final class TaskZoneGroupContainerView: NSView {
             dragConfiguration: dragConfiguration,
             activationHandler: activationHandler,
             windowActivationHandler: windowActivationHandler,
-            thumbnailProvider: thumbnailProvider
+            thumbnailProvider: thumbnailProvider,
+            thumbnailService: thumbnailService
         )
         self.runtimeStateProvider = runtimeStateProvider
         self.showsActivityOverlay = showsActivityOverlay
