@@ -400,6 +400,7 @@ final class TaskbarContentView: NSView {
         zonesStackView.addArrangedSubview(clusterDivider)
         
         addOrderedDockWidgets()
+        applyWindowsModeLayout()
 
         let fixedViews: [NSView] = [
             launcherZoneView,
@@ -438,6 +439,13 @@ final class TaskbarContentView: NSView {
             guard let view = viewsByID[widgetID], view.superview == nil else { continue }
             zonesStackView.addArrangedSubview(view)
         }
+
+    }
+
+    private func applyWindowsModeLayout() {
+        zonesStackView.edgeInsets = settings.windows11Mode
+            ? NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+            : zoneEdgeInsets(usesCompactOuterInsets: false)
     }
 
     private func applyDockWidgetOrder() {
@@ -510,6 +518,15 @@ final class TaskbarContentView: NSView {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.applyDockWidgetOrder()
+                self?.schedulePreferredWidthNotification()
+            }
+            .store(in: &cancellables)
+
+        settings.$windows11Mode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.applyWindowsModeLayout()
+                self?.scheduleRebuildTaskZone()
                 self?.schedulePreferredWidthNotification()
             }
             .store(in: &cancellables)
@@ -1663,6 +1680,9 @@ final class TaskbarContentView: NSView {
     }
 
     private func shouldGroupWindows(_ windows: [WindowInfo]) -> Bool {
+        if settings.windows11Mode {
+            return true
+        }
         switch settings.groupingMode {
         case .never:
             return false
@@ -2056,7 +2076,16 @@ final class TaskbarContentView: NSView {
                     accessibilityService.raiseAndActivate(element: lastWindow, app: app)
                 }
             } else {
-                app.hide()
+                if settings.windows11Mode,
+                   let element = TaskButtonView.resolveWindowElement(
+                    for: firstWindow,
+                    application: app,
+                    accessibilityService: accessibilityService
+                   ) {
+                    accessibilityService.minimize(element: element)
+                } else {
+                    app.hide()
+                }
             }
         } else {
             activate(windowInfo: firstWindow)
@@ -2459,10 +2488,12 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     private let titleLabel = NSTextField(labelWithString: "")
     private var titleLeadingConstraint: NSLayoutConstraint?
     private var titleTrailingConstraint: NSLayoutConstraint?
+    private var windowsIconCenterConstraint: NSLayoutConstraint?
     private var maxWidthConstraint: NSLayoutConstraint?
     private var widthCap: CGFloat?
     private var usesAdaptiveWidth = false
     private let statusIndicatorView = NSView()
+    private let windowsRunningIndicatorView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
     private let badgeView = NSView()
@@ -2594,9 +2625,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             var items: [WindowThumbnailItem] = []
             for window in windows {
                 if let cgWindowID = window.cgWindowID {
-                    let fallbackImage = window.icon ?? NSWorkspace.shared.icon(forFile: "/System/Library/CoreServices/Finder.app")
-
-                    let thumbnail = await self.thumbnailProvider(cgWindowID) ?? fallbackImage
+                    let thumbnail = await self.thumbnailProvider(cgWindowID)
                     let title = !window.title.isEmpty ? window.title : window.appName
 
                     items.append(WindowThumbnailItem(
@@ -2632,7 +2661,11 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             }
 
             if !Task.isCancelled && !items.isEmpty {
-                self.popover.show(items: items, relativeTo: self)
+                self.popover.show(
+                    items: items,
+                    screenRecordingMissing: self.thumbnailService?.isScreenRecordingGranted == false,
+                    relativeTo: self
+                )
             }
         }
     }
@@ -2713,6 +2746,15 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             return
         }
 
+        if settings.windows11Mode, appGroup.windows.count > 1 {
+            if popover.isShown {
+                activationHandler()
+            } else {
+                showHoverPreview()
+            }
+            return
+        }
+
         activationHandler()
     }
 
@@ -2734,6 +2776,12 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         statusIndicatorView.wantsLayer = true
         statusIndicatorView.layer?.cornerRadius = 1.5
         statusIndicatorView.isHidden = true
+
+        windowsRunningIndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        windowsRunningIndicatorView.wantsLayer = true
+        windowsRunningIndicatorView.layer?.cornerRadius = 1.5
+        windowsRunningIndicatorView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        windowsRunningIndicatorView.isHidden = true
 
         activityBadgeView.translatesAutoresizingMaskIntoConstraints = false
         activityBadgeView.material = .toolTip
@@ -2776,6 +2824,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         dropIndicatorView.isHidden = true
 
         addSubview(statusIndicatorView)
+        addSubview(windowsRunningIndicatorView)
         addSubview(iconView)
         addSubview(titleLabel)
         addSubview(activityBadgeView)
@@ -2816,6 +2865,9 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         let titleTrailingConstraint = titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10)
         self.titleLeadingConstraint = titleLeadingConstraint
         self.titleTrailingConstraint = titleTrailingConstraint
+        let windowsIconCenterConstraint = iconView.centerXAnchor.constraint(equalTo: centerXAnchor)
+        windowsIconCenterConstraint.priority = .defaultHigh
+        self.windowsIconCenterConstraint = windowsIconCenterConstraint
 
         let maxWidthConstraint = widthAnchor.constraint(equalToConstant: 40)
         self.maxWidthConstraint = maxWidthConstraint
@@ -2831,6 +2883,10 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             statusIndicatorView.topAnchor.constraint(equalTo: topAnchor, constant: 6),
             statusIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
             statusIndicatorView.widthAnchor.constraint(equalToConstant: 3),
+            windowsRunningIndicatorView.centerXAnchor.constraint(equalTo: iconView.centerXAnchor),
+            windowsRunningIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            windowsRunningIndicatorView.widthAnchor.constraint(equalToConstant: 12),
+            windowsRunningIndicatorView.heightAnchor.constraint(equalToConstant: 3),
 
             iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -2913,11 +2969,14 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
         titleLabel.font = NSFont.systemFont(ofSize: settings.titleFontSize)
         
         let showsTitle = settings.showTitles && !title.isEmpty
-        titleLabel.isHidden = !showsTitle
-        titleLeadingConstraint?.isActive = showsTitle
-        titleTrailingConstraint?.isActive = showsTitle
+        let showsWindowsLabel = settings.windows11Mode && settings.showTitles && !title.isEmpty
+        let effectiveShowsTitle = settings.windows11Mode ? showsWindowsLabel : showsTitle
+        titleLabel.isHidden = !effectiveShowsTitle
+        titleLeadingConstraint?.isActive = effectiveShowsTitle
+        titleTrailingConstraint?.isActive = effectiveShowsTitle
+        windowsIconCenterConstraint?.isActive = settings.windows11Mode && !showsWindowsLabel
         
-        if showsTitle {
+        if effectiveShowsTitle {
             let preferred = min(TaskButtonView.maximumTaskButtonWidth, TaskButtonView.preferredWidth(
                 title: title,
                 font: titleLabel.font ?? NSFont.systemFont(ofSize: settings.titleFontSize),
@@ -2930,7 +2989,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             let cappedWidth = widthCap.map { min(preferred, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferred
             maxWidthConstraint?.constant = cappedWidth
         } else {
-            maxWidthConstraint?.constant = settings.taskbarHeight + 8
+            maxWidthConstraint?.constant = settings.windows11Mode ? 48 : settings.taskbarHeight + 8
         }
         
         updateStatusIndicator()
@@ -2957,6 +3016,12 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     }
 
     private func updateBackgroundColor() {
+        let windowsMode = settings.windows11Mode
+        windowsRunningIndicatorView.isHidden = !windowsMode
+        windowsRunningIndicatorView.layer?.backgroundColor = (isActive ? NSColor.controlAccentColor : NSColor.secondaryLabelColor).cgColor
+        windowsRunningIndicatorView.layer?.setAffineTransform(
+            CGAffineTransform(scaleX: isActive ? 1.8 : 1, y: 1)
+        )
         if isActive {
             layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
         } else if runtimeState.needsAttention {

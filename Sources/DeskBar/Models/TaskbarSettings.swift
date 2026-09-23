@@ -239,6 +239,10 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showTitles, forKey: "showTitles") }
     }
 
+    @Published var windows11Mode: Bool {
+        didSet { defaults.set(windows11Mode, forKey: "windows11Mode") }
+    }
+
     @Published var taskTitleSource: TaskTitleSource {
         didSet { defaults.set(taskTitleSource.rawValue, forKey: "taskTitleSource") }
     }
@@ -485,6 +489,7 @@ class TaskbarSettings: ObservableObject {
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
         showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
+        windows11Mode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
         taskTitleSource = TaskTitleSource(rawValue: defaults.string(forKey: "taskTitleSource") ?? "") ?? .windowTitle
         taskTruncationStyle = TaskTruncationStyle(rawValue: defaults.string(forKey: "taskTruncationStyle") ?? "") ?? .tail
         iconOnlySize = defaults.object(forKey: "iconOnlySize") as? CGFloat ?? 24

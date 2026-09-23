@@ -302,6 +302,7 @@ private struct TaskbarSettingsPage: View {
             }
             Toggle("Show over fullscreen windows", isOn: $settings.showOverFullScreenApps)
             Toggle("Show on all monitors", isOn: $settings.showOnAllMonitors)
+            Toggle("Windows 11 Mode", isOn: $settings.windows11Mode)
             Section("Task items") {
                 Toggle("Show titles", isOn: $settings.showTitles)
                 Picker("Title source", selection: $settings.taskTitleSource) {
