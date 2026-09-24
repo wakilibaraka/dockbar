@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 
-final class ThumbnailPopover: NSPopover, NSPopoverDelegate {
+final class ThumbnailPopover: BorderlessFlyout {
     private let popoverEdge: NSRectEdge = .maxY
     private let thumbnailViewController: ThumbnailPopoverViewController
     private var cancellables = Set<AnyCancellable>()
@@ -17,10 +17,8 @@ final class ThumbnailPopover: NSPopover, NSPopoverDelegate {
             thumbnailSize: settings.thumbnailSize
         )
         super.init()
-        behavior = .applicationDefined
-        animates = true
-        contentViewController = thumbnailViewController
-        delegate = self
+                        contentViewController = thumbnailViewController
+        
 
         settings.$thumbnailSize
             .receive(on: RunLoop.main)
@@ -54,7 +52,7 @@ final class ThumbnailPopover: NSPopover, NSPopoverDelegate {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.15
             self.contentViewController?.view.alphaValue = 0
-            show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
+            super.show(contentViewController: self.contentViewController!, relativeTo: view.bounds, of: view)
             self.contentViewController?.view.animator().alphaValue = 1
         }, completionHandler: nil)
         

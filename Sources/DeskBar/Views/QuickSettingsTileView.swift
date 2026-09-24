@@ -5,7 +5,7 @@ final class QuickSettingsTileView: NSView {
     private let setting: QuickSetting
     private let iconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
-    private var flyout: NSPopover?
+    private var flyout: BorderlessFlyout?
     var onToggle: (() -> Void)?
     
     init(setting: QuickSetting) {
@@ -142,10 +142,10 @@ final class QuickSettingsTileView: NSView {
             return true
         }
 
-        let popover = NSPopover()
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: rootView)
-        popover.show(relativeTo: bounds, of: self, preferredEdge: .maxY)
+        let popover = BorderlessFlyout()
+        
+        let vc = NSHostingController(rootView: rootView)
+        popover.show(contentViewController: vc, relativeTo: bounds, of: self)
         flyout = popover
         return true
     }

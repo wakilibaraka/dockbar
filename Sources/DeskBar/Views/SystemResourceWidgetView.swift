@@ -148,23 +148,18 @@ final class SystemResourceWidgetView: NSView {
     }
     
     // MARK: - Interaction
-    private lazy var popover: NSPopover = {
-        let pop = NSPopover()
-        pop.behavior = .transient
-        // NSHostingController automatically provides the standard macOS popover appearance
-        pop.contentViewController = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
-        return pop
-    }()
+    private var flyout: BorderlessFlyout = BorderlessFlyout()
     
     private var popoverEventMonitor: Any?
 
     override func mouseDown(with event: NSEvent) {
-        if popover.isShown {
+        if flyout.isShown {
             closePopover()
             return
         }
         
-        popover.show(relativeTo: bounds, of: self, preferredEdge: .maxY)
+        let vc = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
+        flyout.show(contentViewController: vc, relativeTo: bounds, of: self)
         NSApp.activate(ignoringOtherApps: true)
         
         if popoverEventMonitor == nil {
@@ -175,7 +170,7 @@ final class SystemResourceWidgetView: NSView {
     }
     
     private func closePopover() {
-        popover.performClose(nil)
+        flyout.performClose(nil)
         if let monitor = popoverEventMonitor {
             NSEvent.removeMonitor(monitor)
             popoverEventMonitor = nil

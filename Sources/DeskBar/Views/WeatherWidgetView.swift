@@ -8,7 +8,7 @@ final class WeatherWidgetView: NSView {
     private let service: WeatherService
     private let settings: TaskbarSettings
     private let button = NSButton()
-    private var popover: NSPopover?
+    private var flyout: BorderlessFlyout?
     private var cancellables = Set<AnyCancellable>()
 
     init(service: WeatherService, settings: TaskbarSettings) {
@@ -49,17 +49,17 @@ final class WeatherWidgetView: NSView {
     func preferredContentWidth() -> CGFloat { Self.fixedWidth }
 
     @objc private func togglePopover() {
-        if let popover, popover.isShown {
-            popover.performClose(nil)
+        if let _ = flyout, flyout?.isShown == true {
+            flyout?.performClose(nil)
             return
         }
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
-        newPopover.contentViewController = NSHostingController(
+        let newPopover = BorderlessFlyout()
+        
+        let vc = NSHostingController(
             rootView: WeatherFlyoutView(service: service, settings: settings)
         )
-        newPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
-        popover = newPopover
+        newPopover.show(contentViewController: vc, relativeTo: button.bounds, of: button)
+        flyout = newPopover
     }
 
     private func updateAppearance() {

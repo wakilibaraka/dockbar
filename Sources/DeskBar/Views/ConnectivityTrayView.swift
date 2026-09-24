@@ -5,7 +5,7 @@ final class ConnectivityTrayView: NSStackView {
     private let settings: TaskbarSettings
     private let manager = QuickSettingsManager.shared
     
-    private var popover: NSPopover?
+    private var flyout: BorderlessFlyout?
 
     init(settings: TaskbarSettings) {
         self.settings = settings
@@ -32,16 +32,16 @@ final class ConnectivityTrayView: NSStackView {
     }
 
     @objc private func toggleQuickSettings() {
-        if let popover = popover, popover.isShown {
+        if let popover = flyout, popover.isShown {
             popover.performClose(nil)
-            self.popover = nil
+            self.flyout = nil
             return
         }
         
-        let newPopover = NSPopover()
-        newPopover.behavior = .transient
+        let newPopover = BorderlessFlyout()
+        
         newPopover.contentViewController = QuickSettingsViewController(settings: settings, manager: manager)
-        newPopover.show(relativeTo: quickSettingsButton.bounds, of: quickSettingsButton, preferredEdge: .maxY)
-        self.popover = newPopover
+        newPopover.show(contentViewController: QuickSettingsViewController(settings: settings, manager: manager), relativeTo: quickSettingsButton.bounds, of: quickSettingsButton)
+        self.flyout = newPopover
     }
 }

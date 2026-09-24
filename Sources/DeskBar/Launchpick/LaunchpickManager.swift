@@ -5,7 +5,7 @@ final class LaunchpickManager {
     static let shared = LaunchpickManager()
     
     private var panel: LaunchpickPanel?
-    private var popover: NSPopover?
+    private var flyout: BorderlessFlyout?
     private var state: LaunchpickState?
     private var localMonitor: Any?
     private var globalMonitor: Any?
@@ -14,7 +14,7 @@ final class LaunchpickManager {
     private init() {}
     
     func toggle(relativeTo view: NSView? = nil) {
-        if (panel?.isVisible == true) || (popover?.isShown == true) {
+        if (panel?.isVisible == true) || (flyout?.isShown == true) {
             hide()
         } else {
             show(relativeTo: view)
@@ -73,21 +73,21 @@ final class LaunchpickManager {
             panel?.orderOut(nil)
             panel = nil
             
-            if popover == nil {
-                let newPopover = NSPopover()
-                newPopover.behavior = .transient
+            if flyout == nil {
+                let newPopover = BorderlessFlyout()
+                
                 let vc = NSViewController()
                 vc.view = hostingView
                 vc.preferredContentSize = NSSize(width: 680, height: 680)
                 newPopover.contentViewController = vc
-                self.popover = newPopover
+                self.flyout = newPopover
             }
             
-            popover?.show(relativeTo: view.bounds, of: view, preferredEdge: .maxY)
+            flyout?.show(contentViewController: flyout!.contentViewController!, relativeTo: view.bounds, of: view)
         } else {
             // Use Panel
-            popover?.performClose(nil)
-            popover = nil
+            flyout?.performClose(nil)
+            flyout = nil
             
             if panel == nil {
                 let newPanel = LaunchpickPanel()
@@ -140,7 +140,7 @@ final class LaunchpickManager {
     
     func hide() {
         panel?.orderOut(nil)
-        popover?.performClose(nil)
+        flyout?.performClose(nil)
         removeMonitors()
     }
     

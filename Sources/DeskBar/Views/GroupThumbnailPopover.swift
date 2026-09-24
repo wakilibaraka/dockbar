@@ -13,7 +13,7 @@ struct WindowThumbnailItem {
     let zoomHandler: () -> Void
 }
 
-final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
+final class GroupThumbnailPopover: BorderlessFlyout {
     private let popoverEdge: NSRectEdge = .maxY
     private let thumbnailViewController: GroupThumbnailPopoverViewController
     private var cancellables = Set<AnyCancellable>()
@@ -27,10 +27,8 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
             thumbnailSize: settings.thumbnailSize
         )
         super.init()
-        behavior = .applicationDefined
-        animates = true
-        contentViewController = thumbnailViewController
-        delegate = self
+                        contentViewController = thumbnailViewController
+        
 
         settings.$thumbnailSize
             .receive(on: RunLoop.main)
@@ -68,7 +66,7 @@ final class GroupThumbnailPopover: NSPopover, NSPopoverDelegate {
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
             self.contentViewController?.view.alphaValue = 0
-            show(relativeTo: view.bounds, of: view, preferredEdge: popoverEdge)
+            super.show(contentViewController: self.contentViewController!, relativeTo: view.bounds, of: view)
             self.contentViewController?.view.animator().alphaValue = 1
         }, completionHandler: nil)
         
