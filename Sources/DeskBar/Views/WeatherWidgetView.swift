@@ -49,12 +49,14 @@ final class WeatherWidgetView: NSView {
     func preferredContentWidth() -> CGFloat { Self.fixedWidth }
 
     @objc private func togglePopover() {
-        if let _ = flyout, flyout?.isShown == true {
-            flyout?.performClose(nil)
-            flyout = nil
+        if let currentFlyout = flyout, currentFlyout.isShown {
+            currentFlyout.performClose(nil)
             return
         }
         let newPopover = BorderlessFlyout()
+        newPopover.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
         
         let vc = NSHostingController(
             rootView: WeatherFlyoutView(service: service, settings: settings)

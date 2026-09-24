@@ -30,10 +30,7 @@ struct SystemResourceDashboardView: View {
         }
         .padding(16)
         .frame(width: 280)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(NSColor.windowBackgroundColor))
-        )
+
         .onAppear {
             BluetoothStatsService.shared.startMonitoring()
         }

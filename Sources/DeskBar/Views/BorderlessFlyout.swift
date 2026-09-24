@@ -4,6 +4,9 @@ open class BorderlessFlyout: NSPanel {
     private var localMouseDownMonitor: Any?
     private var globalMouseDownMonitor: Any?
     private var localKeyboardMonitor: Any?
+    var onDismiss: (() -> Void)?
+    private weak var positioningView: NSView?
+    private var hasFiredDismiss = false
     
     var isShown: Bool { isVisible }
     
@@ -22,6 +25,8 @@ open class BorderlessFlyout: NSPanel {
     open override var canBecomeMain: Bool { true }
     
     func show(contentViewController: NSViewController, relativeTo rect: NSRect, of view: NSView) {
+        self.positioningView = view
+        self.hasFiredDismiss = false
         self.contentViewController = contentViewController
         
         guard let window = view.window,
@@ -90,10 +95,22 @@ open class BorderlessFlyout: NSPanel {
         
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             guard let self = self else { return event }
-            let point = event.locationInWindow
-            if !self.contentView!.frame.contains(point) {
-                self.performClose(nil)
+            
+            // If the event is in the flyout window, don't close.
+            if event.window == self { return event }
+            
+            // If the event is in the window containing the positioning view...
+            if let posView = self.positioningView, event.window == posView.window {
+                // Convert event location to posView coordinates
+                let pointInPosView = posView.convert(event.locationInWindow, from: nil)
+                if posView.bounds.contains(pointInPosView) {
+                    // Clicked exactly on the toggle button! Let the button's action handle closing.
+                    return event
+                }
             }
+            
+            // Clicked somewhere else in our app's windows. Close the flyout.
+            self.performClose(nil)
             return event
         }
         globalMouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -112,6 +129,7 @@ open class BorderlessFlyout: NSPanel {
     }
     
     private func setupRoundedCorners(for view: NSVisualEffectView) {
+        view.wantsLayer = true
         view.layer?.cornerRadius = 14
         view.layer?.cornerCurve = .continuous
         view.layer?.masksToBounds = true
@@ -123,6 +141,11 @@ open class BorderlessFlyout: NSPanel {
         if let lm = localMouseDownMonitor { NSEvent.removeMonitor(lm); localMouseDownMonitor = nil }
         if let gm = globalMouseDownMonitor { NSEvent.removeMonitor(gm); globalMouseDownMonitor = nil }
         if let lk = localKeyboardMonitor { NSEvent.removeMonitor(lk); localKeyboardMonitor = nil }
+        
+        if !hasFiredDismiss {
+            hasFiredDismiss = true
+            onDismiss?()
+        }
         super.close()
     }
     

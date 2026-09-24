@@ -34,11 +34,14 @@ final class ConnectivityTrayView: NSStackView {
     @objc private func toggleQuickSettings() {
         if let popover = flyout, popover.isShown {
             popover.performClose(nil)
-            self.flyout = nil
+            // flyout = nil is handled by onDismiss
             return
         }
         
         let newPopover = BorderlessFlyout()
+        newPopover.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
         let vc = QuickSettingsViewController(settings: settings, manager: manager)
         newPopover.show(contentViewController: vc, relativeTo: quickSettingsButton.bounds, of: quickSettingsButton)
         self.flyout = newPopover

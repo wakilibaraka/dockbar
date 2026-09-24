@@ -76,10 +76,12 @@ final class LaunchpickManager {
             flyout?.performClose(nil)
             
             let newPopover = BorderlessFlyout()
+            newPopover.onDismiss = { [weak self] in
+                self?.flyout = nil
+            }
             let vc = NSViewController()
             vc.view = hostingView
             vc.preferredContentSize = NSSize(width: 680, height: 680)
-            
             newPopover.show(contentViewController: vc, relativeTo: view.bounds, of: view)
             self.flyout = newPopover
         } else {

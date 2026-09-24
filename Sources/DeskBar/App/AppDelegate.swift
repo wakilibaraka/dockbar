@@ -452,10 +452,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         self.batteryFlyout?.performClose(nil)
         let newPopover = BorderlessFlyout()
+        newPopover.onDismiss = { [weak self] in
+            self?.batteryFlyout = nil
+            if let monitor = self?.popoverEventMonitor {
+                NSEvent.removeMonitor(monitor)
+                self?.popoverEventMonitor = nil
+            }
+        }
         newPopover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
         self.batteryFlyout = newPopover
         NSApp.activate(ignoringOtherApps: true)
         
+        // Note: BorderlessFlyout now adds its own monitors, but we keep this for menu bar clicks outside the flyout.
         self.popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             self?.closePopover(nil)
         }
@@ -463,11 +471,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func closePopover(_ sender: Any?) {
         self.batteryFlyout?.performClose(sender)
-        self.batteryFlyout = nil
-        if let monitor = self.popoverEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            self.popoverEventMonitor = nil
-        }
+        // onDismiss will handle nilling
     }
 
     private func configureObservers(

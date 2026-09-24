@@ -161,9 +161,15 @@ final class SystemResourceWidgetView: NSView {
         flyout?.performClose(nil)
         
         let newFlyout = BorderlessFlyout()
+        newFlyout.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
+        
         let rootVC = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
         
-        // Ensure we calculate the full fitting size for the content
+        // Force constraints so fitting size is accurate
+        rootVC.view.translatesAutoresizingMaskIntoConstraints = false
+        rootVC.view.widthAnchor.constraint(equalToConstant: 280).isActive = true
         rootVC.view.layoutSubtreeIfNeeded()
         let fittingSize = rootVC.view.fittingSize
         rootVC.view.frame = NSRect(origin: .zero, size: fittingSize)
@@ -190,7 +196,6 @@ final class SystemResourceWidgetView: NSView {
     
     private func closePopover() {
         flyout?.performClose(nil)
-        flyout = nil
         if let monitor = popoverEventMonitor {
             NSEvent.removeMonitor(monitor)
             popoverEventMonitor = nil
