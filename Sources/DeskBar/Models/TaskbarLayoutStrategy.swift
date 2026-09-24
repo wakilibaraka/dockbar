@@ -9,9 +9,7 @@ protocol TaskbarLayoutStrategy {
     // Content Layout
     func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat]
     func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView?
-    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets)
-    
-    // Window Grouping
+    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets)
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool
     var combinesPinnedApps: Bool { get }
     var groupsSingleWindows: Bool { get }
@@ -77,10 +75,10 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
         return zonesStackView
     }
     
-    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
+    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = defaultZoneEdgeInsets
+        launcherButtonView.isHidden = false
         launcherZoneView.isHidden = false
-        startButtonView.isHidden = true
     }
     
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
@@ -162,10 +160,10 @@ struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
         return windowsTrayClusterView
     }
     
-    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
+    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+        launcherButtonView.isHidden = false
         launcherZoneView.isHidden = true
-        startButtonView.isHidden = false
     }
     
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
@@ -257,10 +255,10 @@ struct MacTaskbarStrategy: TaskbarLayoutStrategy {
         return nil // Mac mode uses NSStatusItems managed by AppDelegate, so no dock container
     }
     
-    func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
+    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+        launcherButtonView.isHidden = true
         launcherZoneView.isHidden = true
-        startButtonView.isHidden = true
     }
     
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool {

@@ -20,7 +20,7 @@ final class TaskbarContentView: NSView {
     private let blacklistManager: BlacklistManager
     private let displayID: CGDirectDisplayID
     private let launcherZoneView: LauncherZoneView
-    private let startButtonView: StartButtonView
+    private let launcherButtonView = AppsLauncherButtonView()
     private let windowsTrayClusterView = WindowsTrayClusterView()
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
@@ -111,7 +111,6 @@ final class TaskbarContentView: NSView {
         self.thumbnailService = thumbnailService
         self.displayID = displayID
         self.openSettingsHandler = openSettingsHandler
-        self.startButtonView = StartButtonView(settings: settings, pinnedAppManager: pinnedAppManager)
         launcherZoneView = LauncherZoneView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,
@@ -398,8 +397,8 @@ final class TaskbarContentView: NSView {
             taskZoneContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 32)
         ])
 
+        zonesStackView.addArrangedSubview(launcherButtonView)
         zonesStackView.addArrangedSubview(launcherZoneView)
-        zonesStackView.addArrangedSubview(startButtonView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
         // Vertical divider separating apps from right-hand widgets
@@ -464,8 +463,8 @@ final class TaskbarContentView: NSView {
     private func applyModeLayout() {
         settings.taskbarMode.strategy.applyModeLayout(
             zonesStackView: zonesStackView, 
+            launcherButtonView: launcherButtonView,
             launcherZoneView: launcherZoneView, 
-            startButtonView: startButtonView, 
             defaultZoneEdgeInsets: zoneEdgeInsets(usesCompactOuterInsets: false)
         )
     }

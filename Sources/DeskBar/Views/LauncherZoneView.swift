@@ -165,8 +165,6 @@ final class LauncherZoneView: NSStackView {
             view.removeFromSuperview()
         }
 
-        buttonsStackView.addArrangedSubview(AppsLauncherButtonView())
-
         let runningApplicationsByBundleIdentifier: [String: NSRunningApplication] =
             NSWorkspace.shared.runningApplications.reduce(into: [:]) { result, application in
                 guard let bundleIdentifier = application.bundleIdentifier else {
