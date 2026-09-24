@@ -174,10 +174,11 @@ final class TaskbarContentView: NSView {
     /// Width contributed by right-cluster widgets that are currently in the Dock,
     /// plus the 1pt cluster-divider pixel. Use this at every layout budget site.
     private var dockWidgetFixedWidth: CGFloat {
-        (settings.systemResourceWidgetLocation == .dock ? systemResourceWidgetView.preferredContentWidth() : 0)
-            + (settings.connectivityTrayLocation == .dock ? connectivityTrayView.preferredContentWidth() : 0)
-            + (settings.weatherEnabled && settings.weatherWidgetLocation == .dock ? weatherWidgetView.preferredContentWidth() : 0)
-            + 1
+        var width: CGFloat = 1 // divider
+        if settings.connectivityTrayLocation == .dock { width += connectivityTrayView.preferredContentWidth() + 8 }
+        if settings.systemResourceWidgetLocation == .dock { width += systemResourceWidgetView.preferredContentWidth() + 8 }
+        if settings.weatherEnabled && settings.weatherWidgetLocation == .dock { width += weatherWidgetView.preferredContentWidth() + 8 }
+        return width
     }
 
     func preferredCompactWidth() -> CGFloat {
@@ -363,13 +364,22 @@ final class TaskbarContentView: NSView {
         clusterDivider.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             clusterDivider.widthAnchor.constraint(equalToConstant: 1),
-            clusterDivider.heightAnchor.constraint(equalToConstant: 20)
+            clusterDivider.heightAnchor.constraint(equalToConstant: 24)
         ])
-        zonesStackView.addArrangedSubview(clusterDivider)
         
-        zonesStackView.addArrangedSubview(connectivityTrayView)
-        zonesStackView.addArrangedSubview(systemResourceWidgetView)
-        zonesStackView.addArrangedSubview(weatherWidgetView)
+        // Right cluster stack for consistent spacing and centering
+        let rightClusterStack = NSStackView()
+        rightClusterStack.orientation = .horizontal
+        rightClusterStack.alignment = .centerY
+        rightClusterStack.spacing = 8
+        rightClusterStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        rightClusterStack.addArrangedSubview(clusterDivider)
+        rightClusterStack.addArrangedSubview(connectivityTrayView)
+        rightClusterStack.addArrangedSubview(systemResourceWidgetView)
+        rightClusterStack.addArrangedSubview(weatherWidgetView)
+        
+        zonesStackView.addArrangedSubview(rightClusterStack)
     }
 
 

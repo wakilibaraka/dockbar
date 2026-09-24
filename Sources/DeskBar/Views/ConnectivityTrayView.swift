@@ -28,7 +28,7 @@ final class ConnectivityTrayView: NSStackView {
     required init?(coder: NSCoder) { fatalError() }
 
     func preferredContentWidth() -> CGFloat {
-        return quickSettingsButton.fittingSize.width + 8
+        return quickSettingsButton.fittingSize.width
     }
 
     @objc private func toggleQuickSettings() {

@@ -40,7 +40,7 @@ final class SystemResourceWidgetView: NSView {
     
     func preferredContentWidth() -> CGFloat {
         // Fixed width to prevent layout glitches
-        return isHidden ? 0 : 56
+        return isHidden ? 0 : 50
     }
     
     override var intrinsicContentSize: NSSize {
@@ -70,15 +70,15 @@ final class SystemResourceWidgetView: NSView {
         NSLayoutConstraint.activate([
             containerView.centerYAnchor.constraint(equalTo: centerYAnchor),
             containerView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            containerView.widthAnchor.constraint(equalToConstant: 44),
-            containerView.heightAnchor.constraint(equalToConstant: 22),
+            containerView.widthAnchor.constraint(equalToConstant: 50),
+            containerView.heightAnchor.constraint(equalToConstant: 24),
             
             textLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             textLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             graphView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             graphView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            graphView.widthAnchor.constraint(equalToConstant: 44),
-            graphView.heightAnchor.constraint(equalToConstant: 22)
+            graphView.widthAnchor.constraint(equalToConstant: 50),
+            graphView.heightAnchor.constraint(equalToConstant: 24)
         ])
     }
     
@@ -174,16 +174,9 @@ final class SystemResourceWidgetView: NSView {
         let fittingSize = rootVC.view.fittingSize
         rootVC.view.frame = NSRect(origin: .zero, size: fittingSize)
         
-        let scrollView = NSScrollView(frame: NSRect(origin: .zero, size: fittingSize))
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = false
-        scrollView.documentView = rootVC.view
+        rootVC.preferredContentSize = fittingSize
         
-        let vc = NSViewController()
-        vc.view = scrollView
-        vc.preferredContentSize = fittingSize
-        
-        newFlyout.show(contentViewController: vc, relativeTo: bounds, of: self)
+        newFlyout.show(contentViewController: rootVC, relativeTo: bounds, of: self)
         self.flyout = newFlyout
         NSApp.activate(ignoringOtherApps: true)
         
