@@ -30,10 +30,15 @@ import AppKit
 import SwiftUI
 import CoreAudio
 
+
+final class FlippedView: NSView {
+    override var isFlipped: Bool { true }
+}
+
 final class QuickSettingsViewController: NSViewController {
     private let settings: TaskbarSettings
     private let manager: QuickSettingsManager
-    private let blurView = NSView() // Popover provides its own background/blur
+    private let blurView = FlippedView() // Popover provides its own background/blur
     private var tileViews: [QuickSettingsTileView] = []
     private var volSlider: NSSlider?
 
@@ -49,8 +54,8 @@ final class QuickSettingsViewController: NSViewController {
         self.view = blurView
     }
 
-    override func viewWillAppear() {
-        super.viewWillAppear()
+    override func viewDidLoad() {
+        super.viewDidLoad()
         refreshOnOpen()
     }
 

@@ -49,18 +49,29 @@ open class BorderlessFlyout: NSPanel {
         var panelWidth = fit.width
         var panelHeight = fit.height
         
-        var originY = anchor.maxY + spacing
-        var originX = anchor.midX - (panelWidth / 2)
-        
-        if panelWidth > visibleFrame.width { panelWidth = visibleFrame.width }
-        
-        if originY + panelHeight > visibleFrame.maxY {
-            panelHeight = visibleFrame.maxY - originY - spacing
+        var originY: CGFloat
+        if anchor.minY > visibleFrame.midY {
+            // Anchor is in the top half of the screen (e.g. top dock). Open DOWNWARD.
+            originY = anchor.minY - spacing - panelHeight
+            if originY < visibleFrame.minY + spacing {
+                let overflow = (visibleFrame.minY + spacing) - originY
+                panelHeight -= overflow
+                originY = visibleFrame.minY + spacing
+            }
+        } else {
+            // Anchor is in the bottom half of the screen (e.g. bottom dock). Open UPWARD.
+            originY = anchor.maxY + spacing
+            if originY + panelHeight > visibleFrame.maxY - spacing {
+                panelHeight = (visibleFrame.maxY - spacing) - originY
+            }
         }
         
-        if originX < visibleFrame.minX {
+        var originX = anchor.midX - (panelWidth / 2)
+        if panelWidth > visibleFrame.width { panelWidth = visibleFrame.width }
+        
+        if originX < visibleFrame.minX + spacing {
             originX = visibleFrame.minX + spacing
-        } else if originX + panelWidth > visibleFrame.maxX {
+        } else if originX + panelWidth > visibleFrame.maxX - spacing {
             originX = visibleFrame.maxX - panelWidth - spacing
         }
         
@@ -70,22 +81,30 @@ open class BorderlessFlyout: NSPanel {
         if let effectView = contentViewController.view as? NSVisualEffectView {
             setupRoundedCorners(for: effectView)
             self.contentView = effectView
-        } else if let existingEffectView = self.contentView as? NSVisualEffectView, existingEffectView.subviews.contains(contentViewController.view) {
-            setupRoundedCorners(for: existingEffectView)
-            existingEffectView.frame = finalFrame // we will set frame to bounds later... wait.
-            existingEffectView.frame.origin = .zero
-            existingEffectView.frame.size = finalFrame.size
-            contentViewController.view.frame = existingEffectView.bounds
         } else {
+            // Check if we need to wrap in a scroll view because we capped the height
+            let needsScroll = panelHeight < fit.height && !(contentViewController.view is NSScrollView)
+            
             let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: finalFrame.size))
             effectView.material = NSVisualEffectView.Material.popover
             effectView.blendingMode = NSVisualEffectView.BlendingMode.behindWindow
             effectView.state = NSVisualEffectView.State.active
             setupRoundedCorners(for: effectView)
             
-            contentViewController.view.autoresizingMask = [.width, .height]
-            contentViewController.view.frame = effectView.bounds
-            effectView.addSubview(contentViewController.view)
+            if needsScroll {
+                let scrollView = NSScrollView(frame: effectView.bounds)
+                scrollView.hasVerticalScroller = true
+                scrollView.drawsBackground = false
+                scrollView.autoresizingMask = [.width, .height]
+                contentViewController.view.frame = NSRect(x: 0, y: 0, width: panelWidth, height: fit.height)
+                scrollView.documentView = contentViewController.view
+                effectView.addSubview(scrollView)
+            } else {
+                contentViewController.view.autoresizingMask = [.width, .height]
+                contentViewController.view.frame = effectView.bounds
+                effectView.addSubview(contentViewController.view)
+            }
+            
             self.contentView = effectView
         }
         
