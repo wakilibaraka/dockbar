@@ -24,7 +24,7 @@ struct TaskButtonDragConfiguration {
 }
 
 struct TaskButtonPluginMenuConfiguration {
-    let buttonTitle: String
+    let imageSymbolName: String
     let tintColor: NSColor
     let showsActionButton: Bool
     let menuProvider: () -> NSMenu
@@ -718,14 +718,7 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private func displayTitle() -> String {
-        switch windowState {
-        case .minimized:
-            return "[\(resolvedTitle())]"
-        case .hidden:
-            return "(\(resolvedTitle()))"
-        case .active, .normal:
-            return resolvedTitle()
-        }
+        return resolvedTitle()
     }
 
     private func resolvedToolTip() -> String {
@@ -1067,6 +1060,7 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     private func updateAppearance() {
         titleLabel.stringValue = displayTitle()
         titleLabel.textColor = textColor()
+        titleLabel.alphaValue = iconAlpha()
         toolTip = resolvedToolTip()
         iconView.image = displayIcon()
         iconView.alphaValue = iconAlpha()
@@ -1097,7 +1091,13 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
         statusDefaultLeadingConstraint?.isActive = !shouldShowInlinePluginActionButton
         statusSMLeadingConstraint?.isActive = shouldShowInlinePluginActionButton
         
-        pluginActionButton.title = pluginMenuConfiguration?.buttonTitle ?? ""
+        if let symbolName = pluginMenuConfiguration?.imageSymbolName {
+            let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .semibold)
+            pluginActionButton.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)?.withSymbolConfiguration(config)
+        } else {
+            pluginActionButton.image = nil
+        }
+        
         pluginActionButton.contentTintColor = pluginMenuConfiguration?.tintColor ?? .secondaryLabelColor
         pluginActionButton.activityColor = pluginMenuConfiguration?.tintColor ?? .secondaryLabelColor
     }
@@ -1616,10 +1616,10 @@ private final class TaskButtonPluginActionButton: NSButton {
 
     init() {
         super.init(frame: .zero)
-        title = "sm"
+        title = ""
+        imagePosition = .imageOnly
         isBordered = false
         bezelStyle = .regularSquare
-        font = NSFont.monospacedSystemFont(ofSize: 9, weight: .semibold)
         focusRingType = .none
         wantsLayer = true
         layer?.cornerRadius = 4

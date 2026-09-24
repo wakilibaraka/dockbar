@@ -68,6 +68,7 @@ final class SystemResourceWidgetView: NSView {
         containerView.addSubview(graphView)
         
         NSLayoutConstraint.activate([
+            widthAnchor.constraint(greaterThanOrEqualToConstant: Self.fixedWidth),
             containerView.centerYAnchor.constraint(equalTo: centerYAnchor),
             containerView.centerXAnchor.constraint(equalTo: centerXAnchor),
             containerView.widthAnchor.constraint(equalToConstant: 44),

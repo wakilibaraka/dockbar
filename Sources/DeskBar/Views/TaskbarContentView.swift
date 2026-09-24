@@ -1620,7 +1620,7 @@ final class TaskbarContentView: NSView {
         }
 
         return TaskButtonPluginMenuConfiguration(
-            buttonTitle: "sm",
+            imageSymbolName: "sparkles",
             tintColor: watchAnnotation.aggregateState.color,
             showsActionButton: settings.showSessionManagerActionButton,
             menuProvider: { [weak self] in
@@ -1688,7 +1688,7 @@ final class TaskbarContentView: NSView {
 
     private func smAgentPluginMenuConfiguration(for annotation: SMAgentWindowAnnotation) -> TaskButtonPluginMenuConfiguration {
         TaskButtonPluginMenuConfiguration(
-            buttonTitle: "sm",
+            imageSymbolName: "sparkles",
             tintColor: annotation.activityState.color,
             showsActionButton: settings.showSessionManagerActionButton,
             menuProvider: { [weak self] in
