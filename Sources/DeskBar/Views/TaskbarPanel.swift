@@ -287,7 +287,9 @@ final class TaskbarPanel: NSPanel {
 
     private func updateVisualStyle(for frame: NSRect) {
         let isFloating = settings.dockPosition == .floatingCenter
-        let usesGlassChrome = settings.layoutMode.usesGlassChrome
+        let strategy = settings.taskbarMode.strategy
+        let layoutMode = strategy.layoutMode(defaultLayoutMode: settings.layoutMode)
+        let usesGlassChrome = layoutMode.usesGlassChrome
         let cornerRadius = (usesGlassChrome || isFloating) ? min(frame.height / 2, 18) : 0
 
         chromeShadowView.layer?.cornerRadius = cornerRadius
@@ -391,7 +393,9 @@ private final class TaskbarPanelRootView: NSView {
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        if settings.layoutMode.limitsHitTestingToChrome,
+        let strategy = settings.taskbarMode.strategy
+        let layoutMode = strategy.layoutMode(defaultLayoutMode: settings.layoutMode)
+        if layoutMode.limitsHitTestingToChrome,
            let chromeView,
            !chromeView.frame.contains(point) {
             return nil
@@ -401,7 +405,9 @@ private final class TaskbarPanelRootView: NSView {
     }
 
     override var fittingSize: NSSize {
-        if let preferredCarrierSize, !settings.layoutMode.usesCompactWidth {
+        let strategy = settings.taskbarMode.strategy
+        let usesCompact = strategy.usesCompactContentWidth(defaultUsesCompactWidth: settings.layoutMode.usesCompactWidth)
+        if let preferredCarrierSize, !usesCompact {
             return preferredCarrierSize
         }
 
@@ -409,7 +415,9 @@ private final class TaskbarPanelRootView: NSView {
     }
 
     override var intrinsicContentSize: NSSize {
-        if let preferredCarrierSize, !settings.layoutMode.usesCompactWidth {
+        let strategy = settings.taskbarMode.strategy
+        let usesCompact = strategy.usesCompactContentWidth(defaultUsesCompactWidth: settings.layoutMode.usesCompactWidth)
+        if let preferredCarrierSize, !usesCompact {
             return preferredCarrierSize
         }
 

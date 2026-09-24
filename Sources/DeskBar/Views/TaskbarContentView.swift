@@ -142,15 +142,19 @@ final class TaskbarContentView: NSView {
         autoresizingMask = [.width, .height]
 
         configureLayout()
-        bindState()
-        installCollapseMonitors()
-        installModifierMonitors()
-        observePinRequests()
-        systemResourceWidgetView.preferredWidthDidChange = { [weak self] in
-            self?.schedulePreferredWidthNotification()
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.bindState()
+            self.installCollapseMonitors()
+            self.installModifierMonitors()
+            self.observePinRequests()
+            self.systemResourceWidgetView.preferredWidthDidChange = { [weak self] in
+                self?.schedulePreferredWidthNotification()
+            }
+            self.updateTaskbarLayout()
+            self.rebuildTaskZone()
         }
-        updateTaskbarLayout()
-        rebuildTaskZone()
     }
 
     @available(*, unavailable)
@@ -408,8 +412,9 @@ final class TaskbarContentView: NSView {
         ])
         zonesStackView.addArrangedSubview(clusterDivider)
         
-        addOrderedDockWidgets()
-        applyModeLayout()
+        // Deferred to bindState / async init
+        // addOrderedDockWidgets()
+        // applyModeLayout()
 
         let fixedViews: [NSView] = [
             launcherZoneView,
@@ -427,11 +432,12 @@ final class TaskbarContentView: NSView {
         taskZoneContainer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         taskZoneContainer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: clusterDivider)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: connectivityTrayView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: calendarWidgetView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: quickSettingsWidgetView)
-        zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: systemResourceWidgetView)
+        [clusterDivider, connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView, weatherWidgetView]
+            .forEach { view in
+                if zonesStackView.arrangedSubviews.contains(view) {
+                    zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: view)
+                }
+            }
     }
 
     private func addOrderedDockWidgets() {
@@ -471,9 +477,11 @@ final class TaskbarContentView: NSView {
                 view.removeFromSuperview()
             }
         addOrderedDockWidgets()
-        [clusterDivider, connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView]
+        [clusterDivider, connectivityTrayView, calendarWidgetView, quickSettingsWidgetView, systemResourceWidgetView, batteryWidgetView, weatherWidgetView]
             .forEach { view in
-                zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: view)
+                if zonesStackView.arrangedSubviews.contains(view) {
+                    zonesStackView.setCustomSpacing(fixedWidgetSpacing, after: view)
+                }
             }
     }
 
