@@ -223,7 +223,9 @@ final class TaskbarContentView: NSView {
 
     func preferredCompactWidth() -> CGFloat {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
+        let launcherBtnWidth = launcherButtonView.isHidden ? 0 : launcherButtonView.intrinsicContentSize.width
         let contentWidth =
+            launcherBtnWidth +
             launcherZoneView.preferredContentWidth() +
             fullMeasurement.preferredWidth +
             dockWidgetFixedWidth +
@@ -1742,16 +1744,18 @@ final class TaskbarContentView: NSView {
         return width > 0 ? width : max(taskZoneLayoutStackView.bounds.width, 320)
     }
 
+    private var fixedZoneContentWidth: CGFloat {
+        let launcherBtnWidth = launcherButtonView.isHidden ? 0 : launcherButtonView.intrinsicContentSize.width
+        return launcherBtnWidth + launcherZoneView.preferredContentWidth() + dockWidgetFixedWidth
+    }
+
     private var availableTaskZoneContentWidth: CGFloat {
         let contentWidth = bounds.width > 0 ? bounds.width : zonesStackView.bounds.width
         guard contentWidth > 0 else {
             return 0
         }
 
-        let fixedZoneWidth =
-            launcherZoneView.preferredContentWidth() +
-            dockWidgetFixedWidth +
-            zoneEdgeInsetsWidth(compactZoneEdgeInsets)
+        let fixedZoneWidth = fixedZoneContentWidth + zoneEdgeInsetsWidth(compactZoneEdgeInsets)
 
         return max(0, contentWidth - fixedZoneWidth)
     }
@@ -1763,10 +1767,7 @@ final class TaskbarContentView: NSView {
         }
 
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
-        let fixedZoneWidth =
-            launcherZoneView.preferredContentWidth() +
-            dockWidgetFixedWidth +
-            zoneEdgeInsetsWidth(regularZoneEdgeInsets)
+        let fixedZoneWidth = fixedZoneContentWidth + zoneEdgeInsetsWidth(regularZoneEdgeInsets)
         let fullPreferredWidth = fixedZoneWidth + fullMeasurement.preferredWidth
         let usesAdaptiveTaskLayout = fullPreferredWidth > contentWidth + 0.5
         let usesCompactOuterInsets = Self.shouldUseCompactOuterInsets(
@@ -1789,17 +1790,13 @@ final class TaskbarContentView: NSView {
         let effectiveFixedZoneWidth: CGFloat
 
         if usesAdaptiveTaskLayout {
-            let nonTrayFixedWidth =
-                launcherZoneView.preferredContentWidth() +
-                dockWidgetFixedWidth +
-                zoneEdgeInsetsWidth(compactZoneEdgeInsets)
+            let nonTrayFixedWidth = fixedZoneContentWidth + zoneEdgeInsetsWidth(compactZoneEdgeInsets)
             effectiveFixedZoneWidth =
                 nonTrayFixedWidth +
                 0
         } else {
             effectiveFixedZoneWidth =
-                launcherZoneView.preferredContentWidth() +
-                dockWidgetFixedWidth +
+                fixedZoneContentWidth +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)
         }
 

@@ -172,10 +172,13 @@ final class TaskbarPanel: NSPanel {
             self.screen ??
             NSScreen.screens.first
 
+        let strategy = settings.taskbarMode.strategy
+        let resolvedPosition = strategy.dockPosition(defaultPosition: settings.dockPosition)
+
         let nextFrame = Self.panelFrame(
             isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
             taskbarHeight: settings.taskbarHeight,
-            dockPosition: settings.dockPosition,
+            dockPosition: resolvedPosition,
             screen: resolvedScreen
         )
 
@@ -195,9 +198,11 @@ final class TaskbarPanel: NSPanel {
         let layoutMode = strategy.layoutMode(defaultLayoutMode: settings.layoutMode)
         let compactWidth: CGFloat? = strategy.usesCompactContentWidth(defaultUsesCompactWidth: settings.layoutMode.usesCompactWidth) ? compactContentWidth() : nil
 
+        let resolvedPosition = strategy.dockPosition(defaultPosition: settings.dockPosition)
+
         let chromeFrame = Self.chromeFrame(
             layoutMode: layoutMode,
-            dockPosition: settings.dockPosition,
+            dockPosition: resolvedPosition,
             compactContentWidth: compactWidth,
             bounds: rootView.bounds
         )
@@ -286,8 +291,9 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func updateVisualStyle(for frame: NSRect) {
-        let isFloating = settings.dockPosition == .floatingCenter
         let strategy = settings.taskbarMode.strategy
+        let resolvedPosition = strategy.dockPosition(defaultPosition: settings.dockPosition)
+        let isFloating = resolvedPosition == .floatingCenter
         let layoutMode = strategy.layoutMode(defaultLayoutMode: settings.layoutMode)
         let usesGlassChrome = layoutMode.usesGlassChrome
         let cornerRadius = (usesGlassChrome || isFloating) ? min(frame.height / 2, 18) : 0

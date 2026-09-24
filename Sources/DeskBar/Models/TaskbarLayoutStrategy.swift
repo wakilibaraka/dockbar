@@ -4,6 +4,7 @@ protocol TaskbarLayoutStrategy {
     // Panel Chrome
     var visualEffectMaterial: NSVisualEffectView.Material { get }
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode
+    func dockPosition(defaultPosition: DockPosition) -> DockPosition
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool
     
     // Content Layout
@@ -62,6 +63,10 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
         defaultLayoutMode
     }
     
+    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
+        defaultPosition
+    }
+    
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
         true
     }
@@ -108,13 +113,17 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
     func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
         let title = appGroup.appName
         let showsTitle = settings.showTitles && !title.isEmpty
-        titleLabel.isHidden = !showsTitle
-        titleLeadingConstraint?.isActive = showsTitle
-        titleTrailingConstraint?.isActive = showsTitle
-        windowsIconCenterConstraint?.isActive = false
+        let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
         
-        if showsTitle {
-            let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
+        let hasRoomForText = cappedWidth >= 120
+        let shouldShowTitle = showsTitle && hasRoomForText
+        
+        titleLabel.isHidden = !shouldShowTitle
+        titleLeadingConstraint?.isActive = shouldShowTitle
+        titleTrailingConstraint?.isActive = shouldShowTitle
+        windowsIconCenterConstraint?.isActive = !shouldShowTitle
+        
+        if shouldShowTitle {
             maxWidthConstraint?.constant = cappedWidth
         } else {
             maxWidthConstraint?.constant = settings.taskbarHeight + 8
@@ -142,6 +151,10 @@ struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
     
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
         .fullWidthGlass
+    }
+    
+    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
+        .bottomCenter
     }
     
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
@@ -202,19 +215,11 @@ struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
     }
     
     func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        let title = appGroup.appName
-        let showsTitle = settings.showTitles && !title.isEmpty
-        titleLabel.isHidden = !showsTitle
-        titleLeadingConstraint?.isActive = showsTitle
-        titleTrailingConstraint?.isActive = showsTitle
-        windowsIconCenterConstraint?.isActive = !showsTitle
-        
-        if showsTitle {
-            let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
-            maxWidthConstraint?.constant = cappedWidth
-        } else {
-            maxWidthConstraint?.constant = 48
-        }
+        titleLabel.isHidden = true
+        titleLeadingConstraint?.isActive = false
+        titleTrailingConstraint?.isActive = false
+        windowsIconCenterConstraint?.isActive = true
+        maxWidthConstraint?.constant = 48
     }
     
     func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
@@ -240,6 +245,10 @@ struct MacTaskbarStrategy: TaskbarLayoutStrategy {
     
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
         .compactGlass
+    }
+    
+    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
+        .floatingCenter
     }
     
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
