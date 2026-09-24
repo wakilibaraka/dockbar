@@ -51,6 +51,7 @@ final class WeatherWidgetView: NSView {
     @objc private func togglePopover() {
         if let _ = flyout, flyout?.isShown == true {
             flyout?.performClose(nil)
+            flyout = nil
             return
         }
         let newPopover = BorderlessFlyout()

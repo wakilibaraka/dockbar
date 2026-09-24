@@ -73,17 +73,15 @@ final class LaunchpickManager {
             panel?.orderOut(nil)
             panel = nil
             
-            if flyout == nil {
-                let newPopover = BorderlessFlyout()
-                
-                let vc = NSViewController()
-                vc.view = hostingView
-                vc.preferredContentSize = NSSize(width: 680, height: 680)
-                newPopover.contentViewController = vc
-                self.flyout = newPopover
-            }
+            flyout?.performClose(nil)
             
-            flyout?.show(contentViewController: flyout!.contentViewController!, relativeTo: view.bounds, of: view)
+            let newPopover = BorderlessFlyout()
+            let vc = NSViewController()
+            vc.view = hostingView
+            vc.preferredContentSize = NSSize(width: 680, height: 680)
+            
+            newPopover.show(contentViewController: vc, relativeTo: view.bounds, of: view)
+            self.flyout = newPopover
         } else {
             // Use Panel
             flyout?.performClose(nil)
@@ -141,6 +139,7 @@ final class LaunchpickManager {
     func hide() {
         panel?.orderOut(nil)
         flyout?.performClose(nil)
+        flyout = nil
         removeMonitors()
     }
     

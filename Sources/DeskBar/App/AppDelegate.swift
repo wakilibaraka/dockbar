@@ -445,23 +445,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func handleStatusItemClick(_ sender: Any?) {
         guard let button = statusItem?.button else { return }
         
-        if let popover = self.batteryFlyout {
-            if popover.isShown {
-                closePopover(nil)
-            } else {
-                popover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
-                self.batteryFlyout = popover
-                NSApp.activate(ignoringOtherApps: true)
-                
-                self.popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-                    self?.closePopover(nil)
-                }
-            }
+        if let popover = self.batteryFlyout, popover.isShown {
+            closePopover(nil)
+            return
+        }
+        
+        self.batteryFlyout?.performClose(nil)
+        let newPopover = BorderlessFlyout()
+        newPopover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
+        self.batteryFlyout = newPopover
+        NSApp.activate(ignoringOtherApps: true)
+        
+        self.popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.closePopover(nil)
         }
     }
     
     private func closePopover(_ sender: Any?) {
         self.batteryFlyout?.performClose(sender)
+        self.batteryFlyout = nil
         if let monitor = self.popoverEventMonitor {
             NSEvent.removeMonitor(monitor)
             self.popoverEventMonitor = nil

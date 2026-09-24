@@ -39,9 +39,8 @@ final class ConnectivityTrayView: NSStackView {
         }
         
         let newPopover = BorderlessFlyout()
-        
-        newPopover.contentViewController = QuickSettingsViewController(settings: settings, manager: manager)
-        newPopover.show(contentViewController: QuickSettingsViewController(settings: settings, manager: manager), relativeTo: quickSettingsButton.bounds, of: quickSettingsButton)
+        let vc = QuickSettingsViewController(settings: settings, manager: manager)
+        newPopover.show(contentViewController: vc, relativeTo: quickSettingsButton.bounds, of: quickSettingsButton)
         self.flyout = newPopover
     }
 }

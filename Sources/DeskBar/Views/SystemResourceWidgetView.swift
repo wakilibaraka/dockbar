@@ -148,18 +148,37 @@ final class SystemResourceWidgetView: NSView {
     }
     
     // MARK: - Interaction
-    private var flyout: BorderlessFlyout = BorderlessFlyout()
+    private var flyout: BorderlessFlyout?
     
     private var popoverEventMonitor: Any?
 
     override func mouseDown(with event: NSEvent) {
-        if flyout.isShown {
+        if flyout?.isShown == true {
             closePopover()
             return
         }
         
-        let vc = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
-        flyout.show(contentViewController: vc, relativeTo: bounds, of: self)
+        flyout?.performClose(nil)
+        
+        let newFlyout = BorderlessFlyout()
+        let rootVC = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
+        
+        // Ensure we calculate the full fitting size for the content
+        rootVC.view.layoutSubtreeIfNeeded()
+        let fittingSize = rootVC.view.fittingSize
+        rootVC.view.frame = NSRect(origin: .zero, size: fittingSize)
+        
+        let scrollView = NSScrollView(frame: NSRect(origin: .zero, size: fittingSize))
+        scrollView.hasVerticalScroller = true
+        scrollView.drawsBackground = false
+        scrollView.documentView = rootVC.view
+        
+        let vc = NSViewController()
+        vc.view = scrollView
+        vc.preferredContentSize = fittingSize
+        
+        newFlyout.show(contentViewController: vc, relativeTo: bounds, of: self)
+        self.flyout = newFlyout
         NSApp.activate(ignoringOtherApps: true)
         
         if popoverEventMonitor == nil {
@@ -170,7 +189,8 @@ final class SystemResourceWidgetView: NSView {
     }
     
     private func closePopover() {
-        flyout.performClose(nil)
+        flyout?.performClose(nil)
+        flyout = nil
         if let monitor = popoverEventMonitor {
             NSEvent.removeMonitor(monitor)
             popoverEventMonitor = nil

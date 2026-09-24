@@ -64,8 +64,15 @@ open class BorderlessFlyout: NSPanel {
         
         if let effectView = contentViewController.view as? NSVisualEffectView {
             setupRoundedCorners(for: effectView)
+            self.contentView = effectView
+        } else if let existingEffectView = self.contentView as? NSVisualEffectView, existingEffectView.subviews.contains(contentViewController.view) {
+            setupRoundedCorners(for: existingEffectView)
+            existingEffectView.frame = finalFrame // we will set frame to bounds later... wait.
+            existingEffectView.frame.origin = .zero
+            existingEffectView.frame.size = finalFrame.size
+            contentViewController.view.frame = existingEffectView.bounds
         } else {
-            let effectView = NSVisualEffectView(frame: self.contentView?.bounds ?? .zero)
+            let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: finalFrame.size))
             effectView.material = NSVisualEffectView.Material.popover
             effectView.blendingMode = NSVisualEffectView.BlendingMode.behindWindow
             effectView.state = NSVisualEffectView.State.active
@@ -76,6 +83,10 @@ open class BorderlessFlyout: NSPanel {
             effectView.addSubview(contentViewController.view)
             self.contentView = effectView
         }
+        
+        if let lm = localMouseDownMonitor { NSEvent.removeMonitor(lm); localMouseDownMonitor = nil }
+        if let gm = globalMouseDownMonitor { NSEvent.removeMonitor(gm); globalMouseDownMonitor = nil }
+        if let lk = localKeyboardMonitor { NSEvent.removeMonitor(lk); localKeyboardMonitor = nil }
         
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             guard let self = self else { return event }
@@ -108,10 +119,14 @@ open class BorderlessFlyout: NSPanel {
         view.layer?.borderColor = NSColor.white.withAlphaComponent(0.15).cgColor
     }
     
-    open override func performClose(_ sender: Any?) {
+    open override func close() {
         if let lm = localMouseDownMonitor { NSEvent.removeMonitor(lm); localMouseDownMonitor = nil }
         if let gm = globalMouseDownMonitor { NSEvent.removeMonitor(gm); globalMouseDownMonitor = nil }
         if let lk = localKeyboardMonitor { NSEvent.removeMonitor(lk); localKeyboardMonitor = nil }
+        super.close()
+    }
+    
+    open override func performClose(_ sender: Any?) {
         self.close()
     }
 }
