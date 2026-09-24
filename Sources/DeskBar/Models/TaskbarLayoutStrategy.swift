@@ -8,7 +8,7 @@ protocol TaskbarLayoutStrategy {
     
     // Content Layout
     func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat]
-    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String])
+    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView?
     func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets)
     
     // Window Grouping
@@ -72,13 +72,9 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
         originalWidths
     }
     
-    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String]) {
+    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
         windowsTrayClusterView.removeFromSuperview()
-        for widgetID in orderedIDs {
-            if let view = viewsByID[widgetID], view.superview == nil {
-                zonesStackView.addArrangedSubview(view)
-            }
-        }
+        return zonesStackView
     }
     
     func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
@@ -158,17 +154,12 @@ struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
         originalWidths + [clusterWidth + 12]
     }
     
-    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String]) {
-        for widgetID in orderedIDs {
-            if let view = viewsByID[widgetID], view.superview == nil {
-                if let tray = windowsTrayClusterView as? WindowsTrayClusterView {
-                    tray.addWidget(view)
-                }
-            }
-        }
+    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
         if windowsTrayClusterView.superview == nil {
             zonesStackView.addArrangedSubview(windowsTrayClusterView)
+            zonesStackView.setCustomSpacing(4, after: windowsTrayClusterView)
         }
+        return windowsTrayClusterView
     }
     
     func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
@@ -261,11 +252,9 @@ struct MacTaskbarStrategy: TaskbarLayoutStrategy {
         []
     }
     
-    func applyDockWidgetOrder(zonesStackView: NSStackView, windowsTrayClusterView: NSView, viewsByID: [String: NSView], orderedIDs: [String]) {
+    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
         windowsTrayClusterView.removeFromSuperview()
-        for widgetID in orderedIDs {
-            viewsByID[widgetID]?.removeFromSuperview()
-        }
+        return nil // Mac mode uses NSStatusItems managed by AppDelegate, so no dock container
     }
     
     func applyModeLayout(zonesStackView: NSStackView, launcherZoneView: NSView, startButtonView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
