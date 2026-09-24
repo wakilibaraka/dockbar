@@ -32,6 +32,7 @@ final class TaskbarPanel: NSPanel {
         let frame = Self.panelFrame(
             isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
             taskbarHeight: settings.taskbarHeight,
+            layoutMode: settings.layoutMode,
             screen: screen
         )
 
@@ -133,6 +134,7 @@ final class TaskbarPanel: NSPanel {
         let nextFrame = Self.panelFrame(
             isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
             taskbarHeight: settings.taskbarHeight,
+            layoutMode: settings.layoutMode,
             screen: resolvedScreen
         )
 
@@ -174,6 +176,7 @@ final class TaskbarPanel: NSPanel {
     private static func panelFrame(
         isAccessibilityGranted: Bool,
         taskbarHeight: CGFloat,
+        layoutMode: DeskBarLayoutMode,
         screen: NSScreen?
     ) -> NSRect {
         guard let screen else {
@@ -183,9 +186,14 @@ final class TaskbarPanel: NSPanel {
         let contentHeight = max(taskbarHeight, minimumContentHeight)
         let height = contentHeight
 
+        var yPos = screen.frame.origin.y
+        if layoutMode == .floatingCenter {
+            yPos += 12 // margin from screen edge
+        }
+        
         return NSRect(
             x: screen.frame.origin.x,
-            y: screen.frame.origin.y,
+            y: yPos,
             width: screen.frame.width,
             height: height
         )
@@ -203,7 +211,7 @@ final class TaskbarPanel: NSPanel {
             width = bounds.width
         case .fullWidthGlass:
             width = max(120, bounds.width - glassHorizontalMargin * 2)
-        case .compact, .compactGlass:
+        case .compact, .compactGlass, .floatingCenter:
             let maximumWidth = max(120, bounds.width - compactHorizontalMargin * 2)
             let minimumWidth = min(compactMinimumWidth, maximumWidth)
             let desiredWidth = compactContentWidth ?? min(compactFallbackWidth, maximumWidth)
@@ -298,11 +306,11 @@ final class TaskbarPanel: NSPanel {
 
 private extension DeskBarLayoutMode {
     var usesCompactWidth: Bool {
-        self == .compact || self == .compactGlass
+        self == .compact || self == .compactGlass || self == .floatingCenter
     }
 
     var usesGlassChrome: Bool {
-        self == .compactGlass || self == .fullWidthGlass
+        self == .compactGlass || self == .fullWidthGlass || self == .floatingCenter
     }
 
     var limitsHitTestingToChrome: Bool {
