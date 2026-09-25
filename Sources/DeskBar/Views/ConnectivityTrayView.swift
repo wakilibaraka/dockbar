@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 final class ConnectivityTrayView: NSStackView {
     private let quickSettingsButton = CalendarTrayButton()
@@ -6,6 +7,9 @@ final class ConnectivityTrayView: NSStackView {
     private let manager = QuickSettingsManager.shared
     
     private var flyout: BorderlessFlyout?
+    private var win11Constraint: NSLayoutConstraint?
+    private var cancellables = Set<AnyCancellable>()
+
 
     init(settings: TaskbarSettings) {
         self.settings = settings
@@ -19,20 +23,32 @@ final class ConnectivityTrayView: NSStackView {
         quickSettingsButton.toolTip = "Quick Settings"
 
         addArrangedSubview(quickSettingsButton)
-        NSLayoutConstraint.activate([
-            quickSettingsButton.widthAnchor.constraint(equalToConstant: 32)
-        ])
+        
+        win11Constraint = quickSettingsButton.widthAnchor.constraint(equalToConstant: 32)
+        win11Constraint?.isActive = settings.layoutMode == .windows11
 
         setContentHuggingPriority(.required, for: .horizontal)
         setContentCompressionResistancePriority(.required, for: .horizontal)
+        
+        settings.$layoutMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] mode in
+                self?.win11Constraint?.isActive = mode == .windows11
+            }
+            .store(in: &cancellables)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+
     func preferredContentWidth() -> CGFloat {
-        return 32 // fixed width for connectivity button
+        if settings.layoutMode == .windows11 {
+            return 32
+        }
+        return quickSettingsButton.fittingSize.width
     }
+
 
     @objc private func toggleQuickSettings() {
         if let popover = flyout, popover.isShown {
