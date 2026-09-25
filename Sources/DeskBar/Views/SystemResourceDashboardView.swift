@@ -290,14 +290,14 @@ class AccessoryAppsViewModel: ObservableObject {
     @Published var isRefreshing = false
     
     init() {
-        refreshApps()
+        refreshApps(sync: true)
     }
     
-    func refreshApps() {
+    func refreshApps(sync: Bool = false) {
         guard !isRefreshing else { return }
         isRefreshing = true
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        let work = {
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/ps")
             task.arguments = ["-x", "-o", "pid,rss"]
@@ -337,11 +337,29 @@ class AccessoryAppsViewModel: ObservableObject {
                     return ($0.localizedName ?? "") < ($1.localizedName ?? "")
                 }
             
-            DispatchQueue.main.async {
-                self.apps = filtered
-                self.memoryMap = memMap
-                self.isRefreshing = false
+            if sync {
+                DispatchQueue.main.async {
+                    self.apps = filtered
+                    self.memoryMap = memMap
+                    self.isRefreshing = false
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.apps = filtered
+                    self.memoryMap = memMap
+                    self.isRefreshing = false
+                }
             }
+            return (filtered, memMap)
+        }
+        
+        if sync {
+            let (f, m) = work()
+            self.apps = f
+            self.memoryMap = m
+            self.isRefreshing = false
+        } else {
+            DispatchQueue.global(qos: .userInitiated).async { _ = work() }
         }
     }
 }
