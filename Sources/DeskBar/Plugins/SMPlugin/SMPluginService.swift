@@ -529,6 +529,8 @@ final class SMPluginService: ObservableObject {
     }
 
     func refresh(forceTerminalMapping: Bool = false) {
+        return
+
         guard isEnabled else {
             windowAnnotations = [:]
             agentTabs = []

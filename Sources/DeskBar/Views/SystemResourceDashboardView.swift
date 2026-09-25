@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SystemResourceDashboardView: View {
     @ObservedObject var monitor: SystemResourceMonitor
-    var smPluginService: SMPluginService?
 
     
     // Theme Colors
@@ -12,12 +11,6 @@ struct SystemResourceDashboardView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            
-            // 2. Antigravity Activity
-            if let smPluginService = smPluginService {
-                AgentActivitySectionView(service: smPluginService)
-                Divider().overlay(borderDark)
-            }
             
             // 3. System Resources
             SystemResourcesSectionView(monitor: monitor)
@@ -41,46 +34,7 @@ struct SystemResourceDashboardView: View {
 }
 
 
-// MARK: - Antigravity Activity
-struct AgentActivitySectionView: View {
-    @ObservedObject var service: SMPluginService
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Antigravity Activity")
-                .font(.system(size: 14, weight: .semibold))
-            
-            HStack(spacing: 8) {
-                AgentBadge(title: "ACT", value: service.watchSummary.workingCount, color: Color(nsColor: NSColor(red: 0.42, green: 0.8, blue: 0.67, alpha: 1.0))) // Soft Green
-                AgentBadge(title: "THK", value: service.watchSummary.thinkingCount, color: Color(nsColor: NSColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0))) // Soft Yellow
-                AgentBadge(title: "PRM", value: service.watchSummary.waitingPermissionCount, color: Color.orange)
-                AgentBadge(title: "IDL", value: service.watchSummary.idleCount, color: Color.secondary)
-            }
-        }
-    }
-}
 
-struct AgentBadge: View {
-    let title: String
-    let value: Int
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundColor(value > 0 ? color : Color.secondary.opacity(0.5))
-            Text("\(value)")
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                .foregroundColor(value > 0 ? .primary : Color.secondary.opacity(0.5))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(Color.primary.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.05), lineWidth: 1))
-    }
-}
 
 // MARK: - System Resources
 struct SystemResourcesSectionView: View {

@@ -5,7 +5,6 @@ import SwiftUI
 final class SystemResourceWidgetView: NSView {
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
-    private let smPluginService: SMPluginService?
     
     private let containerView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
@@ -17,11 +16,10 @@ final class SystemResourceWidgetView: NSView {
     
     private let isCollapsedInstance: Bool
     
-    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, smPluginService: SMPluginService? = nil, displayID: CGDirectDisplayID? = nil, isCollapsedInstance: Bool = false) {
+    init(settings: TaskbarSettings, monitor: SystemResourceMonitor,  displayID: CGDirectDisplayID? = nil, isCollapsedInstance: Bool = false) {
         self.settings = settings
         self.monitor = monitor
-        self.smPluginService = smPluginService
-        self.isCollapsedInstance = isCollapsedInstance
+                self.isCollapsedInstance = isCollapsedInstance
         graphView = NSHostingView(
             rootView: MetricGraphView(samples: [], accent: .green, style: .filledWave, maximum: 100)
         )
@@ -165,7 +163,7 @@ final class SystemResourceWidgetView: NSView {
             self?.flyout = nil
         }
         
-        let rootVC = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService))
+        let rootVC = NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor))
         
         // Force constraints so fitting size is accurate
         rootVC.view.translatesAutoresizingMaskIntoConstraints = false

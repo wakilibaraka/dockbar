@@ -1,16 +1,5 @@
 import SwiftUI
 
-class QuickSettingsTabState: ObservableObject {
-    @Published var items: [QuickSettingItem] = []
-    
-    struct QuickSettingItem: Identifiable, Equatable {
-        let id: String
-        let title: String
-        let symbol: String
-        var isEnabled: Bool
-    }
-}
-
 struct TaskbarElementsTab: View {
     @ObservedObject var settings: TaskbarSettings
     
@@ -19,7 +8,7 @@ struct TaskbarElementsTab: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Battery Widget
                 GroupBox(label: Text("Battery Widget").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 12) {
+                    Form {
                         Picker("Location:", selection: $settings.batteryWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
@@ -55,50 +44,12 @@ struct TaskbarElementsTab: View {
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
 
                 GroupBox(label: Text("Calendar & Quick Settings").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 12) {
+                    Form {
                         Picker("Location:", selection: $settings.connectivityTrayLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
-                            }
-
-                            GroupBox(label: Text("Weather Widget").font(.headline)) {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
-                                    Picker("Location:", selection: $settings.weatherWidgetLocation) {
-                                        ForEach(WidgetLocation.allCases) { loc in
-                                            Text(loc.displayName).tag(loc)
-                                        }
-                                    }
-                                    .pickerStyle(SegmentedPickerStyle())
-                                    .frame(maxWidth: 200)
-                                    Picker("Units:", selection: $settings.weatherUnit) {
-                                        ForEach(WeatherUnit.allCases) { unit in
-                                            Text(unit.displayName).tag(unit)
-                                        }
-                                    }
-                                    Picker("Refresh:", selection: $settings.weatherPollingInterval) {
-                                        Text("15 minutes").tag(TimeInterval(900))
-                                        Text("30 minutes").tag(TimeInterval(1800))
-                                        Text("1 hour").tag(TimeInterval(3600))
-                                    }
-                                    Picker("Location mode:", selection: $settings.weatherLocationMode) {
-                                        ForEach(WeatherLocationMode.allCases) { mode in
-                                            Text(mode.displayName).tag(mode)
-                                        }
-                                    }
-                                    if settings.weatherLocationMode == .manual {
-                                        HStack {
-                                            TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
-                                            TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
-                                        }
-                                    }
-                                }
-                                .disabled(!settings.weatherEnabled)
-                                .padding(.top, 8)
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
@@ -108,9 +59,47 @@ struct TaskbarElementsTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                GroupBox(label: Text("Weather Widget").font(.headline)) {
+                    Form {
+                        Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
+                        
+                        Picker("Units:", selection: $settings.weatherUnit) {
+                            ForEach(WeatherUnit.allCases) { unit in
+                                Text(unit.displayName).tag(unit)
+                            }
+                        }
+                        .frame(maxWidth: 200)
+                        
+                        Picker("Refresh:", selection: $settings.weatherPollingInterval) {
+                            Text("15 minutes").tag(TimeInterval(900))
+                            Text("30 minutes").tag(TimeInterval(1800))
+                            Text("1 hour").tag(TimeInterval(3600))
+                        }
+                        .frame(maxWidth: 200)
+                        
+                        Picker("Location mode:", selection: $settings.weatherLocationMode) {
+                            ForEach(WeatherLocationMode.allCases) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .frame(maxWidth: 200)
+                        
+                        if settings.weatherLocationMode == .manual {
+                            HStack {
+                                TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
+                                TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
+                            }
+                            .frame(maxWidth: 300)
+                        }
+                    }
+                    .disabled(!settings.weatherEnabled)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 // System Resources
                 GroupBox(label: Text("System Resources Widget").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 12) {
+                    Form {
                         Picker("Location:", selection: $settings.systemResourceWidgetLocation) {
                             ForEach(WidgetLocation.allCases) { loc in
                                 Text(loc.displayName).tag(loc)
@@ -134,27 +123,6 @@ struct TaskbarElementsTab: View {
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
-                // Session Manager Plugin
-                GroupBox(label: Text("Session Manager Plugin").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Enable Session Manager plugin", isOn: $settings.enableSessionManagerPlugin)
-                        
-                        Group {
-                            Toggle("Show agent titles", isOn: $settings.showSessionManagerAgentTitles)
-                            Toggle("Show activity indicators", isOn: $settings.showSessionManagerActivityIndicators)
-                            Toggle("Animate activity", isOn: $settings.animateSessionManagerActivity)
-                                .disabled(!settings.showSessionManagerActivityIndicators)
-                            Toggle("Enable terminal actions", isOn: $settings.enableSessionManagerTerminalActions)
-                            Toggle("Show action button", isOn: $settings.showSessionManagerActionButton)
-                        }
-                        .disabled(!settings.enableSessionManagerPlugin)
-                        .padding(.leading, 16)
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
             }
             .padding(20)
         }

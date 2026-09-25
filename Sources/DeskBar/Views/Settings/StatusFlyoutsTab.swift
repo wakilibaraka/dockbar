@@ -133,3 +133,13 @@ struct StatusFlyoutsTab: View {
         settings.enabledQuickSettings = enabled
     }
 }
+
+class QuickSettingsTabState: ObservableObject {
+    struct QuickSettingItem: Identifiable {
+        let id: String
+        let title: String
+        let symbol: String
+        var isEnabled: Bool
+    }
+    @Published var items: [QuickSettingItem] = []
+}

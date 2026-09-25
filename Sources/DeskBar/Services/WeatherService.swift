@@ -2,6 +2,27 @@ import Foundation
 import Combine
 import CoreLocation
 
+struct CachedWeather: Codable {
+    let temperature: Double?
+    let apparentTemperature: Double?
+    let humidity: Double?
+    let windSpeed: Double?
+    let weatherCode: Int?
+    let symbolName: String
+    let conditionText: String
+    let locationName: String?
+    let lastUpdated: Date?
+    let highTemperature: Double?
+    let lowTemperature: Double?
+    let hourlyForecast: [HourlyForecastCache]
+    
+    struct HourlyForecastCache: Codable {
+        let time: Date
+        let temperature: Double
+        let weatherCode: Int
+    }
+}
+
 struct WeatherConditions {
     enum State {
         case noLocation
@@ -162,8 +183,52 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
                 }
                 let payload = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
                 self?.conditions = Self.conditions(from: payload, locationName: name)
+                
+                // Cache it
+                if let conditions = self?.conditions {
+                    let cache = CachedWeather(
+                        temperature: conditions.temperature,
+                        apparentTemperature: conditions.apparentTemperature,
+                        humidity: conditions.humidity,
+                        windSpeed: conditions.windSpeed,
+                        weatherCode: conditions.weatherCode,
+                        symbolName: conditions.symbolName,
+                        conditionText: conditions.conditionText,
+                        locationName: conditions.locationName,
+                        lastUpdated: conditions.lastUpdated,
+                        highTemperature: conditions.highTemperature,
+                        lowTemperature: conditions.lowTemperature,
+                        hourlyForecast: conditions.hourlyForecast.map { CachedWeather.HourlyForecastCache(time: $0.time, temperature: $0.temperature, weatherCode: $0.weatherCode) }
+                    )
+                    if let encoded = try? JSONEncoder().encode(cache) {
+                        UserDefaults.standard.set(encoded, forKey: "DeskBarWeatherCache")
+                    }
+                }
             } catch {
-                self?.conditions = WeatherConditions(state: .error("Weather unavailable"))
+                // Check cache if less than 24h old
+                if let cachedData = UserDefaults.standard.data(forKey: "DeskBarWeatherCache"),
+                   let cache = try? JSONDecoder().decode(CachedWeather.self, from: cachedData),
+                   let lastUpdated = cache.lastUpdated,
+                   Date().timeIntervalSince(lastUpdated) < 24 * 3600 {
+                    
+                    self?.conditions = WeatherConditions(
+                        state: .available,
+                        temperature: cache.temperature,
+                        apparentTemperature: cache.apparentTemperature,
+                        humidity: cache.humidity,
+                        windSpeed: cache.windSpeed,
+                        weatherCode: cache.weatherCode,
+                        symbolName: cache.symbolName,
+                        conditionText: cache.conditionText + " (Cached)",
+                        locationName: cache.locationName,
+                        lastUpdated: cache.lastUpdated,
+                        highTemperature: cache.highTemperature,
+                        lowTemperature: cache.lowTemperature,
+                        hourlyForecast: cache.hourlyForecast.map { HourlyForecast(time: $0.time, temperature: $0.temperature, weatherCode: $0.weatherCode) }
+                    )
+                } else {
+                    self?.conditions = WeatherConditions(state: .error("Weather unavailable"))
+                }
             }
         }
     }

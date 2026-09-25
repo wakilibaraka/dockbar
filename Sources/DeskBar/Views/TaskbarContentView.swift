@@ -43,7 +43,7 @@ final class TaskbarContentView: NSView {
     private let compactTaskZoneSpacerWidth: CGFloat = 8
     static let minimumResponsiveContentWidth: CGFloat = 320
     static let compactOuterInsetContentWidthThreshold: CGFloat = 2200
-    static let compactTrailingOverflowGuardWidth: CGFloat = 16
+    static let compactTrailingOverflowGuardWidth: CGFloat = 0
     private let regularZoneEdgeInsets = NSEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
     private let compactZoneEdgeInsets = NSEdgeInsets(top: 6, left: 0, bottom: 6, right: 0)
 
@@ -113,7 +113,7 @@ final class TaskbarContentView: NSView {
         systemResourceWidgetView = SystemResourceWidgetView(
             settings: settings,
             monitor: systemResourceMonitor,
-            smPluginService: smPluginService,
+            
             displayID: displayID
         )
                 self.connectivityTrayView = ConnectivityTrayView(settings: settings)

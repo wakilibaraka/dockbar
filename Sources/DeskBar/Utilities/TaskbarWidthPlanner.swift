@@ -46,7 +46,7 @@ enum TaskbarWidthPlanner {
             }
         }
 
-        return max(largestMinimumWidth, floor(low + 0.001))
+        return max(largestMinimumWidth, low)
     }
 
     private static func totalWidth(for items: [TaskbarWidthPlanItem], cap: CGFloat?) -> CGFloat {

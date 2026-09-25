@@ -287,7 +287,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         guard let validSettings = self.settings,
                               let validMonitor = self.systemResourceMonitor,
                               let validSMPlugin = self.smPluginService else { return }
-                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, smPluginService: validSMPlugin, displayID: CGMainDisplayID())
+                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, displayID: CGMainDisplayID())
                         view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
                         item.button?.addSubview(view)
                         item.length = view.preferredContentWidth()
