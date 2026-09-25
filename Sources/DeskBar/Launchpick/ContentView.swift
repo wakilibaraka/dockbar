@@ -98,7 +98,7 @@ struct LaunchpickItem: Identifiable {
 
 struct ContentView: View {
     @ObservedObject var state: LaunchpickState
-    @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .list
+    @AppStorage("allAppsLayout") private var allAppsLayout: AllAppsLayout = .grid
     @AppStorage("showAllPinned") private var showAllPinned: Bool = false
     @AppStorage("launchpickShowPinnedApps") private var launchpickShowPinnedApps: Bool = true
     @AppStorage("launchpickShowMostUsedApps") private var launchpickShowMostUsedApps: Bool = false
