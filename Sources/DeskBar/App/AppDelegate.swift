@@ -588,6 +588,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 systemResourceMonitor: systemResourceMonitor,
                 thumbnailService: thumbnailService,
                 displayID: displayID,
+                weatherService: weatherService,
                 openSettingsHandler: { [weak self] in
                     self?.openSettings(nil)
                 }
