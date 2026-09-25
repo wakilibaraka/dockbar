@@ -20,6 +20,16 @@ struct WeatherConditions {
     var conditionText = "Location unavailable"
     var locationName: String?
     var lastUpdated: Date?
+    var highTemperature: Double?
+    var lowTemperature: Double?
+    var hourlyForecast: [HourlyForecast] = []
+}
+
+struct HourlyForecast: Identifiable {
+    let id = UUID()
+    let time: Date
+    let temperature: Double
+    let weatherCode: Int
 }
 
 @MainActor
@@ -136,6 +146,9 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
             URLQueryItem(name: "latitude", value: String(location.coordinate.latitude)),
             URLQueryItem(name: "longitude", value: String(location.coordinate.longitude)),
             URLQueryItem(name: "current", value: "temperature_2m,weather_code,apparent_temperature,relative_humidity_2m,wind_speed_10m"),
+            URLQueryItem(name: "hourly", value: "temperature_2m,weather_code"),
+            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min"),
+            URLQueryItem(name: "timeformat", value: "unixtime"),
             URLQueryItem(name: "timezone", value: "auto")
         ]
 
@@ -148,14 +161,15 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
                     throw URLError(.badServerResponse)
                 }
                 let payload = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
-                self?.conditions = Self.conditions(from: payload.current, locationName: name)
+                self?.conditions = Self.conditions(from: payload, locationName: name)
             } catch {
                 self?.conditions = WeatherConditions(state: .error("Weather unavailable"))
             }
         }
     }
 
-    private static func conditions(from current: OpenMeteoCurrent, locationName: String) -> WeatherConditions {
+    private static func conditions(from response: OpenMeteoResponse, locationName: String) -> WeatherConditions {
+        let current = response.current
         let description = description(for: current.weatherCode)
         return WeatherConditions(
             state: .available,
@@ -167,8 +181,31 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
             symbolName: description.symbol,
             conditionText: description.text,
             locationName: locationName,
-            lastUpdated: Date()
+            lastUpdated: Date(),
+            highTemperature: response.daily?.temperatureMax.first,
+            lowTemperature: response.daily?.temperatureMin.first,
+            hourlyForecast: Self.parseHourly(response.hourly)
         )
+    }
+
+    
+    static func icon(for weatherCode: Int) -> String {
+        return description(for: weatherCode).symbol
+    }
+
+    private static func parseHourly(_ hourly: OpenMeteoHourly?) -> [HourlyForecast] {
+        guard let hourly = hourly else { return [] }
+        var result: [HourlyForecast] = []
+        let now = Date().timeIntervalSince1970
+        for i in 0..<min(hourly.time.count, hourly.temperature.count) {
+            let t = hourly.time[i]
+            if TimeInterval(t) > now - 3600 {
+                let code = i < hourly.weatherCode.count ? hourly.weatherCode[i] : 0
+                result.append(HourlyForecast(time: Date(timeIntervalSince1970: TimeInterval(t)), temperature: hourly.temperature[i], weatherCode: code))
+                if result.count >= 6 { break }
+            }
+        }
+        return result
     }
 
     static func displayTemperature(_ temperature: Double, unit: WeatherUnit) -> String {
@@ -194,6 +231,8 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
 
 private struct OpenMeteoResponse: Decodable {
     let current: OpenMeteoCurrent
+    let hourly: OpenMeteoHourly?
+    let daily: OpenMeteoDaily?
 }
 
 private struct OpenMeteoCurrent: Decodable {
@@ -209,5 +248,29 @@ private struct OpenMeteoCurrent: Decodable {
         case apparentTemperature = "apparent_temperature"
         case humidity = "relative_humidity_2m"
         case windSpeed = "wind_speed_10m"
+    }
+}
+
+private struct OpenMeteoHourly: Decodable {
+    let time: [Int]
+    let temperature: [Double]
+    let weatherCode: [Int]
+    
+    enum CodingKeys: String, CodingKey {
+        case time
+        case temperature = "temperature_2m"
+        case weatherCode = "weather_code"
+    }
+}
+
+private struct OpenMeteoDaily: Decodable {
+    let time: [Int]
+    let temperatureMax: [Double]
+    let temperatureMin: [Double]
+    
+    enum CodingKeys: String, CodingKey {
+        case time
+        case temperatureMax = "temperature_2m_max"
+        case temperatureMin = "temperature_2m_min"
     }
 }

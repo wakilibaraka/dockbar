@@ -26,7 +26,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindowController: OnboardingWindowController?
     private var connectivityStatusItem: NSStatusItem?
     private var systemResourceStatusItem: NSStatusItem?
-    private var weatherStatusItem: NSStatusItem?
     private var weatherService: WeatherService?
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
@@ -247,12 +246,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let connectivityStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let systemResourceStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let weatherStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         self.statusItem = statusItem
         self.connectivityStatusItem = connectivityStatusItem
         self.systemResourceStatusItem = systemResourceStatusItem
-        self.weatherStatusItem = weatherStatusItem
 
         if let settings = self.settings {
             settings.$batteryWidgetLocation
@@ -307,22 +304,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 .store(in: &cancellables)
 
-            settings.$weatherEnabled
-                .combineLatest(settings.$weatherWidgetLocation)
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self, weak weatherStatusItem] enabled, location in
-                    MainActor.assumeIsolated {
-                        guard let self, let item = weatherStatusItem else { return }
-                        item.isVisible = enabled && location == .menuBar
-                        item.button?.subviews.forEach { $0.removeFromSuperview() }
-                        guard item.isVisible, let service = self.weatherService else { return }
-                        let view = WeatherWidgetView(service: service, settings: settings)
-                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                        item.button?.addSubview(view)
-                        item.length = view.preferredContentWidth()
-                    }
-                }
-                .store(in: &cancellables)
+
         }
         
         if let button = statusItem.button {
@@ -459,7 +441,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.popoverEventMonitor = nil
             }
         }
-        newPopover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
+        newPopover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView(weatherService: self.weatherService!).environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
         self.batteryFlyout = newPopover
         NSApp.activate(ignoringOtherApps: true)
         
@@ -604,7 +586,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 blacklistManager: blacklistManager,
                 pinnedAppManager: pinnedAppManager,
                 systemResourceMonitor: systemResourceMonitor,
-                weatherService: weatherService,
                 thumbnailService: thumbnailService,
                 displayID: displayID,
                 openSettingsHandler: { [weak self] in

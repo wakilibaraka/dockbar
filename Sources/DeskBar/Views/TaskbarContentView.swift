@@ -22,7 +22,6 @@ final class TaskbarContentView: NSView {
     private let launcherZoneView: LauncherZoneView
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
-    private let weatherWidgetView: WeatherWidgetView
     
         private let clusterDivider = NSView()
     private let axGetWindow: AXUIElementGetWindowFunc?
@@ -89,7 +88,6 @@ final class TaskbarContentView: NSView {
         blacklistManager: BlacklistManager,
         pinnedAppManager: PinnedAppManager,
         systemResourceMonitor: SystemResourceMonitor,
-        weatherService: WeatherService,
         thumbnailService: ThumbnailService? = nil,
         displayID: CGDirectDisplayID,
         openSettingsHandler: @escaping () -> Void
@@ -119,7 +117,6 @@ final class TaskbarContentView: NSView {
             displayID: displayID
         )
                 self.connectivityTrayView = ConnectivityTrayView(settings: settings)
-        self.weatherWidgetView = WeatherWidgetView(service: weatherService, settings: settings)
         if let symbol = dlsym(dlopen(nil, RTLD_LAZY), "_AXUIElementGetWindow") {
             axGetWindow = unsafeBitCast(symbol, to: AXUIElementGetWindowFunc.self)
         } else {
@@ -177,7 +174,6 @@ final class TaskbarContentView: NSView {
         var width: CGFloat = 1 // divider
         if settings.connectivityTrayLocation == .dock { width += connectivityTrayView.preferredContentWidth() + 8 }
         if settings.systemResourceWidgetLocation == .dock { width += systemResourceWidgetView.preferredContentWidth() + 8 }
-        if settings.weatherEnabled && settings.weatherWidgetLocation == .dock { width += weatherWidgetView.preferredContentWidth() + 8 }
         return width
     }
 
@@ -255,7 +251,6 @@ final class TaskbarContentView: NSView {
             launcherZoneView,
             systemResourceWidgetView,
             connectivityTrayView,
-            weatherWidgetView,
             leftTaskZoneSeparatorView,
             rightTaskZoneSeparatorView
         ].compactMap { $0 } + Array(taskItemViews.values)
@@ -377,7 +372,6 @@ final class TaskbarContentView: NSView {
         rightClusterStack.addArrangedSubview(clusterDivider)
         rightClusterStack.addArrangedSubview(connectivityTrayView)
         rightClusterStack.addArrangedSubview(systemResourceWidgetView)
-        rightClusterStack.addArrangedSubview(weatherWidgetView)
         
         zonesStackView.addArrangedSubview(rightClusterStack)
     }
@@ -386,7 +380,6 @@ final class TaskbarContentView: NSView {
     private func updateClusterDividerVisibility() {
         let hasRightWidgets = settings.connectivityTrayLocation == .dock
             || settings.systemResourceWidgetLocation == .dock
-            || (settings.weatherEnabled && settings.weatherWidgetLocation == .dock)
         clusterDivider.isHidden = !hasRightWidgets
     }
 
@@ -410,15 +403,7 @@ final class TaskbarContentView: NSView {
             }
             .store(in: &cancellables)
 
-        settings.$weatherEnabled
-            .combineLatest(settings.$weatherWidgetLocation)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] enabled, location in
-                self?.weatherWidgetView.isHidden = !enabled || location != .dock
-                self?.updateClusterDividerVisibility()
-                self?.schedulePreferredWidthNotification()
-            }
-            .store(in: &cancellables)
+
         windowManager.$visibleWindows
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in

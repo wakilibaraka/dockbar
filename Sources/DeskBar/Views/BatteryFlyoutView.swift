@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BatteryFlyoutView: View {
+    let weatherService: WeatherService
     @ObservedObject var systemStats = SystemStatsService.shared
     @ObservedObject var bluetoothStats = BluetoothStatsService.shared
     @ObservedObject var networkMonitor = NetworkMonitorService.shared
@@ -27,75 +28,121 @@ struct BatteryFlyoutView: View {
             
             Divider().opacity(0.4)
             
-            // Top Section: Battery & Devices
-            HStack(alignment: .top, spacing: 14) {
-                // Left Column: Battery Hero
-                VStack {
-                    Spacer()
-                    BatteryHeroView(stats: systemStats.batteryStats)
+            // Weather Section
+            if settings.weatherEnabled {
+                WeatherHeroView(service: weatherService)
+                    .environmentObject(settings)
+                    .padding(14)
+            }
+            
+            // Battery Mini Stats Bar
+            if let stats = systemStats.batteryStats {
+                HStack(spacing: 12) {
+                    // Battery Level
+                    HStack(spacing: 4) {
+                        Image(systemName: stats.isCharging ? "bolt.fill" : (stats.percentage < 20 ? "battery.25" : "battery.100"))
+                            .foregroundColor(stats.isCharging ? .yellow : (stats.percentage < 20 ? .red : .primary))
+                        Text("\(Int(stats.percentage))%")
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.primary.opacity(0.05))
+                    .cornerRadius(8)
+
+                    if stats.wattage > 0.1 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bolt.horizontal.fill")
+                            Text(String(format: "%.1f W", stats.wattage))
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.05))
+                        .cornerRadius(8)
+                    }
+                    
+                    if stats.temperature > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "thermometer.medium")
+                            Text(String(format: "%.0f°C", stats.temperature))
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(stats.temperature > 40 ? .orange : .primary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.05))
+                        .cornerRadius(8)
+                    }
+                    
+                    if stats.healthPercentage > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart.fill")
+                            Text("\(stats.healthPercentage)%")
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.05))
+                        .cornerRadius(8)
+                    }
+                    
                     Spacer()
                 }
-                .padding(14)
-                .frame(width: 170)
-                .frame(maxHeight: .infinity)
-                .background(Color.primary.opacity(0.04))
-                .cornerRadius(12)
-                
-                // Right Column: Connections
-                if settings.showConnections {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Connections")
-                        .font(.system(size: 10, weight: .bold))
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+            }
+            
+            // Connections Section
+            if settings.showConnections {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Connections")
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.secondary)
                         .padding(.leading, 4)
                     
-                    ScrollView(.vertical, showsIndicators: true) {
-                        VStack(spacing: 8) {
-                            // WiFi Card
-                            HStack(spacing: 8) {
-                                Image(systemName: networkMonitor.isConnected ? "wifi" : "wifi.slash")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(networkMonitor.isConnected ? .blue : .secondary)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.primary.opacity(0.04))
-                                    .clipShape(Circle())
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(networkMonitor.ssid ?? "Disconnected")
-                                        .font(.system(size: 11, weight: .medium))
-                                    
-                                    if let ip = networkMonitor.localIP {
-                                        Text(ip)
-                                            .font(.system(size: 9))
-                                            .foregroundColor(.secondary)
-                                    } else if let rssi = networkMonitor.rssi {
-                                        Text("\(rssi) dBm")
-                                            .font(.system(size: 9))
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                Spacer()
-                            }
-                            .padding(8)
-                            .background(Color.primary.opacity(0.03))
-                            .cornerRadius(8)
+                    VStack(spacing: 8) {
+                        // WiFi Card
+                        HStack(spacing: 8) {
+                            Image(systemName: networkMonitor.isConnected ? "wifi" : "wifi.slash")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(networkMonitor.isConnected ? .blue : .secondary)
+                                .frame(width: 26, height: 26)
+                                .background(Color.primary.opacity(0.04))
+                                .clipShape(Circle())
                             
-                            // Bluetooth Cards
-                            ForEach(bluetoothStats.connectedDevices) { device in
-                                DeviceCardView(device: device)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(networkMonitor.ssid ?? "Disconnected")
+                                    .font(.system(size: 12, weight: .medium))
+                                
+                                if let ip = networkMonitor.localIP {
+                                    Text(ip)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.secondary)
+                                } else if let rssi = networkMonitor.rssi {
+                                    Text("\(rssi) dBm")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            Spacer()
                         }
-                        .padding(.trailing, 4)
+                        .padding(10)
+                        .background(Color.primary.opacity(0.03))
+                        .cornerRadius(8)
+                        
+                        // Bluetooth Cards
+                        ForEach(bluetoothStats.connectedDevices) { device in
+                            DeviceCardView(device: device)
+                        }
                     }
                 }
                 .padding(14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.primary.opacity(0.04))
                 .cornerRadius(12)
-                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
             }
-            .frame(height: 190)
-            .padding(14)
 
             // Recently Closed Apps (Always render to maintain structure)
             VStack(alignment: .leading, spacing: 10) {
@@ -172,7 +219,7 @@ struct BatteryFlyoutView: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 14)
         }
-        .frame(width: 320)
+        .frame(width: 380)
         .onAppear {
             bluetoothStats.startMonitoring()
             networkMonitor.startMonitoring()
