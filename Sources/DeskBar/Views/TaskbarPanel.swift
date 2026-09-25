@@ -207,7 +207,7 @@ final class TaskbarPanel: NSPanel {
         let width: CGFloat
 
         switch layoutMode {
-        case .fullWidth:
+        case .fullWidth, .windows11:
             width = bounds.width
         case .fullWidthGlass:
             width = max(120, bounds.width - glassHorizontalMargin * 2)

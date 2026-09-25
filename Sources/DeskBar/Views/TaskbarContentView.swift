@@ -20,6 +20,9 @@ final class TaskbarContentView: NSView {
     private let blacklistManager: BlacklistManager
     private let displayID: CGDirectDisplayID
     private let launcherZoneView: LauncherZoneView
+    private let weatherWidgetView: DockWeatherWidgetView
+    private let clockWidgetView = DockClockWidgetView()
+    private let batteryWidgetView: DockBatteryWidgetView
     private let systemResourceWidgetView: SystemResourceWidgetView
     private let connectivityTrayView: ConnectivityTrayView
     
@@ -90,6 +93,7 @@ final class TaskbarContentView: NSView {
         systemResourceMonitor: SystemResourceMonitor,
         thumbnailService: ThumbnailService? = nil,
         displayID: CGDirectDisplayID,
+        weatherService: WeatherService,
         openSettingsHandler: @escaping () -> Void
     ) {
         self.windowManager = windowManager
@@ -103,6 +107,8 @@ final class TaskbarContentView: NSView {
         self.thumbnailService = thumbnailService
         self.displayID = displayID
         self.openSettingsHandler = openSettingsHandler
+        self.weatherWidgetView = DockWeatherWidgetView(weatherService: weatherService, settings: settings)
+        self.batteryWidgetView = DockBatteryWidgetView(settings: settings)
         launcherZoneView = LauncherZoneView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,
@@ -171,9 +177,24 @@ final class TaskbarContentView: NSView {
 
     /// Width contributed by right-cluster widgets that are currently in the Dock,
     /// plus the 1pt cluster-divider pixel. Use this at every layout budget site.
+    
+
+    private var leftZoneWidth: CGFloat {
+        var width: CGFloat = 0
+        if settings.layoutMode == .windows11 {
+            width += weatherWidgetView.preferredContentWidth()
+            width += launcherZoneView.preferredContentWidth() // Also subtract launcher width from budget!
+        } else {
+            width += launcherZoneView.preferredContentWidth()
+        }
+        return width
+    }
+
+
     private var dockWidgetFixedWidth: CGFloat {
         var width: CGFloat = 1 // divider
         if settings.connectivityTrayLocation == .dock { width += connectivityTrayView.preferredContentWidth() + 8 }
+        if settings.layoutMode == .windows11 { width += clockWidgetView.preferredContentWidth() + 8 + batteryWidgetView.preferredContentWidth() + 8 }
         if settings.systemResourceWidgetLocation == .dock { width += systemResourceWidgetView.preferredContentWidth() + 8 }
         return width
     }
@@ -181,7 +202,7 @@ final class TaskbarContentView: NSView {
     func preferredCompactWidth() -> CGFloat {
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let contentWidth =
-            launcherZoneView.preferredContentWidth() +
+            leftZoneWidth +
             fullMeasurement.preferredWidth +
             dockWidgetFixedWidth +
             0 +
@@ -352,6 +373,7 @@ final class TaskbarContentView: NSView {
             taskZoneContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 32)
         ])
 
+        zonesStackView.addArrangedSubview(weatherWidgetView)
         zonesStackView.addArrangedSubview(launcherZoneView)
         zonesStackView.addArrangedSubview(taskZoneContainer)
         
@@ -374,6 +396,8 @@ final class TaskbarContentView: NSView {
         rightClusterStack.addArrangedSubview(clusterDivider)
         rightClusterStack.addArrangedSubview(connectivityTrayView)
         rightClusterStack.addArrangedSubview(systemResourceWidgetView)
+        rightClusterStack.addArrangedSubview(batteryWidgetView)
+        rightClusterStack.addArrangedSubview(clockWidgetView)
         
         zonesStackView.addArrangedSubview(rightClusterStack)
     }
@@ -550,6 +574,14 @@ final class TaskbarContentView: NSView {
                 }
 
                 self.scheduleRebuildTaskZone()
+            }
+            .store(in: &cancellables)
+
+        
+        settings.$layoutMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateTaskbarLayout()
             }
             .store(in: &cancellables)
 
@@ -783,7 +815,32 @@ final class TaskbarContentView: NSView {
         smPluginService?.windowAnnotations[windowID] != nil
     }
 
+    
+    private func applyLayoutMode() {
+        
+        let isWin11 = settings.layoutMode == .windows11
+        weatherWidgetView.isHidden = !isWin11
+        clockWidgetView.isHidden = !isWin11
+        batteryWidgetView.isHidden = !isWin11
+
+        
+        launcherZoneView.removeFromSuperview()
+        if isWin11 {
+            // Windows 11 mode: weather | [Spacer Launcher Apps Spacer] | Tray
+            taskZoneLayoutStackView.insertArrangedSubview(launcherZoneView, at: 1)
+        } else {
+            // Default mode: Launcher | [Spacer Apps Spacer] | Tray
+            zonesStackView.insertArrangedSubview(launcherZoneView, at: 1)
+        }
+        
+        // Also force right cluster to have clock, battery, connectivity in Win11?
+        // Wait, the prompt said "System tray far-RIGHT (trailing): clock, battery, quick settings/connectivity."
+        // We will just let settings handle it?
+        // No, "re-place a dock weather element on the left for this mode only"
+    }
+
     private func updateTaskbarLayout() {
+        applyLayoutMode()
         zonesStackView.edgeInsets = zoneEdgeInsets(usesCompactOuterInsets: lastAppliedUsesCompactOuterInsets)
         layoutSubtreeIfNeeded()
         schedulePreferredWidthNotification()
@@ -1582,7 +1639,7 @@ final class TaskbarContentView: NSView {
         }
 
         let fixedZoneWidth =
-            launcherZoneView.preferredContentWidth() +
+            leftZoneWidth +
             dockWidgetFixedWidth +
             0 + 1 +
             zoneEdgeInsetsWidth(compactZoneEdgeInsets)
@@ -1598,7 +1655,7 @@ final class TaskbarContentView: NSView {
 
         let fullMeasurement = taskZoneWidthMeasurement(usesAdaptiveTaskWidth: false, includesEdgeSpacers: true)
         let fixedZoneWidth =
-            launcherZoneView.preferredContentWidth() +
+            leftZoneWidth +
             dockWidgetFixedWidth +
             0 + 1 +
             zoneEdgeInsetsWidth(regularZoneEdgeInsets)
@@ -1628,7 +1685,7 @@ final class TaskbarContentView: NSView {
 
         if usesAdaptiveTaskLayout {
             let nonTrayFixedWidth =
-                launcherZoneView.preferredContentWidth() +
+                leftZoneWidth +
                 dockWidgetFixedWidth +
                 zoneEdgeInsetsWidth(compactZoneEdgeInsets) + 1
             let availableTrayWidth = layoutBudgetContentWidth - nonTrayFixedWidth - taskMinimumWidth
@@ -1637,7 +1694,7 @@ final class TaskbarContentView: NSView {
                 0
         } else {
             effectiveFixedZoneWidth =
-                launcherZoneView.preferredContentWidth() +
+                leftZoneWidth +
                 dockWidgetFixedWidth +
                 0 + 1 +
                 zoneEdgeInsetsWidth(usesCompactOuterInsets ? compactZoneEdgeInsets : regularZoneEdgeInsets)

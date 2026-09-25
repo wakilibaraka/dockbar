@@ -19,6 +19,7 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compact
     case compactGlass
     case floatingCenter
+    case windows11
 }
 
 enum BatteryIconSize: String, CaseIterable, Identifiable {

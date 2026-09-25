@@ -101,6 +101,7 @@ struct OnboardingView: View {
                                 Text("Compact Glass").tag(DeskBarLayoutMode.compactGlass)
                                 Text("Full Width Glass").tag(DeskBarLayoutMode.fullWidthGlass)
                                 Text("Full Width (Solid)").tag(DeskBarLayoutMode.fullWidth)
+                                Text("Windows 11").tag(DeskBarLayoutMode.windows11)
                             }
                             .padding(.bottom, 8)
                             

@@ -19,6 +19,9 @@ final class ConnectivityTrayView: NSStackView {
         quickSettingsButton.toolTip = "Quick Settings"
 
         addArrangedSubview(quickSettingsButton)
+        NSLayoutConstraint.activate([
+            quickSettingsButton.widthAnchor.constraint(equalToConstant: 32)
+        ])
 
         setContentHuggingPriority(.required, for: .horizontal)
         setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -28,7 +31,7 @@ final class ConnectivityTrayView: NSStackView {
     required init?(coder: NSCoder) { fatalError() }
 
     func preferredContentWidth() -> CGFloat {
-        return quickSettingsButton.fittingSize.width
+        return 32 // fixed width for connectivity button
     }
 
     @objc private func toggleQuickSettings() {

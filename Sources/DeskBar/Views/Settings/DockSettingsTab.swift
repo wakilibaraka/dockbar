@@ -36,6 +36,7 @@ struct DockSettingsTab: View {
                             Text("Full Width (Glass)").tag(DeskBarLayoutMode.fullWidthGlass)
                             Text("Compact").tag(DeskBarLayoutMode.compact)
                             Text("Compact (Glass)").tag(DeskBarLayoutMode.compactGlass)
+                            Text("Windows 11").tag(DeskBarLayoutMode.windows11)
                         }
                     }
                     .padding(.top, 8)
