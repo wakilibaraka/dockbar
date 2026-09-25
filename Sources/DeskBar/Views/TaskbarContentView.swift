@@ -134,6 +134,7 @@ final class TaskbarContentView: NSView {
         installModifierMonitors()
         observePinRequests()
         systemResourceWidgetView.preferredWidthDidChange = { [weak self] in
+            self?.updateClusterDividerVisibility()
             self?.schedulePreferredWidthNotification()
         }
         updateTaskbarLayout()
@@ -192,6 +193,7 @@ final class TaskbarContentView: NSView {
 
     override func layout() {
         super.layout()
+        print("TaskbarContentView layout called bounds=\(bounds.width)")
         let contentWidth = availableContentWidth
         if lastResponsiveLayoutContentWidth.map({ abs($0 - contentWidth) >= 0.5 }) ?? true {
             lastResponsiveLayoutContentWidth = contentWidth
