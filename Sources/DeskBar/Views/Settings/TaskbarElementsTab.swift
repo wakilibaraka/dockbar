@@ -60,39 +60,41 @@ struct TaskbarElementsTab: View {
                 }
 
                 GroupBox(label: Text("Weather Widget").font(.headline)) {
-                    Form {
+                                        Form {
                         Toggle("Enable weather widget", isOn: $settings.weatherEnabled)
                         
-                        Picker("Units:", selection: $settings.weatherUnit) {
-                            ForEach(WeatherUnit.allCases) { unit in
-                                Text(unit.displayName).tag(unit)
+                        Group {
+                            Picker("Units:", selection: $settings.weatherUnit) {
+                                ForEach(WeatherUnit.allCases) { unit in
+                                    Text(unit.displayName).tag(unit)
+                                }
+                            }
+                            .frame(maxWidth: 200)
+                            
+                            Picker("Refresh:", selection: $settings.weatherPollingInterval) {
+                                Text("15 minutes").tag(TimeInterval(900))
+                                Text("30 minutes").tag(TimeInterval(1800))
+                                Text("1 hour").tag(TimeInterval(3600))
+                            }
+                            .frame(maxWidth: 200)
+                            
+                            Picker("Location mode:", selection: $settings.weatherLocationMode) {
+                                ForEach(WeatherLocationMode.allCases) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .frame(maxWidth: 200)
+                            
+                            if settings.weatherLocationMode == .manual {
+                                HStack {
+                                    TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
+                                    TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
+                                }
+                                .frame(maxWidth: 300)
                             }
                         }
-                        .frame(maxWidth: 200)
-                        
-                        Picker("Refresh:", selection: $settings.weatherPollingInterval) {
-                            Text("15 minutes").tag(TimeInterval(900))
-                            Text("30 minutes").tag(TimeInterval(1800))
-                            Text("1 hour").tag(TimeInterval(3600))
-                        }
-                        .frame(maxWidth: 200)
-                        
-                        Picker("Location mode:", selection: $settings.weatherLocationMode) {
-                            ForEach(WeatherLocationMode.allCases) { mode in
-                                Text(mode.displayName).tag(mode)
-                            }
-                        }
-                        .frame(maxWidth: 200)
-                        
-                        if settings.weatherLocationMode == .manual {
-                            HStack {
-                                TextField("Latitude", value: $settings.weatherManualLatitude, format: .number)
-                                TextField("Longitude", value: $settings.weatherManualLongitude, format: .number)
-                            }
-                            .frame(maxWidth: 300)
-                        }
+                        .disabled(!settings.weatherEnabled)
                     }
-                    .disabled(!settings.weatherEnabled)
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
