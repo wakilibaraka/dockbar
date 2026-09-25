@@ -45,7 +45,7 @@ struct DockSettingsTab: View {
                 
                 GroupBox(label: Text("Task Items").font(.headline)) {
                     VStack(alignment: .leading, spacing: 16) {
-                        Toggle("Show titles", isOn: $settings.showTitles)
+                        Toggle("Icons Only", isOn: Binding(get: { !settings.showTitles }, set: { settings.showTitles = !$0 }))
                         
                         Picker("Title source", selection: $settings.taskTitleSource) {
                             Text("Window Title").tag(TaskTitleSource.windowTitle)

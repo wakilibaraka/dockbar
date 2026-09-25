@@ -108,7 +108,7 @@ final class TaskbarContentView: NSView {
         self.displayID = displayID
         self.openSettingsHandler = openSettingsHandler
         self.weatherWidgetView = DockWeatherWidgetView(weatherService: weatherService, settings: settings)
-        self.batteryWidgetView = DockBatteryWidgetView(settings: settings)
+        self.batteryWidgetView = DockBatteryWidgetView(settings: settings, weatherService: weatherService)
         launcherZoneView = LauncherZoneView(
             settings: settings,
             pinnedAppManager: pinnedAppManager,

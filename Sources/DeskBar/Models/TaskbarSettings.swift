@@ -90,6 +90,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
 enum LauncherStyle: String, CaseIterable {
     case anchored
     case floating
+    case floatingBottom
 }
 
 enum TaskTitleSource: String, CaseIterable {
@@ -306,7 +307,12 @@ class TaskbarSettings: ObservableObject {
     }
 
     @Published var layoutMode: DeskBarLayoutMode {
-        didSet { defaults.set(layoutMode.rawValue, forKey: "layoutMode") }
+        didSet {
+            defaults.set(layoutMode.rawValue, forKey: "layoutMode")
+            if layoutMode == .windows11 {
+                showTitles = false
+            }
+        }
     }
 
     @Published var enableWindowSwitcher: Bool {

@@ -10,7 +10,8 @@ class SettingsWindowController: NSWindowController {
         blacklistManager: BlacklistManager,
         pinnedAppManager: PinnedAppManager,
         permissionsManager: PermissionsManager,
-        thumbnailService: ThumbnailService
+        thumbnailService: ThumbnailService,
+        weatherService: WeatherService?
     ) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 750, height: 650),
@@ -37,7 +38,8 @@ class SettingsWindowController: NSWindowController {
             settings: settings,
             permissionsManager: permissionsManager,
             thumbnailService: thumbnailService,
-            blacklistManager: blacklistManager
+            blacklistManager: blacklistManager,
+            weatherService: weatherService
         ).frame(minWidth: minW, minHeight: minH, alignment: .top))
         generalTab.title = "General"
         let generalItem = NSTabViewItem(viewController: generalTab)

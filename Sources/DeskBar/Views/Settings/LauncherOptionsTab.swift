@@ -33,7 +33,8 @@ struct LauncherOptionsTab: View {
                         
                         Picker("Style", selection: $settings.launcherStyle) {
                             Text("Anchored").tag(LauncherStyle.anchored)
-                            Text("Floating").tag(LauncherStyle.floating)
+                            Text("Floating Center").tag(LauncherStyle.floating)
+                            Text("Floating Bottom").tag(LauncherStyle.floatingBottom)
                         }
                         
                         Group {

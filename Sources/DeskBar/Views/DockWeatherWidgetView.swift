@@ -2,6 +2,16 @@ import AppKit
 import SwiftUI
 import Combine
 
+
+struct WeatherFlyoutView: View {
+    let service: WeatherService
+    var body: some View {
+        WeatherHeroView(service: service)
+            .padding(16)
+            .frame(width: 320)
+    }
+}
+
 struct SmallWeatherView: View {
     @ObservedObject var service: WeatherService
     @EnvironmentObject var settings: TaskbarSettings
@@ -34,9 +44,14 @@ final class DockWeatherWidgetView: NSView {
     private let fixedWidth: CGFloat = 110 + 16
     private var cancellables = Set<AnyCancellable>()
     private let service: WeatherService
+    private let settings: TaskbarSettings
     
+    private var flyout: BorderlessFlyout?
+
     init(weatherService: WeatherService, settings: TaskbarSettings) {
         self.service = weatherService
+        self.settings = settings
+
         let view = SmallWeatherView(service: weatherService).environmentObject(settings)
         hostingView = NSHostingView(rootView: AnyView(view))
         super.init(frame: .zero)
@@ -58,4 +73,23 @@ final class DockWeatherWidgetView: NSView {
     func preferredContentWidth() -> CGFloat {
         return fixedWidth
     }
+
+    override func mouseDown(with event: NSEvent) {
+        if let current = flyout, current.isShown {
+            current.performClose(nil)
+            return
+        }
+        let popover = BorderlessFlyout()
+        popover.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
+        let view = WeatherFlyoutView(service: service).environmentObject(settings)
+        let hc = NSHostingController(rootView: view)
+        popover.show(contentViewController: hc, relativeTo: bounds, of: self)
+        flyout = popover
+    }
+
+    override func isAccessibilityElement() -> Bool { return true }
+    override func accessibilityLabel() -> String? { return "WeatherWidget" }
+    override func accessibilityRole() -> NSAccessibility.Role? { return .button }
 }

@@ -1011,4 +1011,8 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
     override func concludeDragOperation(_ sender: NSDraggingInfo?) {
         updateDropIndicator(nil)
     }
+
+    override func isAccessibilityElement() -> Bool { return true }
+    override func accessibilityLabel() -> String? { return "LauncherZone" }
+    override func accessibilityRole() -> NSAccessibility.Role? { return .button }
 }

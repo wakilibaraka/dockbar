@@ -1,15 +1,21 @@
 import AppKit
 import Combine
+import SwiftUI
 
 final class DockBatteryWidgetView: NSView {
     private let button = NSButton()
     private var cancellables = Set<AnyCancellable>()
     private let settings: TaskbarSettings
+    private let weatherService: WeatherService
     private let fixedWidth: CGFloat = 44
     
-    init(settings: TaskbarSettings) {
+    private var flyout: BorderlessFlyout?
+    
+    init(settings: TaskbarSettings, weatherService: WeatherService) {
         self.settings = settings
+        self.weatherService = weatherService
         super.init(frame: .zero)
+
         
         button.isBordered = false
         button.title = ""
@@ -45,4 +51,23 @@ final class DockBatteryWidgetView: NSView {
     func preferredContentWidth() -> CGFloat {
         return fixedWidth
     }
+
+    override func mouseDown(with event: NSEvent) {
+        if let current = flyout, current.isShown {
+            current.performClose(nil)
+            return
+        }
+        let popover = BorderlessFlyout()
+        popover.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
+        let view = BatteryFlyoutView(weatherService: weatherService).environmentObject(settings)
+        let hc = NSHostingController(rootView: view)
+        popover.show(contentViewController: hc, relativeTo: bounds, of: self)
+        flyout = popover
+    }
+
+    override func isAccessibilityElement() -> Bool { return true }
+    override func accessibilityLabel() -> String? { return "BatteryWidget" }
+    override func accessibilityRole() -> NSAccessibility.Role? { return .button }
 }

@@ -91,7 +91,21 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
         timerReference?.invalidate()
     }
 
+
+    func requestLocationAuthorization() {
+        locationManager.requestWhenInUseAuthorization()
+    }
+    
+    var authorizationStatus: CLAuthorizationStatus {
+        if #available(macOS 11.0, *) {
+            return locationManager.authorizationStatus
+        } else {
+            return CLLocationManager.authorizationStatus()
+        }
+    }
+
     func start() {
+
         restartTimer()
         refresh()
     }

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 final class DockClockWidgetView: NSView {
     private let timeLabel = NSTextField(labelWithString: "")
@@ -6,6 +7,9 @@ final class DockClockWidgetView: NSView {
     private let stack = NSStackView()
     private var timer: Timer?
     private let fixedWidth: CGFloat = 70
+    
+    private var flyout: BorderlessFlyout?
+
     
     init() {
         super.init(frame: .zero)
@@ -64,4 +68,22 @@ final class DockClockWidgetView: NSView {
     func preferredContentWidth() -> CGFloat {
         return fixedWidth
     }
+
+    override func mouseDown(with event: NSEvent) {
+        if let current = flyout, current.isShown {
+            current.performClose(nil)
+            return
+        }
+        let popover = BorderlessFlyout()
+        popover.onDismiss = { [weak self] in
+            self?.flyout = nil
+        }
+        let hc = NSHostingController(rootView: CalendarView())
+        popover.show(contentViewController: hc, relativeTo: bounds, of: self)
+        flyout = popover
+    }
+
+    override func isAccessibilityElement() -> Bool { return true }
+    override func accessibilityLabel() -> String? { return "ClockWidget" }
+    override func accessibilityRole() -> NSAccessibility.Role? { return .button }
 }

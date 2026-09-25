@@ -147,7 +147,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             blacklistManager: blacklistManager,
             pinnedAppManager: pinnedAppManager,
             permissionsManager: permissions,
-            thumbnailService: thumbnailService
+            thumbnailService: thumbnailService,
+            weatherService: weatherService
         )
         configureStatusItem()
         bindDockMode(settings: settings)

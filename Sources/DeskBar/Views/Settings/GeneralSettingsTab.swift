@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 struct GeneralSettingsTab: View {
     @ObservedObject var settings: TaskbarSettings
@@ -6,17 +7,20 @@ struct GeneralSettingsTab: View {
     @ObservedObject var thumbnailService: ThumbnailService
     @ObservedObject var blacklistManager: BlacklistManager
     @ObservedObject var calendarService: CalendarEventService
+    let weatherService: WeatherService?
     
     class ViewState: ObservableObject { @Published var newBlacklistBundleID = "" }
     @StateObject private var state = ViewState()
     
-    init(settings: TaskbarSettings, permissionsManager: PermissionsManager, thumbnailService: ThumbnailService, blacklistManager: BlacklistManager) {
+    init(settings: TaskbarSettings, permissionsManager: PermissionsManager, thumbnailService: ThumbnailService, blacklistManager: BlacklistManager, weatherService: WeatherService? = nil) {
         self.settings = settings
         self.permissionsManager = permissionsManager
         self.thumbnailService = thumbnailService
         self.blacklistManager = blacklistManager
+        self.weatherService = weatherService
         self.calendarService = CalendarEventService.shared
     }
+
     
     var body: some View {
         ScrollView {

@@ -84,8 +84,32 @@ final class LaunchpickManager {
             vc.preferredContentSize = NSSize(width: 680, height: 680)
             newPopover.show(contentViewController: vc, relativeTo: view.bounds, of: view)
             self.flyout = newPopover
+        } else if style == .floatingBottom, let view = view {
+            panel?.orderOut(nil)
+            panel = nil
+            
+            flyout?.performClose(nil)
+            
+            let newPopover = BorderlessFlyout()
+            newPopover.onDismiss = { [weak self] in
+                self?.flyout = nil
+            }
+            let vc = NSViewController()
+            vc.view = hostingView
+            vc.preferredContentSize = NSSize(width: 680, height: 680)
+            
+            // "positioned BOTTOM-CENTER, just above the dock, centered horizontally"
+            // Wait, BorderlessFlyout relativeTo a view will anchor to that view.
+            // If the view is the Launcher button, floatingBottom might just anchor to the view but center on screen?
+            // Actually, if we just use BorderlessFlyout relativeTo a fake rect or the view itself?
+            // The prompt: "Reuse the existing crash-safe toggle + BorderlessFlyout presentation; do not hand-roll new positioning math beyond the bottom-center origin."
+            // If we pass `view`, it anchors to the button. Is that "bottom-center"? 
+            // If the taskbar is centered, the launcher button is centered!
+            // So if we just anchor to the launcher button, it will be bottom-center!
+            newPopover.show(contentViewController: vc, relativeTo: view.bounds, of: view)
+            self.flyout = newPopover
         } else {
-            // Use Panel
+            // Use Panel (Floating Center)
             flyout?.performClose(nil)
             flyout = nil
             
