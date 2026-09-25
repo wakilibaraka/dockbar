@@ -15,7 +15,7 @@ rm -rf "$BUNDLE_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 # Copy binary
-cp "$BUILD_DIR/$APP_NAME" "$MACOS_DIR/$APP_NAME"
+cp ".build/out/Products/Release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 
 # Copy resources
 if [ -f "Resources/AppIcon.icns" ]; then
