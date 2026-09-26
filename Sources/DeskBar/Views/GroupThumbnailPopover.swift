@@ -62,12 +62,13 @@ final class GroupThumbnailPopover: BorderlessFlyout {
             self?.close()
         }
         
+        guard let vc = contentViewController else { return }
+        vc.view.alphaValue = 0
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
-            self.contentViewController?.view.alphaValue = 0
-            super.show(contentViewController: self.contentViewController!, relativeTo: view.bounds, of: view)
-            self.contentViewController?.view.animator().alphaValue = 1
+            super.show(contentViewController: vc, relativeTo: view.bounds, of: view)
+            vc.view.animator().alphaValue = 1
         }, completionHandler: nil)
         
         installDismissalMonitors()

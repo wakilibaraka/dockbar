@@ -2583,7 +2583,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
                 }
             }
 
-            if !Task.isCancelled && !items.isEmpty {
+            if !Task.isCancelled && !items.isEmpty && self.window != nil {
                 self.popover.show(items: items, relativeTo: self)
             }
         }

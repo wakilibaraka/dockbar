@@ -7,6 +7,16 @@ final class DockClockWidgetView: NSView {
     private let stack = NSStackView()
     private var timer: Timer?
     private let fixedWidth: CGFloat = 70
+    private let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeStyle = .short
+        return f
+    }()
+    private let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d/yyyy"
+        return f
+    }()
     
     private var flyout: BorderlessFlyout?
 
@@ -48,19 +58,15 @@ final class DockClockWidgetView: NSView {
     }
     
     private func startTimer() {
-        timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+        let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.updateDisplay()
         }
-        RunLoop.main.add(timer!, forMode: .common)
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
     
     private func updateDisplay() {
         let now = Date()
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "M/d/yyyy"
-        
         timeLabel.stringValue = timeFormatter.string(from: now)
         dateLabel.stringValue = dateFormatter.string(from: now)
     }
