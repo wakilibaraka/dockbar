@@ -5,29 +5,40 @@ struct StatusFlyoutsTab: View {
     @StateObject private var quickSettingsState = QuickSettingsTabState()
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 24) {
+            
+            SettingsCard(title: "Connectivity Tracking", icon: "antenna.radiowaves.left.and.right") {
+                SettingsRow(title: "Show connections icon in tray") {
+                    Toggle("", isOn: $settings.showConnections).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
                 
-                // Connectivity
-                GroupBox(label: Text("Connectivity Tracking").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Show connections icon in tray", isOn: $settings.showConnections)
-                        
-                        Divider().padding(.vertical, 4)
-                        
-                        Text("Notifications")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Toggle("Bluetooth device connected/disconnected", isOn: $settings.notifyBluetoothConnect)
-                            .padding(.leading, 16)
-                        Toggle("Bluetooth device low battery", isOn: $settings.notifyBluetoothLowBattery)
-                            .padding(.leading, 16)
-                        Toggle("WiFi network changed", isOn: $settings.notifyWiFiChange)
-                            .padding(.leading, 16)
-                        Toggle("WiFi signal weak", isOn: $settings.notifyWiFiWeak)
-                            .padding(.leading, 16)
-                            
+                SettingsDivider()
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Notifications")
+                        .font(.system(size: 13, weight: .semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
+                    
+                    SettingsRow(title: "Bluetooth device connected/disconnected") {
+                        Toggle("", isOn: $settings.notifyBluetoothConnect).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Bluetooth device low battery") {
+                        Toggle("", isOn: $settings.notifyBluetoothLowBattery).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "WiFi network changed") {
+                        Toggle("", isOn: $settings.notifyWiFiChange).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "WiFi signal weak") {
+                        Toggle("", isOn: $settings.notifyWiFiWeak).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    }
+                    SettingsDivider()
+                    HStack {
+                        Spacer()
                         Button("Test Notification") {
                             NotificationManager.shared.requestAuthorization { granted in
                                 if granted {
@@ -41,53 +52,52 @@ struct StatusFlyoutsTab: View {
                                 }
                             }
                         }
-                        .padding(.top, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
-                // Quick Settings
-                GroupBox(label: Text("Customize Quick Settings").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Drag items to reorder them in the flyout menu.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.bottom, 4)
-                        
-                        List {
-                            ForEach($quickSettingsState.items) { $item in
-                                HStack {
-                                    Image(systemName: "line.3.horizontal")
-                                        .foregroundColor(.secondary)
-                                        .frame(width: 20)
-                                    
-                                    Image(systemName: item.symbol)
-                                        .frame(width: 24)
-                                    
-                                    Text(item.title)
-                                    
-                                    Spacer()
-                                    
-                                    Toggle("", isOn: $item.isEnabled)
-                                        .onChange(of: item.isEnabled) {
-                                            saveQuickSettings()
-                                        }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                            .onMove(perform: moveQuickSetting)
-                        }
-                        .frame(height: 300)
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1)))
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
             }
-            .padding(20)
+            
+            SettingsCard(title: "Customize Quick Settings", icon: "slider.horizontal.3") {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Drag items to reorder them in the flyout menu.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
+                    
+                    List {
+                        ForEach($quickSettingsState.items) { $item in
+                            HStack {
+                                Image(systemName: "line.3.horizontal")
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+                                
+                                Image(systemName: item.symbol)
+                                    .frame(width: 24)
+                                
+                                Text(item.title)
+                                    .font(.system(size: 13))
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $item.isEnabled)
+                                    .labelsHidden()
+                                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .onChange(of: item.isEnabled) {
+                                        saveQuickSettings()
+                                    }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .onMove(perform: moveQuickSetting)
+                    }
+                    .frame(height: 300)
+                    .listStyle(.plain)
+                }
+            }
+
         }
         .onAppear(perform: loadQuickSettings)
     }

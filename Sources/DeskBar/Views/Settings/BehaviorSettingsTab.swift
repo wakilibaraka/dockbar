@@ -4,85 +4,99 @@ struct BehaviorSettingsTab: View {
     @ObservedObject var settings: TaskbarSettings
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                GroupBox(label: Text("Windows").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Picker("Window Grouping", selection: $settings.groupingMode) {
-                                Text("Always (macOS style)").tag(WindowGroupingMode.always)
-                                Text("Automatic (Hybrid)").tag(WindowGroupingMode.automatic)
-                                Text("Never (Windows style)").tag(WindowGroupingMode.never)
-                            }
-                            
-                            switch settings.groupingMode {
-                            case .always:
-                                Text("Always group windows by application. App icons stay in their pinned/stable locations and never move when minimized.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            case .automatic:
-                                Text("Group windows by application only when taskbar space is running low.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            case .never:
-                                Text("Never group windows. Each open window gets its own separate button on the taskbar.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Picker("Left-click action", selection: $settings.groupedClickAction) {
-                            Text("Cycle Windows").tag(GroupedClickAction.cycleWindows)
-                            Text("Show Window List").tag(GroupedClickAction.showPopover)
-                        }
-                        .disabled(settings.groupingMode == .never)
-                        
-                        Picker("When clicking frontmost", selection: $settings.frontmostClickAction) {
-                            Text("Minimize").tag(FrontmostClickAction.minimize)
-                            Text("Cycle to next").tag(FrontmostClickAction.cycle)
-                        }
+        VStack(spacing: 24) {
+            
+            SettingsCard(title: "Windows", icon: "uiwindow.split.2x1") {
+                SettingsRow(title: "Window Grouping") {
+                    Picker("", selection: $settings.groupingMode) {
+                        Text("Always").tag(WindowGroupingMode.always)
+                        Text("Automatic").tag(WindowGroupingMode.automatic)
+                        Text("Never").tag(WindowGroupingMode.never)
                     }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .labelsHidden()
+                    .frame(width: 150)
                 }
                 
-                GroupBox(label: Text("Interaction").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Toggle("Enable task dragging to reorder", isOn: $settings.dragReorder)
-                        
-                        HStack {
-                            Text("Hover preview delay:")
-                            Slider(value: $settings.hoverDelay, in: 0.0...1.0, step: 0.1)
-                            Text(String(format: "%.1fs", settings.hoverDelay))
-                        }
+                HStack {
+                    switch settings.groupingMode {
+                    case .always:
+                        Text("App icons stay in their pinned locations and never move.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    case .automatic:
+                        Text("Group windows only when taskbar space is running low.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    case .never:
+                        Text("Each open window gets its own separate button.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
                     }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                
+                SettingsDivider()
+                
+                SettingsRow(title: "Left-click action", subtitle: "When clicking a grouped app icon") {
+                    Picker("", selection: $settings.groupedClickAction) {
+                        Text("Cycle Windows").tag(GroupedClickAction.cycleWindows)
+                        Text("Show Window List").tag(GroupedClickAction.showPopover)
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                    .disabled(settings.groupingMode == .never)
                 }
                 
-                GroupBox(label: Text("Hold-to-Quit (Cmd+Q / Cmd+W)").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Toggle("Enable hold-to-quit prevention", isOn: $settings.enableHoldToQuit)
-                        
-                        Group {
-                            Toggle("Include Cmd+W (Close Window)", isOn: $settings.holdToQuitCmdW)
-                            
-                            HStack {
-                                Text("Hold duration:")
-                                Slider(value: $settings.holdToQuitDuration, in: 0.5...5.0, step: 0.5)
-                                Text(String(format: "%.1fs", settings.holdToQuitDuration))
-                            }
-                        }
-                        .disabled(!settings.enableHoldToQuit)
-                        .padding(.leading, 16)
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                SettingsDivider()
                 
+                SettingsRow(title: "When clicking frontmost", subtitle: "Clicking the currently active window") {
+                    Picker("", selection: $settings.frontmostClickAction) {
+                        Text("Minimize").tag(FrontmostClickAction.minimize)
+                        Text("Cycle to next").tag(FrontmostClickAction.cycle)
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
             }
-            .padding(20)
+            
+            SettingsCard(title: "Interaction", icon: "hand.point.up.left") {
+                SettingsRow(title: "Enable task dragging to reorder") {
+                    Toggle("", isOn: $settings.dragReorder).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                SettingsRow(title: "Hover preview delay") {
+                    HStack {
+                        Slider(value: $settings.hoverDelay, in: 0.0...1.0, step: 0.1)
+                        Text(String(format: "%.1fs", settings.hoverDelay))
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                }
+            }
+            
+            SettingsCard(title: "Hold-to-Quit Prevention", icon: "keyboard") {
+                SettingsRow(title: "Require hold to quit (Cmd+Q)") {
+                    Toggle("", isOn: $settings.enableHoldToQuit).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                SettingsRow(title: "Include Cmd+W (Close Window)") {
+                    Toggle("", isOn: $settings.holdToQuitCmdW)
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                        .disabled(!settings.enableHoldToQuit)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Hold duration") {
+                    HStack {
+                        Slider(value: $settings.holdToQuitDuration, in: 0.5...5.0, step: 0.5)
+                        Text(String(format: "%.1fs", settings.holdToQuitDuration))
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                    .disabled(!settings.enableHoldToQuit)
+                }
+            }
         }
     }
 }

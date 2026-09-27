@@ -1,3 +1,5 @@
+import DockBarCore
+
 import AppKit
 import Combine
 
@@ -106,18 +108,7 @@ enum TaskTruncationStyle: String, CaseIterable {
 }
 
 
-enum WidgetLocation: String, CaseIterable, Identifiable {
-    case dock
-    case menuBar
-    var id: String { rawValue }
 
-    var displayName: String {
-        switch self {
-        case .dock: return "Dock"
-        case .menuBar: return "Menu Bar"
-        }
-    }
-}
 
 enum WeatherUnit: String, CaseIterable, Identifiable {
     case celsius
@@ -316,6 +307,10 @@ class TaskbarSettings: ObservableObject {
         }
     }
 
+    @Published var useSplitTheme: Bool {
+        didSet { defaults.set(useSplitTheme, forKey: "useSplitTheme") }
+    }
+
     @Published var enableWindowSwitcher: Bool {
         didSet { defaults.set(enableWindowSwitcher, forKey: "enableWindowSwitcher") }
     }
@@ -479,6 +474,7 @@ class TaskbarSettings: ObservableObject {
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
         layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .compactGlass
+        useSplitTheme = defaults.object(forKey: "useSplitTheme") as? Bool ?? false
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap

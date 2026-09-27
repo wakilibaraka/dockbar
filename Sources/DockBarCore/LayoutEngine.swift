@@ -1,0 +1,317 @@
+import Foundation
+import CoreGraphics
+
+// MARK: - Layout Engine
+
+/// A stateless resolver: takes frozen inputs, returns exact frames. No AppKit.
+/// This is the only place positioning math lives.
+public struct LayoutEngine {
+
+    // MARK: - Input
+
+    public struct AppItem: Equatable {
+        public var id: String
+        public var isRunning: Bool
+        public var isFocused: Bool
+        public var hasMultipleWindows: Bool
+        public var isMinimized: Bool
+
+        public init(id: String, isRunning: Bool, isFocused: Bool, hasMultipleWindows: Bool, isMinimized: Bool) {
+            self.id = id; self.isRunning = isRunning; self.isFocused = isFocused
+            self.hasMultipleWindows = hasMultipleWindows; self.isMinimized = isMinimized
+        }
+    }
+
+    public struct Input {
+        public var theme: TaskbarTheme
+        /// Full bounds of the screen (origin may be non-zero for secondary monitors).
+        public var screenFrame: CGRect
+        /// The usable area of the screen (excludes menu bar on top — not used for bar placement
+        /// since we pin to the bottom, but needed for overflow guards).
+        public var visibleFrame: CGRect
+        /// Ordered list of app/window groups left → right.
+        public var apps: [AppItem]
+        public var activeAppID: String?
+        /// Measured widths of active widgets, keyed by SlotKind.
+        /// The engine does not measure widgets itself — the caller injects sizes.
+        public struct WidgetRequest: Equatable {
+            public var id: String
+            public var slot: SlotKind
+            public var rule: WidgetLocation
+            public var size: CGSize
+            public init(id: String, slot: SlotKind, rule: WidgetLocation, size: CGSize) {
+                self.id = id; self.slot = slot; self.rule = rule; self.size = size
+            }
+        }
+        public var widgetRequests: [Input.WidgetRequest]
+        public var isDockHidden: Bool
+        public var isFullScreen: Bool
+
+        public init(
+            theme: TaskbarTheme, screenFrame: CGRect, visibleFrame: CGRect,
+            apps: [AppItem], activeAppID: String?,
+            widgetRequests: [Input.WidgetRequest], isDockHidden: Bool, isFullScreen: Bool
+        ) {
+            self.theme = theme; self.screenFrame = screenFrame; self.visibleFrame = visibleFrame
+            self.apps = apps; self.activeAppID = activeAppID
+            self.widgetRequests = widgetRequests; self.isDockHidden = isDockHidden; self.isFullScreen = isFullScreen
+        }
+    }
+
+    // MARK: - Output
+
+    public struct ResolvedLayout: Equatable {
+        /// The panel's frame in screen coordinates.
+        public var panelFrame: CGRect
+        /// Each segment's rect in panel-local coordinates.
+        public var segmentFrames: [String: CGRect]    // segment.id → frame
+        /// Task button frames, panel-local.
+        public var taskButtonFrames: [String: CGRect] // app.id → frame
+        public var indicatorStates: [String: IndicatorState]
+        /// Hover rect per app (panel-local, already inset per HoverStyle).
+        public var hoverRects: [String: CGRect]
+        /// Widget frames, panel-local.
+        public var widgetFrames: [String: CGRect]
+        public var menuBarWidgets: [String]
+        public var geometryInsets: EdgeInsets
+        /// Whether any overflow occurred (more icons than available width).
+        public var hasTaskOverflow: Bool
+
+        public init(
+            panelFrame: CGRect, segmentFrames: [String: CGRect],
+            taskButtonFrames: [String: CGRect], indicatorStates: [String: IndicatorState],
+            hoverRects: [String: CGRect], widgetFrames: [String: CGRect],
+            menuBarWidgets: [String], geometryInsets: EdgeInsets,
+            hasTaskOverflow: Bool
+        ) {
+            self.panelFrame = panelFrame; self.segmentFrames = segmentFrames
+            self.taskButtonFrames = taskButtonFrames; self.indicatorStates = indicatorStates
+            self.hoverRects = hoverRects; self.widgetFrames = widgetFrames
+            self.menuBarWidgets = menuBarWidgets; self.geometryInsets = geometryInsets
+            self.hasTaskOverflow = hasTaskOverflow
+        }
+    }
+
+    public enum IndicatorState: Equatable {
+        case none
+        case unfocused
+        case focused
+        case groupedFocused
+    }
+
+    // MARK: - Resolution
+
+    public static func resolve(input: Input) -> ResolvedLayout {
+        let theme = input.theme
+        let g = theme.geometry
+        
+        // ── 0. Initial placement rule evaluation ────────────────────────────────
+        var placedInDock: [Input.WidgetRequest] = []
+        var placedInMenuBar: [String] = []
+        
+        let forceAutoToMenuBar = input.isDockHidden || input.isFullScreen
+        
+        for req in input.widgetRequests {
+            switch req.rule {
+            case .menuBar:
+                placedInMenuBar.append(req.id)
+            case .dock:
+                placedInDock.append(req)
+            case .auto:
+                if forceAutoToMenuBar {
+                    placedInMenuBar.append(req.id)
+                } else {
+                    placedInDock.append(req)
+                }
+            }
+        }
+        
+        // Helper to run layout given a set of dock widgets
+        func runLayout(dockWidgets: [Input.WidgetRequest]) -> (
+            clusterWidth: CGFloat,
+            measuredWidths: [Int: CGFloat],
+            hasTaskOverflow: Bool,
+            sizesBySlot: [SlotKind: [Input.WidgetRequest]]
+        ) {
+            var sizesBySlot: [SlotKind: [Input.WidgetRequest]] = [:]
+            for w in dockWidgets { sizesBySlot[w.slot, default: []].append(w) }
+            
+            var measuredWidths: [Int: CGFloat] = [:]
+            var fixedAndHugTotal: CGFloat = 0
+            
+            for (idx, seg) in theme.segments.enumerated() {
+                switch seg.sizing {
+                case .fixed(let w):
+                    measuredWidths[idx] = w
+                    fixedAndHugTotal += w
+                case .hugContents:
+                    let w = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: theme.icons), dockWidgets: sizesBySlot, icons: theme.icons)
+                    measuredWidths[idx] = w
+                    fixedAndHugTotal += w
+                case .fill:
+                    break // calculated after
+                }
+            }
+            
+            let gapTotal = CGFloat(max(0, theme.segments.count - 1)) * theme.interSegmentGap
+            let availableWidth = input.visibleFrame.width - g.screenInsets.left - g.screenInsets.right
+            let fillRemainder = max(0, availableWidth - fixedAndHugTotal - gapTotal)
+            let fillCount = theme.segments.filter { $0.sizing == .fill }.count
+            let fillWidth = fillCount > 0 ? fillRemainder / CGFloat(fillCount) : 0
+            
+            for (idx, seg) in theme.segments.enumerated() {
+                if case .fill = seg.sizing { measuredWidths[idx] = fillWidth }
+            }
+            
+            let clusterWidth = measuredWidths.values.reduce(0, +) + gapTotal
+            
+            // Check overflow
+            var hasTaskOverflow = false
+            if let taskSegIdx = theme.segments.firstIndex(where: { $0.slots.contains(.taskArea) }) {
+                let segW = measuredWidths[taskSegIdx] ?? 0
+                let seg = theme.segments[taskSegIdx]
+                // measure pure required width
+                let requiredW = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: theme.icons), dockWidgets: sizesBySlot, icons: theme.icons)
+                if requiredW > segW {
+                    hasTaskOverflow = true
+                }
+            }
+            
+            return (clusterWidth, measuredWidths, hasTaskOverflow, sizesBySlot)
+        }
+        
+        var layoutInfo = runLayout(dockWidgets: placedInDock)
+        
+        // ── 1. Re-evaluate auto rules for overflow ──────────────────────────────
+        if layoutInfo.hasTaskOverflow {
+            // Move .auto widgets to menu bar
+            let originalDock = placedInDock
+            placedInDock = []
+            for req in originalDock {
+                if req.rule == .auto {
+                    placedInMenuBar.append(req.id)
+                } else {
+                    placedInDock.append(req)
+                }
+            }
+            // Re-run layout
+            layoutInfo = runLayout(dockWidgets: placedInDock)
+        }
+        
+        // ── 2. Final positioning ────────────────────────────────────────────────
+        let screen = input.screenFrame
+        
+        let clusterX: CGFloat
+        switch theme.alignment {
+        case .center:
+            clusterX = screen.minX + floor((screen.width - layoutInfo.clusterWidth) / 2)
+        case .leading:
+            clusterX = screen.minX + g.screenInsets.left
+        case .trailing:
+            clusterX = screen.minX + screen.width - g.screenInsets.right - layoutInfo.clusterWidth
+        }
+        
+        let panelFrame = CGRect(
+            x: clusterX,
+            y: screen.minY + g.screenInsets.bottom,
+            width: layoutInfo.clusterWidth,
+            height: g.height
+        )
+        
+        var segmentFrames: [String: CGRect] = [:]
+        var currentX: CGFloat = 0
+        for (idx, seg) in theme.segments.enumerated() {
+            let w = layoutInfo.measuredWidths[idx] ?? 0
+            let frame = CGRect(x: currentX, y: 0, width: w, height: g.height)
+            segmentFrames[seg.id] = frame
+            currentX += w + (idx < theme.segments.count - 1 ? theme.interSegmentGap : 0)
+        }
+        
+        var taskButtonFrames: [String: CGRect] = [:]
+        var indicatorStates: [String: IndicatorState] = [:]
+        var hoverRects: [String: CGRect] = [:]
+        var widgetFrames: [String: CGRect] = [:]
+        
+        for (idx, seg) in theme.segments.enumerated() {
+            guard let segFrame = segmentFrames[seg.id] else { continue }
+            var slotX = seg.contentInsets.left
+            
+            for slot in seg.slots {
+                if slot == .taskArea {
+                    let btnW = theme.icons.hitTargetSize
+                    for app in input.apps {
+                        if slotX + btnW > segFrame.width - seg.contentInsets.right { break }
+                        
+                        let bFrame = CGRect(x: segFrame.minX + slotX, y: (g.height - theme.icons.hitTargetSize)/2, width: btnW, height: theme.icons.hitTargetSize)
+                        taskButtonFrames[app.id] = bFrame
+                        
+                        let state: IndicatorState
+                        if !app.isRunning { state = .none }
+                        else if app.hasMultipleWindows { state = (app.id == input.activeAppID || app.isFocused) ? .groupedFocused : .unfocused }
+                        else { state = (app.id == input.activeAppID || app.isFocused) ? .focused : .unfocused }
+                        indicatorStates[app.id] = state
+                        
+                        let inset = theme.hover.inset
+                        hoverRects[app.id] = bFrame.insetBy(dx: inset, dy: inset)
+                        
+                        slotX += btnW + theme.icons.spacing
+                    }
+                } else if let widgetsInSlot = layoutInfo.sizesBySlot[slot] {
+                    for wReq in widgetsInSlot {
+                        let wFrame = CGRect(x: segFrame.minX + slotX, y: 0, width: wReq.size.width, height: g.height)
+                        widgetFrames[wReq.id] = wFrame
+                        slotX += wReq.size.width + theme.icons.spacing
+                    }
+                }
+            }
+        }
+        
+        return ResolvedLayout(
+            panelFrame: panelFrame,
+            segmentFrames: segmentFrames,
+            taskButtonFrames: taskButtonFrames,
+            indicatorStates: indicatorStates,
+            hoverRects: hoverRects,
+            widgetFrames: widgetFrames,
+            menuBarWidgets: placedInMenuBar,
+            geometryInsets: g.screenInsets,
+            hasTaskOverflow: layoutInfo.hasTaskOverflow
+        )
+    }
+
+// MARK: - Private Helpers
+
+    private static func taskAreaWidth(apps: [AppItem], icons: IconStyle) -> CGFloat {
+        guard !apps.isEmpty else { return 0 }
+        return CGFloat(apps.count) * icons.hitTargetSize +
+               CGFloat(apps.count - 1) * icons.spacing
+    }
+
+    private static func huggingWidth(
+        segment: Segment,
+        taskContentWidth: CGFloat,
+        dockWidgets: [SlotKind: [Input.WidgetRequest]],
+        icons: IconStyle
+    ) -> CGFloat {
+        let insets = segment.contentInsets
+        var w: CGFloat = insets.left + insets.right
+        for slot in segment.slots {
+            switch slot {
+            case .taskArea:
+                w += taskContentWidth
+            default:
+                if let widgets = dockWidgets[slot] { for wx in widgets { w += wx.size.width + icons.spacing } }
+            }
+        }
+        return max(0, w)
+    }
+
+    private static func indicatorState(for app: AppItem, activeID: String?) -> IndicatorState {
+        guard app.isRunning else { return .none }
+        let isFocused = app.id == activeID || app.isFocused
+        if isFocused {
+            return app.hasMultipleWindows ? .groupedFocused : .focused
+        }
+        return .unfocused
+    }
+}

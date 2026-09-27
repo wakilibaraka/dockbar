@@ -228,11 +228,7 @@ final class TaskbarPanel: NSPanel {
     }
 
     private func compactContentWidth() -> CGFloat? {
-        guard let taskbarContentView = hostedView as? TaskbarContentView else {
-            return hostedView?.fittingSize.width
-        }
-
-        return taskbarContentView.preferredCompactWidth()
+        return hostedView?.fittingSize.width
     }
 
     private func updateVisualStyle(for frame: NSRect) {

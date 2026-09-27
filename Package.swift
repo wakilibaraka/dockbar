@@ -7,19 +7,26 @@ let package = Package(
     platforms: [
         .macOS(.v14)
     ],
-    dependencies: [
-    ],
+    dependencies: [],
     targets: [
+        .target(
+            name: "DockBarCore",
+            path: "Sources/DockBarCore"
+        ),
         .executableTarget(
             name: "DockBar",
+            dependencies: ["DockBarCore"],
             path: "Sources/DeskBar"
         ),
-        .testTarget(
-            name: "DeskBarTests",
-            dependencies: [
-                "DockBar",
-            ],
-            path: "Tests/DeskBarTests"
+        .executableTarget(
+            name: "EngineTests",
+            dependencies: ["DockBarCore"],
+            path: "Tests/EngineTests"
+        ),
+        .executableTarget(
+            name: "SnapshotTests",
+            dependencies: ["DockBarCore"],
+            path: "Tests/SnapshotTests"
         )
     ]
 )

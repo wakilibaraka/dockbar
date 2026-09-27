@@ -1,75 +1,57 @@
 import SwiftUI
-import AppKit
 
 struct OnboardingView: View {
     @ObservedObject var settings: TaskbarSettings
     @ObservedObject var permissionsManager: PermissionsManager
     @ObservedObject var thumbnailService: ThumbnailService
     @ObservedObject var calendarService = CalendarEventService.shared
+    
     let completion: () -> Void
     
-    class ViewState: ObservableObject { @Published var step = 0 }
+    class ViewState: ObservableObject {
+        @Published var step = 0
+    }
     @StateObject private var state = ViewState()
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header / Graphic area
-            ZStack {
-                Color.black.opacity(0.2)
+        ZStack {
+            VStack(spacing: 0) {
+                Spacer()
                 
                 if state.step == 0 {
-                    Image(nsImage: NSApplication.shared.applicationIconImage ?? NSImage())
-                        .resizable()
-                        .frame(width: 128, height: 128)
-                        .shadow(radius: 20)
-                        .transition(.scale.combined(with: .opacity))
-                } else if state.step == 1 {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 80))
-                        .foregroundStyle(.blue.gradient)
-                        .transition(.scale.combined(with: .opacity))
-                } else if state.step == 2 {
-                    Image(systemName: "paintpalette.fill")
-                        .font(.system(size: 80))
-                        .foregroundStyle(.orange.gradient)
-                        .transition(.scale.combined(with: .opacity))
-                } else if state.step == 3 {
-                    Image(systemName: "macwindow.badge.plus")
-                        .font(.system(size: 80))
-                        .foregroundStyle(.purple.gradient)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-            .frame(height: 220)
-            .clipped()
-            
-            // Content area
-            VStack(spacing: 24) {
-                if state.step == 0 {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 16) {
+                        Image(nsImage: NSApplication.shared.applicationIconImage)
+                            .resizable()
+                            .frame(width: 96, height: 96)
+                            .shadow(radius: 10)
+                            .padding(.bottom, 10)
+                            .transition(.scale)
+                        
                         Text("Welcome to DeskBar")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
-                        Text("A modern, highly customizable taskbar replacement for macOS. Let's get you set up in just a few clicks.")
-                            .font(.system(size: 15))
-                            .multilineTextAlignment(.center)
+                            .transition(.opacity)
+                        Text("A fully native, lightweight taskbar for macOS.")
                             .foregroundColor(.secondary)
-                            .padding(.horizontal, 40)
+                            .font(.title3)
+                            .transition(.opacity)
                     }
                 } else if state.step == 1 {
                     VStack(spacing: 16) {
-                        Text("Permissions required")
+                        Text("Permissions")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
+                        Text("DeskBar needs a few permissions to function properly.")
+                            .foregroundColor(.secondary)
                         
                         VStack(spacing: 12) {
                             PermissionRow(
-                                title: "Device Control and Data Access",
-                                description: "Required to interact with windows and switch apps.",
+                                title: "Accessibility (Required)",
+                                description: "Required to monitor active windows and bring them to the front.",
                                 isGranted: permissionsManager.isAccessibilityGranted,
                                 action: { permissionsManager.requestAccessibilityPermission() }
                             )
                             PermissionRow(
-                                title: "Screen Recording",
-                                description: "Required for window thumbnails.",
+                                title: "Screen Recording (Required)",
+                                description: "Required to show window thumbnails when hovering.",
                                 isGranted: thumbnailService.isScreenRecordingGranted,
                                 action: {
                                     if !thumbnailService.requestScreenRecordingPermission() {
@@ -78,8 +60,8 @@ struct OnboardingView: View {
                                 }
                             )
                             PermissionRow(
-                                title: "Calendar",
-                                description: "Required to show upcoming events in the widget.",
+                                title: "Calendar (Optional)",
+                                description: "Required to show upcoming events in the calendar widget.",
                                 isGranted: calendarService.isAuthorized,
                                 action: {
                                     CalendarEventService.shared.checkPermission()
@@ -91,18 +73,18 @@ struct OnboardingView: View {
                     }
                 } else if state.step == 2 {
                     VStack(spacing: 16) {
-                        Text("Personalize Your DeskBar")
+                        Text("Personalize DeskBar")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("Choose your preferred layout and window behavior.")
+                        Text("Choose your preferred layout and behavior.")
                             .foregroundColor(.secondary)
                         
                         Form {
                             Picker("Layout Theme", selection: $settings.layoutMode) {
+                                Text("Windows 11 (Floating)").tag(DeskBarLayoutMode.windows11Floating)
+                                Text("Windows 11 (Full Width)").tag(DeskBarLayoutMode.windows11FullWidth)
                                 Text("Compact Glass").tag(DeskBarLayoutMode.compactGlass)
                                 Text("Full Width Glass").tag(DeskBarLayoutMode.fullWidthGlass)
                                 Text("Full Width (Solid)").tag(DeskBarLayoutMode.fullWidth)
-                                Text("Windows 11 (Full Width)").tag(DeskBarLayoutMode.windows11FullWidth)
-                                Text("Windows 11 (Floating)").tag(DeskBarLayoutMode.windows11Floating)
                             }
                             .padding(.bottom, 8)
                             
@@ -110,34 +92,6 @@ struct OnboardingView: View {
                                 Text("Never").tag(WindowGroupingMode.never)
                                 Text("Automatic").tag(WindowGroupingMode.automatic)
                                 Text("Always").tag(WindowGroupingMode.always)
-                            }
-                            
-                            Toggle("Track WiFi & Bluetooth connections", isOn: $settings.showConnections)
-                                .padding(.top, 10)
-                            
-                            if settings.showConnections {
-                                Toggle("Enable connection alerts", isOn: Binding(get: {
-                                    settings.notifyBluetoothConnect || settings.notifyBluetoothLowBattery || settings.notifyWiFiChange
-                                }, set: { val in
-                                    if val {
-                                        NotificationManager.shared.requestAuthorization { granted in
-                                            DispatchQueue.main.async {
-                                                if granted {
-                                                    settings.notifyBluetoothConnect = true
-                                                    settings.notifyBluetoothLowBattery = true
-                                                    settings.notifyWiFiChange = true
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        settings.notifyBluetoothConnect = false
-                                        settings.notifyBluetoothLowBattery = false
-                                        settings.notifyWiFiChange = false
-                                        settings.notifyWiFiWeak = false
-                                    }
-                                }))
-                                .padding(.leading, 20)
-                                .foregroundColor(.secondary)
                             }
                         }
                         .frame(maxWidth: 400)
@@ -147,11 +101,11 @@ struct OnboardingView: View {
                     VStack(spacing: 16) {
                         Text("Dock Integration")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("Choose how DeskBar interacts with the native macOS Dock.")
+                        Text("How should DeskBar interact with the native macOS Dock?")
                             .foregroundColor(.secondary)
                         
                         Picker("", selection: $settings.dockMode) {
-                            Text("Independent (Both visible)").tag(DockMode.independent)
+                            Text("Independent").tag(DockMode.independent)
                             Text("Hide Native Dock").tag(DockMode.hidden)
                             Text("Replace (Autohide)").tag(DockMode.autoHide)
                         }
@@ -188,16 +142,24 @@ struct OnboardingView: View {
                     .buttonStyle(.plain)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 8)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(isNextButtonDisabled ? Color.gray.opacity(0.5) : Color.accentColor)
+                    .foregroundColor(isNextButtonDisabled ? Color.secondary : .white)
                     .cornerRadius(8)
+                    .disabled(isNextButtonDisabled)
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 30)
             }
-            .padding(.top, 30)
+            .padding(.top, 40)
         }
-        .frame(width: 800, height: 600)
+        .frame(width: 700, height: 450)
+    }
+    
+    private var isNextButtonDisabled: Bool {
+        if state.step == 1 {
+            return !permissionsManager.isAccessibilityGranted || !thumbnailService.isScreenRecordingGranted
+        }
+        return false
     }
 }
 
@@ -231,7 +193,7 @@ struct PermissionRow: View {
             }
         }
         .padding(16)
-        .background(Color.black.opacity(0.2))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .cornerRadius(12)
     }
 }

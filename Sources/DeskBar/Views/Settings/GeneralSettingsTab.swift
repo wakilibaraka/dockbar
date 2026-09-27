@@ -21,97 +21,94 @@ struct GeneralSettingsTab: View {
         self.calendarService = CalendarEventService.shared
     }
 
-    
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                GroupBox(label: Text("Startup").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Start at login", isOn: $settings.startAtLogin)
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 24) {
+            
+            SettingsCard(title: "Startup", icon: "power") {
+                SettingsRow(title: "Start at login", subtitle: "Launch DeskBar automatically when you log in") {
+                    Toggle("", isOn: $settings.startAtLogin)
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 }
-                
-                GroupBox(label: Text("Permissions").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Device Control and Data Access")
-                            Spacer()
-                            Text(permissionsManager.isAccessibilityGranted ? "Granted" : "Not Granted")
-                                .foregroundColor(permissionsManager.isAccessibilityGranted ? .green : .red)
-                            Button("Open Settings") {
-                                permissionsManager.requestAccessibilityPermission()
-                            }
-                        }
-                        HStack {
-                            Text("Screen Recording")
-                            Spacer()
-                            Text(thumbnailService.isScreenRecordingGranted ? "Granted" : "Not Granted")
-                                .foregroundColor(thumbnailService.isScreenRecordingGranted ? .green : .red)
-                            Button("Open Settings") {
-                                if !thumbnailService.requestScreenRecordingPermission() {
-                                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
-                                }
-                            }
-                        }
-                        HStack {
-                            Text("Calendar")
-                            Spacer()
-                            Text(calendarService.isAuthorized ? "Granted" : "Not Granted")
-                                .foregroundColor(calendarService.isAuthorized ? .green : .red)
-                            Button("Open Settings") {
-                                CalendarEventService.shared.checkPermission()
-                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
-                            }
-                        }
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
-                GroupBox(label: Text("Hidden Applications (Blacklist)").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Apps added here will not appear in the taskbar.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            TextField("Bundle Identifier (e.g. com.apple.Safari)", text: $state.newBlacklistBundleID)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            Button("Add") {
-                                blacklistManager.add(bundleIdentifier: state.newBlacklistBundleID)
-                                state.newBlacklistBundleID = ""
-                            }
-                            .disabled(state.newBlacklistBundleID.isEmpty)
-                        }
-                        
-                        List {
-                            ForEach(Array(blacklistManager.blacklistedBundleIDs).sorted(), id: \.self) { bundleID in
-                                HStack {
-                                    Text(bundleID)
-                                    Spacer()
-                                    Button(action: {
-                                        blacklistManager.remove(bundleIdentifier: bundleID)
-                                    }) {
-                                        Image(systemName: "trash")
-                                            .foregroundColor(.red)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                        .frame(minHeight: 150)
-                        .border(Color.secondary.opacity(0.2))
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
             }
-            .padding(20)
+            
+            SettingsCard(title: "Permissions", icon: "lock.shield") {
+                SettingsRow(title: "Device Control", subtitle: "Accessibility permission to manage windows") {
+                    HStack {
+                        Image(systemName: permissionsManager.isAccessibilityGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(permissionsManager.isAccessibilityGranted ? .green : .red)
+                        Button("Settings") {
+                            permissionsManager.requestAccessibilityPermission()
+                        }
+                    }
+                }
+                SettingsDivider()
+                SettingsRow(title: "Screen Recording", subtitle: "Required for window hover thumbnails") {
+                    HStack {
+                        Image(systemName: thumbnailService.isScreenRecordingGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(thumbnailService.isScreenRecordingGranted ? .green : .red)
+                        Button("Settings") {
+                            if !thumbnailService.requestScreenRecordingPermission() {
+                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                            }
+                        }
+                    }
+                }
+                SettingsDivider()
+                SettingsRow(title: "Calendar", subtitle: "Required to show events in the flyout") {
+                    HStack {
+                        Image(systemName: calendarService.isAuthorized ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(calendarService.isAuthorized ? .green : .red)
+                        Button("Settings") {
+                            CalendarEventService.shared.checkPermission()
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
+                        }
+                    }
+                }
+            }
+            
+            SettingsCard(title: "Hidden Applications", icon: "eye.slash") {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        TextField("Bundle Identifier (e.g. com.apple.Safari)", text: $state.newBlacklistBundleID)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Add") {
+                            blacklistManager.add(bundleIdentifier: state.newBlacklistBundleID)
+                            state.newBlacklistBundleID = ""
+                        }
+                        .disabled(state.newBlacklistBundleID.isEmpty)
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(16)
+                    
+                    SettingsDivider()
+                    
+                    if blacklistManager.blacklistedBundleIDs.isEmpty {
+                        Text("No apps hidden")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 24)
+                    } else {
+                        ForEach(Array(blacklistManager.blacklistedBundleIDs).sorted(), id: \.self) { bundleID in
+                            HStack {
+                                Text(bundleID)
+                                    .font(.system(size: 13, weight: .regular))
+                                Spacer()
+                                Button(action: {
+                                    blacklistManager.remove(bundleIdentifier: bundleID)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            SettingsDivider()
+                        }
+                    }
+                }
+            }
         }
     }
 }

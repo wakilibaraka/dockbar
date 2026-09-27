@@ -4,84 +4,113 @@ struct DockSettingsTab: View {
     @ObservedObject var settings: TaskbarSettings
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                GroupBox(label: Text("Taskbar").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Picker("Dock mode", selection: $settings.dockMode) {
-                            Text("Independent").tag(DockMode.independent)
-                            Text("Hide Native Dock").tag(DockMode.hidden)
-                            Text("Replace (Autohide)").tag(DockMode.autoHide)
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        
-                        Picker("Theme", selection: $settings.appTheme) {
-                            ForEach(AppTheme.allCases) { theme in
-                                Text(theme.displayName).tag(theme)
-                            }
-                        }
-                        
-                        HStack {
-                            Text("Height:")
-                            Slider(value: $settings.taskbarHeight, in: 30...80, step: 2)
-                            Text("\(Int(settings.taskbarHeight))")
-                        }
-                        
-                        Toggle("Show over fullscreen windows", isOn: $settings.showOverFullScreenApps)
-                        Toggle("Show on all monitors", isOn: $settings.showOnAllMonitors)
-                        
-                        Picker("Layout mode", selection: $settings.layoutMode) {
-                            Text("Full Width").tag(DeskBarLayoutMode.fullWidth)
-                            Text("Full Width (Glass)").tag(DeskBarLayoutMode.fullWidthGlass)
-                            Text("Compact").tag(DeskBarLayoutMode.compact)
-                            Text("Compact (Glass)").tag(DeskBarLayoutMode.compactGlass)
-                            Text("Windows 11 (Full Width)").tag(DeskBarLayoutMode.windows11FullWidth)
-                            Text("Windows 11 (Floating)").tag(DeskBarLayoutMode.windows11Floating)
-                        }
+        VStack(spacing: 24) {
+            
+            SettingsCard(title: "Taskbar", icon: "macwindow") {
+                SettingsRow(title: "Dock Mode", subtitle: "How DeskBar interacts with the native macOS Dock") {
+                    Picker("", selection: $settings.dockMode) {
+                        Text("Independent").tag(DockMode.independent)
+                        Text("Hide Native Dock").tag(DockMode.hidden)
+                        Text("Replace (Autohide)").tag(DockMode.autoHide)
                     }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .labelsHidden()
+                    .frame(width: 150)
                 }
-                
-                GroupBox(label: Text("Task Items").font(.headline)) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Toggle("Icons Only", isOn: Binding(get: { !settings.showTitles }, set: { settings.showTitles = !$0 }))
-                        
-                        Picker("Title source", selection: $settings.taskTitleSource) {
-                            Text("Window Title").tag(TaskTitleSource.windowTitle)
-                            Text("Application Name").tag(TaskTitleSource.appName)
-                        }
-                        
-                        Picker("Truncation style", selection: $settings.taskTruncationStyle) {
-                            Text("Tail").tag(TaskTruncationStyle.tail)
-                            Text("Middle").tag(TaskTruncationStyle.middle)
-                            Text("Head").tag(TaskTruncationStyle.ellipsisHead)
-                        }
-                        
-                        HStack {
-                            Text("Title font size:")
-                            Slider(value: $settings.titleFontSize, in: 10...24, step: 1)
-                            Text("\(Int(settings.titleFontSize))")
-                        }
-                        
-                        HStack {
-                            Text("Max task width:")
-                            Slider(value: $settings.maxTaskWidth, in: 100...400, step: 10)
-                            Text("\(Int(settings.maxTaskWidth))")
-                        }
-                        
-                        HStack {
-                            Text("Thumbnail size:")
-                            Slider(value: $settings.thumbnailSize, in: 100...300, step: 10)
-                            Text("\(Int(settings.thumbnailSize))")
+                SettingsDivider()
+                SettingsRow(title: "Theme", subtitle: "Color style of the taskbar") {
+                    Picker("", selection: $settings.appTheme) {
+                        ForEach(AppTheme.allCases) { theme in
+                            Text(theme.displayName).tag(theme)
                         }
                     }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Layout Mode", subtitle: "General shape and alignment") {
+                    Picker("", selection: $settings.layoutMode) {
+                        Text("Full Width").tag(DeskBarLayoutMode.fullWidth)
+                        Text("Full Width (Glass)").tag(DeskBarLayoutMode.fullWidthGlass)
+                        Text("Compact").tag(DeskBarLayoutMode.compact)
+                        Text("Compact (Glass)").tag(DeskBarLayoutMode.compactGlass)
+                        Text("Windows 11 (Full Width)").tag(DeskBarLayoutMode.windows11FullWidth)
+                        Text("Windows 11 (Floating)").tag(DeskBarLayoutMode.windows11Floating)
+                    }
+                    .labelsHidden()
+                    .frame(width: 170)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Taskbar Height") {
+                    HStack {
+                        Slider(value: $settings.taskbarHeight, in: 30...80, step: 2)
+                        Text("\(Int(settings.taskbarHeight))")
+                            .frame(width: 30, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Show over fullscreen windows") {
+                    Toggle("", isOn: $settings.showOverFullScreenApps).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                SettingsRow(title: "Show on all monitors") {
+                    Toggle("", isOn: $settings.showOnAllMonitors).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 }
             }
-            .padding(20)
+            
+            SettingsCard(title: "Task Items", icon: "rectangle.stack") {
+                SettingsRow(title: "Icons Only", subtitle: "Hide app and window titles") {
+                    Toggle("", isOn: Binding(get: { !settings.showTitles }, set: { settings.showTitles = !$0 }))
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                SettingsRow(title: "Title Source") {
+                    Picker("", selection: $settings.taskTitleSource) {
+                        Text("Window Title").tag(TaskTitleSource.windowTitle)
+                        Text("Application Name").tag(TaskTitleSource.appName)
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Truncation Style") {
+                    Picker("", selection: $settings.taskTruncationStyle) {
+                        Text("Tail").tag(TaskTruncationStyle.tail)
+                        Text("Middle").tag(TaskTruncationStyle.middle)
+                        Text("Head").tag(TaskTruncationStyle.ellipsisHead)
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Title Font Size") {
+                    HStack {
+                        Slider(value: $settings.titleFontSize, in: 10...24, step: 1)
+                        Text("\(Int(settings.titleFontSize))")
+                            .frame(width: 30, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Max Task Width") {
+                    HStack {
+                        Slider(value: $settings.maxTaskWidth, in: 100...400, step: 10)
+                        Text("\(Int(settings.maxTaskWidth))")
+                            .frame(width: 30, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                }
+                SettingsDivider()
+                SettingsRow(title: "Hover Thumbnail Size") {
+                    HStack {
+                        Slider(value: $settings.thumbnailSize, in: 100...300, step: 10)
+                        Text("\(Int(settings.thumbnailSize))")
+                            .frame(width: 30, alignment: .trailing)
+                    }
+                    .frame(width: 150)
+                }
+            }
         }
     }
 }

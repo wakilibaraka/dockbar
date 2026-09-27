@@ -7,7 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let minimumTaskbarReservationHeight: CGFloat = 32
 
     private var panels: [CGDirectDisplayID: TaskbarPanel] = [:]
-    private var contentViews: [CGDirectDisplayID: TaskbarContentView] = [:]
+    private var themeCoordinators: [CGDirectDisplayID: ThemeCoordinator] = [:]
     private var windowManager: WindowManager?
     private var permissionsManager: PermissionsManager?
     private var settings: TaskbarSettings?
@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var appStateMonitor: AppStateMonitor?
     private var smPluginService: SMPluginService?
     private var systemResourceMonitor: SystemResourceMonitor?
+    private var calendarService = CalendarEventService()
     private var thumbnailService: ThumbnailService?
     private var windowLayoutSnapshotManager: WindowLayoutSnapshotManager?
     private var windowSwitcherService: WindowSwitcherService?
@@ -577,35 +578,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 continue
             }
 
-            let contentView = TaskbarContentView(
-                windowManager: windowManager,
-                badgeMonitor: badgeMonitor,
-                appStateMonitor: appStateMonitor,
-                smPluginService: smPluginService,
-                permissionsManager: permissionsManager,
-                settings: settings,
-                blacklistManager: blacklistManager,
-                pinnedAppManager: pinnedAppManager,
-                systemResourceMonitor: systemResourceMonitor,
-                thumbnailService: thumbnailService,
-                displayID: displayID,
-                weatherService: weatherService,
-                openSettingsHandler: { [weak self] in
-                    self?.openSettings(nil)
-                }
-            )
             let panel = TaskbarPanel(
                 permissionsManager: permissionsManager,
                 settings: settings,
                 screen: screen
             )
             panel.updateCollectionBehavior(showOverFullScreenApps: settings.showOverFullScreenApps)
-            panel.setContentSubview(contentView)
-            contentView.preferredWidthDidChange = { [weak panel] in
-                panel?.requestLayoutUpdate(animated: false)
+            
+            let themeID: String
+            if settings.useSplitTheme {
+                themeID = "windows11.floatingSplit"
+            } else {
+                switch settings.layoutMode {
+                case .fullWidth: themeID = "fullWidth"
+                case .fullWidthGlass: themeID = "fullWidthGlass"
+                case .compact: themeID = "compact"
+                case .compactGlass: themeID = "compactGlass"
+                case .floatingCenter: themeID = "floatingCenter"
+                case .windows11FullWidth: themeID = "windows11.fullWidth"
+                case .windows11Floating: themeID = "windows11.floating"
+                }
             }
 
-            contentViews[displayID] = contentView
+            let coordinator = ThemeCoordinator(settings: settings, windowManager: windowManager, screen: screen, themeID: themeID, weatherService: weatherService, resourceMonitor: systemResourceMonitor, calendarService: calendarService)
+            panel.setContentSubview(coordinator.containerView)
+            themeCoordinators[displayID] = coordinator
             panels[displayID] = panel
         }
 
@@ -613,7 +610,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for displayID in staleDisplayIDs {
             panels[displayID]?.orderOut(nil)
             panels.removeValue(forKey: displayID)
-            contentViews.removeValue(forKey: displayID)
+            themeCoordinators.removeValue(forKey: displayID)
         }
 
         windowManager.activeDisplayIDs = Set(panels.keys)
@@ -651,7 +648,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleAccessibilityPermissionChange() {
-        contentViews.values.forEach { $0.handleAccessibilityPermissionChange() }
+
         panels.values.forEach { $0.updateForAccessibilityPermissionChange() }
         windowSwitcherService?.updateForAccessibilityPermissionChange(
             isGranted: permissionsManager?.isAccessibilityGranted ?? false
