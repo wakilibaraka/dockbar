@@ -504,6 +504,14 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
             iconView.widthAnchor.constraint(equalToConstant: 28),
             iconView.heightAnchor.constraint(equalToConstant: 28),
+            hoverBackgroundView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            hoverBackgroundView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            hoverBackgroundView.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            hoverBackgroundView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+
+            win11IndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            win11IndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            win11IndicatorView.heightAnchor.constraint(equalToConstant: 3),
 
             dropIndicatorView.topAnchor.constraint(equalTo: topAnchor, constant: 2),
             dropIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),

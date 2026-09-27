@@ -65,6 +65,7 @@ final class TaskbarContentView: NSView {
     private var expandedGroupID: String?
     private weak var expandedGroupView: NSView?
     private var clusterSpacerEqualWidthConstraint: NSLayoutConstraint?
+    private var win11AbsoluteCenterConstraint: NSLayoutConstraint?
     private var groupedTaskOrderState = TaskZoneOrderingState()
     private var ungroupedTaskOrderState = TaskZoneOrderingState()
     private var taskItemViews: [String: NSView] = [:]
@@ -358,6 +359,18 @@ final class TaskbarContentView: NSView {
         taskZoneLayoutStackView.addArrangedSubview(rightTaskZoneSeparatorView)
         taskZoneLayoutStackView.addArrangedSubview(rightTaskZoneStackView)
         taskZoneLayoutStackView.addArrangedSubview(clusterTrailingSpacerView)
+
+        let absoluteCenter = NSView()
+        absoluteCenter.translatesAutoresizingMaskIntoConstraints = false
+        absoluteCenter.isHidden = true
+        taskZoneLayoutStackView.addSubview(absoluteCenter)
+        absoluteCenter.leadingAnchor.constraint(equalTo: clusterLeadingSpacerView.trailingAnchor).isActive = true
+        absoluteCenter.trailingAnchor.constraint(equalTo: clusterTrailingSpacerView.leadingAnchor).isActive = true
+        
+        let absCenterConstraint = absoluteCenter.centerXAnchor.constraint(equalTo: self.centerXAnchor)
+        absCenterConstraint.priority = NSLayoutConstraint.Priority(750)
+        self.win11AbsoluteCenterConstraint = absCenterConstraint
+
         clusterSpacerEqualWidthConstraint = clusterLeadingSpacerView.widthAnchor.constraint(
             equalTo: clusterTrailingSpacerView.widthAnchor
         )
@@ -832,7 +845,13 @@ final class TaskbarContentView: NSView {
         weatherWidgetView.isHidden = !isWin11
         clockWidgetView.isHidden = !isWin11
         
-        win11CenterConstraint?.isActive = isWin11
+        if isWin11 {
+            clusterSpacerEqualWidthConstraint?.isActive = false
+            win11AbsoluteCenterConstraint?.isActive = true
+        } else {
+            win11AbsoluteCenterConstraint?.isActive = false
+            clusterSpacerEqualWidthConstraint?.isActive = true
+        }
 
         launcherZoneView.removeFromSuperview()
         if isWin11 {
