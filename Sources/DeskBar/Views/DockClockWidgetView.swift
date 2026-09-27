@@ -14,7 +14,7 @@ final class DockClockWidgetView: NSView {
     }()
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "M/d/yyyy"
+        f.dateStyle = .short
         return f
     }()
     
@@ -24,7 +24,7 @@ final class DockClockWidgetView: NSView {
     init() {
         super.init(frame: .zero)
         
-        timeLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        timeLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .medium)
         timeLabel.textColor = .labelColor
         timeLabel.alignment = .right
         

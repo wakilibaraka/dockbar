@@ -108,6 +108,9 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     private let titleLabel = NSTextField(labelWithString: "")
     private let statusIndicatorView = NSView()
     private let activeIndicatorView = NSView()
+    private let win11IndicatorView = NSView()
+    private var win11IndicatorWidthConstraint: NSLayoutConstraint?
+    private let hoverBackgroundView = NSView()
     private let activityBadgeView = NSVisualEffectView()
     private let activityLabel = NSTextField(labelWithString: "")
     private let progressTrackView = NSView()
@@ -446,6 +449,21 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private func setupSubviews() {
+        hoverBackgroundView.translatesAutoresizingMaskIntoConstraints = false
+        hoverBackgroundView.wantsLayer = true
+        hoverBackgroundView.layer?.cornerRadius = 4
+        hoverBackgroundView.layer?.masksToBounds = true
+        hoverBackgroundView.alphaValue = 0
+        hoverBackgroundView.layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
+        addSubview(hoverBackgroundView)
+
+        win11IndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        win11IndicatorView.wantsLayer = true
+        win11IndicatorView.layer?.cornerRadius = 1.5
+        win11IndicatorView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        win11IndicatorView.alphaValue = 0
+        addSubview(win11IndicatorView)
+
         pluginActionButton.translatesAutoresizingMaskIntoConstraints = false
         pluginActionButton.contentTintColor = .secondaryLabelColor
         pluginActionButton.toolTip = "Session Manager actions"
@@ -550,6 +568,9 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
         let iconHeightConstraint = iconView.heightAnchor.constraint(equalToConstant: 24)
         self.iconWidthConstraint = iconWidthConstraint
         self.iconHeightConstraint = iconHeightConstraint
+        let win11IndicatorWidthConstraint = win11IndicatorView.widthAnchor.constraint(equalToConstant: 0)
+        win11IndicatorWidthConstraint.isActive = true
+        self.win11IndicatorWidthConstraint = win11IndicatorWidthConstraint
 
         NSLayoutConstraint.activate([
             maxWidthConstraint,
@@ -563,6 +584,14 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
             activeIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
             activeIndicatorView.widthAnchor.constraint(equalToConstant: 16),
             activeIndicatorView.heightAnchor.constraint(equalToConstant: 2),
+            hoverBackgroundView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            hoverBackgroundView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            hoverBackgroundView.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            hoverBackgroundView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+
+            win11IndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            win11IndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            win11IndicatorView.heightAnchor.constraint(equalToConstant: 3),
 
             pluginActionButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             pluginActionButton.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -1342,6 +1371,32 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private func updateBackgroundColor() {
+        let isWin11 = settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating
+        if isWin11 {
+            activeIndicatorView.isHidden = true
+            statusIndicatorView.isHidden = true
+            layer?.backgroundColor = NSColor.clear.cgColor
+
+            // Hover background
+            hoverBackgroundView.animator().alphaValue = isHovered ? 1 : 0
+
+            // Indicator
+            let isRunning = true
+            if isRunning {
+                win11IndicatorView.isHidden = false
+                let isUnfocused = !isActive
+                win11IndicatorWidthConstraint?.constant = isUnfocused ? 16 : 24
+                win11IndicatorView.animator().alphaValue = isUnfocused ? 0.6 : 1.0
+                iconView.animator().alphaValue = windowState == .minimized ? 0.5 : 1.0
+            } else {
+                win11IndicatorView.isHidden = true
+                iconView.animator().alphaValue = 1.0
+            }
+            return
+        }
+        win11IndicatorView.isHidden = true
+        hoverBackgroundView.isHidden = true
+        iconView.alphaValue = 1.0
         activeIndicatorView.isHidden = !isActive
 
         if isActive {

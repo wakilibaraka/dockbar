@@ -31,15 +31,15 @@ struct BatteryStatusRenderer {
             var fillColor: NSColor
             
             if state.isCharging {
-                fillColor = NSColor.systemGreen
+                fillColor = NSColor.labelColor
             } else if state.isACPowered {
                 fillColor = NSColor.labelColor
-            } else if state.percentage <= 5 {
+            } else if state.percentage < 10 {
                 fillColor = NSColor.systemRed
-            } else if state.percentage <= 20 {
+            } else if state.percentage < 20 {
                 fillColor = NSColor.systemOrange
             } else {
-                fillColor = NSColor.systemGreen // or whatever normal is
+                fillColor = NSColor.labelColor // or whatever normal is
             }
             
             // To prevent blurry lines in CoreGraphics, coordinates for 1.0pt strokes should snap to x.5

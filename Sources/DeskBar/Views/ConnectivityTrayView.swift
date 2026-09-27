@@ -25,7 +25,7 @@ final class ConnectivityTrayView: NSStackView {
         addArrangedSubview(quickSettingsButton)
         
         win11Constraint = quickSettingsButton.widthAnchor.constraint(equalToConstant: 32)
-        win11Constraint?.isActive = settings.layoutMode == .windows11
+        win11Constraint?.isActive = settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating
 
         setContentHuggingPriority(.required, for: .horizontal)
         setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -33,7 +33,7 @@ final class ConnectivityTrayView: NSStackView {
         settings.$layoutMode
             .receive(on: RunLoop.main)
             .sink { [weak self] mode in
-                self?.win11Constraint?.isActive = mode == .windows11
+                self?.win11Constraint?.isActive = mode == .windows11FullWidth || mode == .windows11Floating
             }
             .store(in: &cancellables)
     }
@@ -43,7 +43,7 @@ final class ConnectivityTrayView: NSStackView {
 
 
     func preferredContentWidth() -> CGFloat {
-        if settings.layoutMode == .windows11 {
+        if settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating {
             return 32
         }
         return quickSettingsButton.fittingSize.width

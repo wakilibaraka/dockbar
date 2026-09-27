@@ -207,11 +207,11 @@ final class TaskbarPanel: NSPanel {
         let width: CGFloat
 
         switch layoutMode {
-        case .fullWidth, .windows11:
+        case .fullWidth, .windows11FullWidth:
             width = bounds.width
         case .fullWidthGlass:
             width = max(120, bounds.width - glassHorizontalMargin * 2)
-        case .compact, .compactGlass, .floatingCenter:
+        case .compact, .compactGlass, .floatingCenter, .windows11Floating:
             let maximumWidth = max(120, bounds.width - compactHorizontalMargin * 2)
             let minimumWidth = min(compactMinimumWidth, maximumWidth)
             let desiredWidth = compactContentWidth ?? min(compactFallbackWidth, maximumWidth)

@@ -19,7 +19,8 @@ enum DeskBarLayoutMode: String, CaseIterable {
     case compact
     case compactGlass
     case floatingCenter
-    case windows11
+    case windows11FullWidth
+    case windows11Floating
 }
 
 enum BatteryIconSize: String, CaseIterable, Identifiable {
@@ -309,7 +310,7 @@ class TaskbarSettings: ObservableObject {
     @Published var layoutMode: DeskBarLayoutMode {
         didSet {
             defaults.set(layoutMode.rawValue, forKey: "layoutMode")
-            if layoutMode == .windows11 {
+            if layoutMode == .windows11FullWidth || layoutMode == .windows11Floating {
                 showTitles = false
             }
         }

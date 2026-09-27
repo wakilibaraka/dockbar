@@ -55,6 +55,7 @@ final class TaskbarContentView: NSView {
     private let openSettingsHandler: () -> Void
     private let taskZoneContainer = NSView()
     private var taskZoneContainerWidthConstraint: NSLayoutConstraint?
+    private var win11CenterConstraint: NSLayoutConstraint?
     private var taskZoneLayoutTrailingConstraint: NSLayoutConstraint?
     private var cancellables = Set<AnyCancellable>()
     private var localClickMonitor: Any?
@@ -181,7 +182,7 @@ final class TaskbarContentView: NSView {
 
     private var leftZoneWidth: CGFloat {
         var width: CGFloat = 0
-        if settings.layoutMode == .windows11 {
+        if settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating {
             width += weatherWidgetView.preferredContentWidth()
             width += launcherZoneView.preferredContentWidth() // Also subtract launcher width from budget!
         } else {
@@ -194,7 +195,7 @@ final class TaskbarContentView: NSView {
     private var dockWidgetFixedWidth: CGFloat {
         var width: CGFloat = 1 // divider
         if settings.connectivityTrayLocation == .dock { width += connectivityTrayView.preferredContentWidth() + 8 }
-        if settings.layoutMode == .windows11 { width += clockWidgetView.preferredContentWidth() + 8 + batteryWidgetView.preferredContentWidth() + 8 }
+        if settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating { width += clockWidgetView.preferredContentWidth() + 8 + batteryWidgetView.preferredContentWidth() + 8 }
         if settings.systemResourceWidgetLocation == .dock { width += systemResourceWidgetView.preferredContentWidth() + 8 }
         return width
     }
@@ -323,9 +324,15 @@ final class TaskbarContentView: NSView {
         taskZoneContainer.layer?.masksToBounds = true
         taskZoneContainer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         taskZoneContainer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        
         let taskZoneContainerWidthConstraint = taskZoneContainer.widthAnchor.constraint(equalToConstant: 0)
         taskZoneContainerWidthConstraint.isActive = true
         self.taskZoneContainerWidthConstraint = taskZoneContainerWidthConstraint
+
+        let centerConstraint = taskZoneContainer.centerXAnchor.constraint(equalTo: zonesStackView.centerXAnchor)
+        // We will activate this only in win11 mode
+        centerConstraint.priority = .defaultHigh
+        self.win11CenterConstraint = centerConstraint
 
         taskZoneLayoutStackView.orientation = .horizontal
         taskZoneLayoutStackView.alignment = .centerY
@@ -406,6 +413,9 @@ final class TaskbarContentView: NSView {
     private func updateClusterDividerVisibility() {
         let hasRightWidgets = settings.connectivityTrayLocation == .dock
             || settings.systemResourceWidgetLocation == .dock
+            || settings.batteryWidgetLocation == .dock
+            || settings.layoutMode == .windows11FullWidth
+            || settings.layoutMode == .windows11Floating
         clusterDivider.isHidden = !hasRightWidgets
     }
 
@@ -818,26 +828,20 @@ final class TaskbarContentView: NSView {
     
     private func applyLayoutMode() {
         
-        let isWin11 = settings.layoutMode == .windows11
+        let isWin11 = settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating
         weatherWidgetView.isHidden = !isWin11
         clockWidgetView.isHidden = !isWin11
-        batteryWidgetView.isHidden = !isWin11
-
         
+        win11CenterConstraint?.isActive = isWin11
+
         launcherZoneView.removeFromSuperview()
         if isWin11 {
-            // Windows 11 mode: weather | [Spacer Launcher Apps Spacer] | Tray
             taskZoneLayoutStackView.insertArrangedSubview(launcherZoneView, at: 1)
         } else {
-            // Default mode: Launcher | [Spacer Apps Spacer] | Tray
             zonesStackView.insertArrangedSubview(launcherZoneView, at: 1)
         }
-        
-        // Also force right cluster to have clock, battery, connectivity in Win11?
-        // Wait, the prompt said "System tray far-RIGHT (trailing): clock, battery, quick settings/connectivity."
-        // We will just let settings handle it?
-        // No, "re-place a dock weather element on the left for this mode only"
     }
+
 
     private func updateTaskbarLayout() {
         applyLayoutMode()
@@ -2409,6 +2413,12 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     private var thumbnailRequestTask: Task<Void, Never>?
     private let iconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
+    private let win11IndicatorView = NSView()
+    private let win11IndicatorGapView = NSView()
+    private let win11IndicatorLeft = NSView()
+    private let win11IndicatorRight = NSView()
+    private let hoverBackgroundView = NSView()
+    private var win11IndicatorWidthConstraint: NSLayoutConstraint?
     private var titleLeadingConstraint: NSLayoutConstraint?
     private var titleTrailingConstraint: NSLayoutConstraint?
     private var maxWidthConstraint: NSLayoutConstraint?
@@ -2729,6 +2739,37 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
 
         addSubview(statusIndicatorView)
         addSubview(iconView)
+
+        hoverBackgroundView.translatesAutoresizingMaskIntoConstraints = false
+        hoverBackgroundView.wantsLayer = true
+        hoverBackgroundView.layer?.cornerRadius = 4
+        hoverBackgroundView.layer?.masksToBounds = true
+        hoverBackgroundView.alphaValue = 0
+        hoverBackgroundView.layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
+        addSubview(hoverBackgroundView)
+
+        win11IndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        win11IndicatorView.wantsLayer = true
+        win11IndicatorView.layer?.cornerRadius = 1.5
+        win11IndicatorView.alphaValue = 0
+        addSubview(win11IndicatorView)
+
+        let win11GapStack = NSStackView()
+        win11GapStack.orientation = .horizontal
+        win11GapStack.spacing = 2
+        win11GapStack.translatesAutoresizingMaskIntoConstraints = false
+        win11IndicatorLeft.wantsLayer = true; win11IndicatorLeft.layer?.cornerRadius = 1.5; win11IndicatorLeft.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        win11IndicatorRight.wantsLayer = true; win11IndicatorRight.layer?.cornerRadius = 1.5; win11IndicatorRight.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        win11IndicatorLeft.translatesAutoresizingMaskIntoConstraints = false
+        win11IndicatorRight.translatesAutoresizingMaskIntoConstraints = false
+        win11GapStack.addArrangedSubview(win11IndicatorLeft)
+        win11GapStack.addArrangedSubview(win11IndicatorRight)
+        win11IndicatorLeft.widthAnchor.constraint(equalTo: win11IndicatorRight.widthAnchor).isActive = true
+        win11IndicatorView.addSubview(win11GapStack)
+        
+        let w = win11IndicatorView.widthAnchor.constraint(equalToConstant: 24)
+        w.isActive = true
+        self.win11IndicatorWidthConstraint = w
         addSubview(titleLabel)
         addSubview(activityBadgeView)
         activityBadgeView.addSubview(activityLabel)
@@ -2783,6 +2824,19 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             statusIndicatorView.topAnchor.constraint(equalTo: topAnchor, constant: 6),
             statusIndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
             statusIndicatorView.widthAnchor.constraint(equalToConstant: 3),
+            hoverBackgroundView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            hoverBackgroundView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            hoverBackgroundView.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            hoverBackgroundView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+
+            win11IndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            win11IndicatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            win11IndicatorView.heightAnchor.constraint(equalToConstant: 3),
+            
+            win11GapStack.leadingAnchor.constraint(equalTo: win11IndicatorView.leadingAnchor),
+            win11GapStack.trailingAnchor.constraint(equalTo: win11IndicatorView.trailingAnchor),
+            win11GapStack.topAnchor.constraint(equalTo: win11IndicatorView.topAnchor),
+            win11GapStack.bottomAnchor.constraint(equalTo: win11IndicatorView.bottomAnchor),
 
             iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -2909,14 +2963,29 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
     }
 
     private func updateBackgroundColor() {
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if runtimeState.needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
-        } else {
+        let isWin11 = settings.layoutMode == .windows11FullWidth || settings.layoutMode == .windows11Floating
+        if isWin11 {
+            dotsStackView.isHidden = true
+            statusIndicatorView.isHidden = true
             layer?.backgroundColor = NSColor.clear.cgColor
+            
+            hoverBackgroundView.animator().alphaValue = isHovered ? 1 : 0
+            
+            win11IndicatorView.isHidden = false
+            let isUnfocused = !isActive
+            win11IndicatorWidthConstraint?.constant = 24
+            win11IndicatorView.animator().alphaValue = isUnfocused ? 0.6 : 1.0
+            
+            // For grouped, we always show the segmented look
+            let allMinimized = appGroup.windows.allSatisfy { $0.isMinimized || $0.isHidden }
+            iconView.animator().alphaValue = allMinimized ? 0.5 : 1.0
+            return
+        }
+        win11IndicatorView.isHidden = true
+        hoverBackgroundView.isHidden = true
+        iconView.alphaValue = 1.0
+        if appGroup.windows.count > 1 {
+            dotsStackView.isHidden = false
         }
     }
 

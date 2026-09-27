@@ -330,6 +330,9 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
 
     private let iconView = NSImageView()
     private let dropIndicatorView = NSView()
+    private let win11IndicatorView = NSView()
+    private let hoverBackgroundView = NSView()
+    private var win11IndicatorWidthConstraint: NSLayoutConstraint?
 
     private var dropIndicatorLeadingConstraint: NSLayoutConstraint?
     private var dropIndicatorTrailingConstraint: NSLayoutConstraint?
@@ -467,6 +470,25 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
         dropIndicatorView.isHidden = true
 
         addSubview(iconView)
+
+        hoverBackgroundView.translatesAutoresizingMaskIntoConstraints = false
+        hoverBackgroundView.wantsLayer = true
+        hoverBackgroundView.layer?.cornerRadius = 4
+        hoverBackgroundView.layer?.masksToBounds = true
+        hoverBackgroundView.alphaValue = 0
+        hoverBackgroundView.layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
+        addSubview(hoverBackgroundView)
+
+        win11IndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        win11IndicatorView.wantsLayer = true
+        win11IndicatorView.layer?.cornerRadius = 1.5
+        win11IndicatorView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        win11IndicatorView.alphaValue = 0
+        addSubview(win11IndicatorView)
+        
+        let w = win11IndicatorView.widthAnchor.constraint(equalToConstant: 0)
+        w.isActive = true
+        self.win11IndicatorWidthConstraint = w
         addSubview(dropIndicatorView)
 
         let dropIndicatorLeadingConstraint = dropIndicatorView.leadingAnchor.constraint(equalTo: leadingAnchor)
