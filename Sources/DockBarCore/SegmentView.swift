@@ -2,19 +2,33 @@ import AppKit
 
 /// Renders one segment's surface chrome (background + border + corner radius).
 /// All geometry is injected — this view does ZERO layout math.
+
 public final class SegmentView: NSView {
     private var segment: Segment
+    private let effectView: NSVisualEffectView
     private let surfaceLayer: CALayer
     private let borderLayer: CAShapeLayer
 
     public init(segment: Segment) {
         self.segment = segment
+        self.effectView = NSVisualEffectView()
         self.surfaceLayer = CALayer()
         self.borderLayer = CAShapeLayer()
         super.init(frame: .zero)
+        
+        effectView.material = .popover
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        addSubview(effectView)
+        
         wantsLayer = true
-        layer?.addSublayer(surfaceLayer)
-        layer?.addSublayer(borderLayer)
+        // Shadow configuration to match old TaskbarPanel
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOffset = NSSize(width: 0, height: -4)
+        
+        effectView.wantsLayer = true
+        effectView.layer?.addSublayer(surfaceLayer)
+        effectView.layer?.addSublayer(borderLayer)
     }
 
     @available(*, unavailable)
@@ -38,6 +52,33 @@ public final class SegmentView: NSView {
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        
+        effectView.frame = b
+
+        // Shadow configuration based on surface
+        let usesGlassChrome = (segment.surface != .solid(colorToken: "barSurface"))
+        if usesGlassChrome {
+            layer?.shadowOpacity = 0.35
+            layer?.shadowRadius = 12
+            layer?.shadowPath = uniform
+                ? CGPath(roundedRect: b, cornerWidth: cr.topLeft, cornerHeight: cr.topLeft, transform: nil)
+                : makeRoundedPath(rect: b, cr: cr).cgPath
+        } else {
+            layer?.shadowOpacity = 0
+            layer?.shadowPath = nil
+        }
+
+        // Masking the effect view
+        if uniform {
+            effectView.layer?.cornerRadius = cr.topLeft
+            effectView.layer?.cornerCurve = .continuous
+            effectView.layer?.mask = nil
+        } else {
+            let path = makeRoundedPath(rect: b, cr: cr)
+            let mask = CAShapeLayer()
+            mask.path = path.cgPath
+            effectView.layer?.mask = mask
+        }
 
         // Surface
         surfaceLayer.frame = b
@@ -46,7 +87,6 @@ public final class SegmentView: NSView {
             surfaceLayer.cornerCurve = .continuous
             surfaceLayer.mask = nil
         } else {
-            // Per-corner path
             let path = makeRoundedPath(rect: b, cr: cr)
             let mask = CAShapeLayer()
             mask.path = path.cgPath
@@ -80,7 +120,6 @@ public final class SegmentView: NSView {
 
         CATransaction.commit()
     }
-
     private func resolveColorToken(_ token: String) -> NSColor {
         switch token {
         case "barSurface":

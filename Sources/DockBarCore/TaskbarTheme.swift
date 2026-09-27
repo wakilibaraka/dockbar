@@ -1,3 +1,24 @@
+
+public enum ZoneAnchor: String, Codable, Equatable {
+    case leadingEdge
+    case center
+    case trailingEdge
+}
+
+public struct Zone: Codable, Equatable, Identifiable {
+    public var id: String
+    public var anchor: ZoneAnchor
+    public var interSegmentGap: CGFloat
+    public var segments: [Segment]
+
+    public init(id: String, anchor: ZoneAnchor, interSegmentGap: CGFloat, segments: [Segment]) {
+        self.id = id
+        self.anchor = anchor
+        self.interSegmentGap = interSegmentGap
+        self.segments = segments
+    }
+}
+
 import Foundation
 import CoreGraphics
 
@@ -13,11 +34,7 @@ public struct TaskbarTheme: Codable, Equatable {
     /// Overall bar shape / height / screen-edge insets. Shared across all segments.
     public var geometry: BarGeometry
     /// How the segment cluster sits on screen.
-    public var alignment: ContentAlignment
-    /// Gap (pt) between adjacent segments. 0 for single-segment (unified) themes.
-    public var interSegmentGap: CGFloat
-    /// Left→right ordered array of segments. One entry = unified bar. Two+ = split.
-    public var segments: [Segment]
+    public var zones: [Zone]
 
     public var icons: IconStyle
     public var indicator: IndicatorStyle
@@ -27,16 +44,71 @@ public struct TaskbarTheme: Codable, Equatable {
 
     public init(
         id: String, displayName: String,
-        geometry: BarGeometry, alignment: ContentAlignment,
-        interSegmentGap: CGFloat, segments: [Segment],
+        geometry: BarGeometry, zones: [Zone],
         icons: IconStyle, indicator: IndicatorStyle,
         hover: HoverStyle, tray: TrayStyle
     ) {
         self.id = id; self.displayName = displayName
-        self.geometry = geometry; self.alignment = alignment
-        self.interSegmentGap = interSegmentGap; self.segments = segments
+        self.geometry = geometry; self.zones = zones
         self.icons = icons; self.indicator = indicator
         self.hover = hover; self.tray = tray
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.displayName = try container.decode(String.self, forKey: .displayName)
+        self.geometry = try container.decode(BarGeometry.self, forKey: .geometry)
+        self.icons = try container.decode(IconStyle.self, forKey: .icons)
+        self.indicator = try container.decode(IndicatorStyle.self, forKey: .indicator)
+        self.hover = try container.decode(HoverStyle.self, forKey: .hover)
+        self.tray = try container.decode(TrayStyle.self, forKey: .tray)
+        
+        if let zones = try? container.decode([Zone].self, forKey: .zones) {
+            self.zones = zones
+        } else {
+            let alignment = try container.decode(ContentAlignment.self, forKey: CodingKeys(stringValue: "alignment")!)
+            let interSegmentGap = try container.decode(CGFloat.self, forKey: CodingKeys(stringValue: "interSegmentGap")!)
+            let segments = try container.decode([Segment].self, forKey: CodingKeys(stringValue: "segments")!)
+            let anchor: ZoneAnchor = {
+                switch alignment {
+                case .leading: return .leadingEdge
+                case .center: return .center
+                case .trailing: return .trailingEdge
+                }
+            }()
+            self.zones = [Zone(id: "main", anchor: anchor, interSegmentGap: interSegmentGap, segments: segments)]
+        }
+    }
+    
+    // Explicit CodingKeys to handle the custom decode
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encode(geometry, forKey: .geometry)
+        try container.encode(zones, forKey: .zones)
+        try container.encode(icons, forKey: .icons)
+        try container.encode(indicator, forKey: .indicator)
+        try container.encode(hover, forKey: .hover)
+        try container.encode(tray, forKey: .tray)
+    }
+
+    private struct CodingKeys: CodingKey {
+        var stringValue: String
+        init?(stringValue: String) { self.stringValue = stringValue }
+        var intValue: Int? { nil }
+        init?(intValue: Int) { return nil }
+        
+        static let id = CodingKeys(stringValue: "id")!
+        static let displayName = CodingKeys(stringValue: "displayName")!
+        static let geometry = CodingKeys(stringValue: "geometry")!
+        static let zones = CodingKeys(stringValue: "zones")!
+        static let icons = CodingKeys(stringValue: "icons")!
+        static let indicator = CodingKeys(stringValue: "indicator")!
+        static let hover = CodingKeys(stringValue: "hover")!
+        static let tray = CodingKeys(stringValue: "tray")!
     }
 }
 

@@ -101,90 +101,84 @@ public struct LayoutEngine {
 
     // MARK: - Resolution
 
+
     public static func resolve(input: Input) -> ResolvedLayout {
-        let theme = input.theme
-        let g = theme.geometry
+        var placedInDock = input.widgetRequests.filter { $0.rule == .dock }
+        var placedInMenuBar = input.widgetRequests.filter { $0.rule == .menuBar }.map(\.id)
+        let auto = input.widgetRequests.filter { $0.rule == .auto }
         
-        // ── 0. Initial placement rule evaluation ────────────────────────────────
-        var placedInDock: [Input.WidgetRequest] = []
-        var placedInMenuBar: [String] = []
-        
-        let forceAutoToMenuBar = input.isDockHidden || input.isFullScreen
-        
-        for req in input.widgetRequests {
-            switch req.rule {
-            case .menuBar:
-                placedInMenuBar.append(req.id)
-            case .dock:
-                placedInDock.append(req)
-            case .auto:
-                if forceAutoToMenuBar {
-                    placedInMenuBar.append(req.id)
-                } else {
-                    placedInDock.append(req)
-                }
-            }
+        let canUseDock = !input.isDockHidden && !input.isFullScreen
+        if canUseDock {
+            placedInDock.append(contentsOf: auto)
+        } else {
+            placedInMenuBar.append(contentsOf: auto.map(\.id))
         }
         
-        // Helper to run layout given a set of dock widgets
-        func runLayout(dockWidgets: [Input.WidgetRequest]) -> (
-            clusterWidth: CGFloat,
-            measuredWidths: [Int: CGFloat],
-            hasTaskOverflow: Bool,
-            sizesBySlot: [SlotKind: [Input.WidgetRequest]]
-        ) {
+        let g = input.theme.geometry
+        
+        // Return type of layout pass
+        struct ZoneLayoutInfo {
+            let id: String
+            let anchor: ZoneAnchor
+            let measuredWidths: [Int: CGFloat]
+            let sizesBySlot: [SlotKind: [Input.WidgetRequest]]
+            let naturalWidth: CGFloat
+            let segments: [Segment]
+            let hasTaskOverflow: Bool
+        }
+        
+        func measureZone(zone: Zone, dockWidgets: [Input.WidgetRequest]) -> ZoneLayoutInfo {
             var sizesBySlot: [SlotKind: [Input.WidgetRequest]] = [:]
             for w in dockWidgets { sizesBySlot[w.slot, default: []].append(w) }
             
             var measuredWidths: [Int: CGFloat] = [:]
             var fixedAndHugTotal: CGFloat = 0
             
-            for (idx, seg) in theme.segments.enumerated() {
+            for (idx, seg) in zone.segments.enumerated() {
                 switch seg.sizing {
                 case .fixed(let w):
                     measuredWidths[idx] = w
                     fixedAndHugTotal += w
                 case .hugContents:
-                    let w = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: theme.icons), dockWidgets: sizesBySlot, icons: theme.icons)
+                    let w = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: input.theme.icons), dockWidgets: sizesBySlot, icons: input.theme.icons)
                     measuredWidths[idx] = w
                     fixedAndHugTotal += w
                 case .fill:
-                    break // calculated after
+                    break // handled later
                 }
             }
             
-            let gapTotal = CGFloat(max(0, theme.segments.count - 1)) * theme.interSegmentGap
+            let gapTotal = CGFloat(max(0, zone.segments.count - 1)) * zone.interSegmentGap
+            // Assume fill takes remaining available width from screen
             let availableWidth = input.visibleFrame.width - g.screenInsets.left - g.screenInsets.right
             let fillRemainder = max(0, availableWidth - fixedAndHugTotal - gapTotal)
-            let fillCount = theme.segments.filter { $0.sizing == .fill }.count
+            let fillCount = zone.segments.filter { $0.sizing == .fill }.count
             let fillWidth = fillCount > 0 ? fillRemainder / CGFloat(fillCount) : 0
             
-            for (idx, seg) in theme.segments.enumerated() {
+            for (idx, seg) in zone.segments.enumerated() {
                 if case .fill = seg.sizing { measuredWidths[idx] = fillWidth }
             }
             
-            let clusterWidth = measuredWidths.values.reduce(0, +) + gapTotal
+            let naturalWidth = measuredWidths.values.reduce(0, +) + gapTotal
             
-            // Check overflow
             var hasTaskOverflow = false
-            if let taskSegIdx = theme.segments.firstIndex(where: { $0.slots.contains(.taskArea) }) {
+            if let taskSegIdx = zone.segments.firstIndex(where: { $0.slots.contains(.taskArea) }) {
                 let segW = measuredWidths[taskSegIdx] ?? 0
-                let seg = theme.segments[taskSegIdx]
-                // measure pure required width
-                let requiredW = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: theme.icons), dockWidgets: sizesBySlot, icons: theme.icons)
+                let seg = zone.segments[taskSegIdx]
+                let requiredW = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: input.theme.icons), dockWidgets: sizesBySlot, icons: input.theme.icons)
                 if requiredW > segW {
                     hasTaskOverflow = true
                 }
             }
             
-            return (clusterWidth, measuredWidths, hasTaskOverflow, sizesBySlot)
+            return ZoneLayoutInfo(id: zone.id, anchor: zone.anchor, measuredWidths: measuredWidths, sizesBySlot: sizesBySlot, naturalWidth: naturalWidth, segments: zone.segments, hasTaskOverflow: hasTaskOverflow)
         }
         
-        var layoutInfo = runLayout(dockWidgets: placedInDock)
+        var zonesLayout = input.theme.zones.map { measureZone(zone: $0, dockWidgets: placedInDock) }
+        let hasAnyOverflow = zonesLayout.contains { $0.hasTaskOverflow }
         
         // ── 1. Re-evaluate auto rules for overflow ──────────────────────────────
-        if layoutInfo.hasTaskOverflow {
-            // Move .auto widgets to menu bar
+        if hasAnyOverflow {
             let originalDock = placedInDock
             placedInDock = []
             for req in originalDock {
@@ -194,77 +188,157 @@ public struct LayoutEngine {
                     placedInDock.append(req)
                 }
             }
-            // Re-run layout
-            layoutInfo = runLayout(dockWidgets: placedInDock)
+            zonesLayout = input.theme.zones.map { measureZone(zone: $0, dockWidgets: placedInDock) }
         }
         
-        // ── 2. Final positioning ────────────────────────────────────────────────
+        // ── 2. Zone Collision & Width Allocation ──────────────────────────────
         let screen = input.screenFrame
+        let availableXMin = screen.minX + g.screenInsets.left
+        let availableXMax = screen.maxX - g.screenInsets.right
         
-        let clusterX: CGFloat
-        switch theme.alignment {
-        case .center:
-            clusterX = screen.minX + floor((screen.width - layoutInfo.clusterWidth) / 2)
-        case .leading:
-            clusterX = screen.minX + g.screenInsets.left
-        case .trailing:
-            clusterX = screen.minX + screen.width - g.screenInsets.right - layoutInfo.clusterWidth
+        // Identify zones
+        let leftZones = zonesLayout.filter { $0.anchor == .leadingEdge }
+        let rightZones = zonesLayout.filter { $0.anchor == .trailingEdge }
+        var centerZones = zonesLayout.filter { $0.anchor == .center }
+        
+        // We assume max 1 zone per anchor for simplicity, but handle gracefully.
+        let leftWidth = leftZones.reduce(0) { $0 + $1.naturalWidth }
+        let rightWidth = rightZones.reduce(0) { $0 + $1.naturalWidth }
+        
+        let leftMaxX = availableXMin + leftWidth
+        let rightMinX = availableXMax - rightWidth
+        
+        var zoneFrames: [String: CGRect] = [:]
+        
+        // Place Left & Right firmly (they don't compress per requirements)
+        var curX = availableXMin
+        for zl in leftZones {
+            zoneFrames[zl.id] = CGRect(x: curX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+            curX += zl.naturalWidth
+        }
+        
+        var rCurX = availableXMax
+        for zl in rightZones.reversed() {
+            rCurX -= zl.naturalWidth
+            zoneFrames[zl.id] = CGRect(x: rCurX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+        }
+        
+        // Center compresses if needed
+        if let centerZone = centerZones.first {
+            let naturalW = centerZone.naturalWidth
+            let preferredMinX = screen.minX + floor((screen.width - naturalW) / 2)
+            let preferredMaxX = preferredMinX + naturalW
+            
+            var constrainedMinX = preferredMinX
+            var constrainedMaxX = preferredMaxX
+            
+            // If it collides with left
+            if constrainedMinX < leftMaxX {
+                constrainedMinX = leftMaxX
+                constrainedMaxX = constrainedMinX + naturalW
+            }
+            // If it collides with right
+            if constrainedMaxX > rightMinX {
+                constrainedMaxX = rightMinX
+                constrainedMinX = max(leftMaxX, constrainedMaxX - naturalW)
+            }
+            
+            let finalWidth = constrainedMaxX - constrainedMinX
+            // If we actually compressed, we need to re-measure this zone with the constrained width.
+            // But LayoutEngine needs to compress the task area specifically!
+            // We'll adjust the `measuredWidths` for the task segment of the center zone.
+            var adjustedWidths = centerZone.measuredWidths
+            if finalWidth < naturalW {
+                if let taskSegIdx = centerZone.segments.firstIndex(where: { $0.slots.contains(.taskArea) }) {
+                    let oldW = adjustedWidths[taskSegIdx] ?? 0
+                    let difference = naturalW - finalWidth
+                    adjustedWidths[taskSegIdx] = max(0, oldW - difference)
+                }
+            }
+            
+            zoneFrames[centerZone.id] = CGRect(x: constrainedMinX, y: screen.minY + g.screenInsets.bottom, width: finalWidth, height: g.height)
+            
+            // Replace the center zone info with adjusted widths
+            let newCenterZone = ZoneLayoutInfo(id: centerZone.id, anchor: centerZone.anchor, measuredWidths: adjustedWidths, sizesBySlot: centerZone.sizesBySlot, naturalWidth: finalWidth, segments: centerZone.segments, hasTaskOverflow: centerZone.hasTaskOverflow || finalWidth < naturalW)
+            centerZones[0] = newCenterZone
+            
+            // Re-update zonesLayout to reflect adjusted widths
+            if let idx = zonesLayout.firstIndex(where: { $0.id == centerZone.id }) {
+                zonesLayout[idx] = newCenterZone
+            }
         }
         
         let panelFrame = CGRect(
-            x: clusterX,
+            x: screen.minX,
             y: screen.minY + g.screenInsets.bottom,
-            width: layoutInfo.clusterWidth,
+            width: screen.width,
             height: g.height
         )
         
+        // ── 3. Final positioning (PANEL-LOCAL coordinates) ─────────────────────
+        // All frames must be in panel-local space so ThemeContainerView
+        // (which fills the full-width, full-height panel) can apply them directly.
+        // Zone frames are currently screen-absolute; we subtract panelFrame.origin.x
+        // to convert. Y is already 0-based (panel bottom == 0 in its own space).
+        let panelOriginX = panelFrame.origin.x
         var segmentFrames: [String: CGRect] = [:]
-        var currentX: CGFloat = 0
-        for (idx, seg) in theme.segments.enumerated() {
-            let w = layoutInfo.measuredWidths[idx] ?? 0
-            let frame = CGRect(x: currentX, y: 0, width: w, height: g.height)
-            segmentFrames[seg.id] = frame
-            currentX += w + (idx < theme.segments.count - 1 ? theme.interSegmentGap : 0)
-        }
-        
         var taskButtonFrames: [String: CGRect] = [:]
         var indicatorStates: [String: IndicatorState] = [:]
         var hoverRects: [String: CGRect] = [:]
         var widgetFrames: [String: CGRect] = [:]
         
-        for (idx, seg) in theme.segments.enumerated() {
-            guard let segFrame = segmentFrames[seg.id] else { continue }
-            var slotX = seg.contentInsets.left
+        for zl in zonesLayout {
+            guard let zFrame = zoneFrames[zl.id] else { continue }
             
-            for slot in seg.slots {
-                if slot == .taskArea {
-                    let btnW = theme.icons.hitTargetSize
-                    for app in input.apps {
-                        if slotX + btnW > segFrame.width - seg.contentInsets.right { break }
-                        
-                        let bFrame = CGRect(x: segFrame.minX + slotX, y: (g.height - theme.icons.hitTargetSize)/2, width: btnW, height: theme.icons.hitTargetSize)
-                        taskButtonFrames[app.id] = bFrame
-                        
-                        let state: IndicatorState
-                        if !app.isRunning { state = .none }
-                        else if app.hasMultipleWindows { state = (app.id == input.activeAppID || app.isFocused) ? .groupedFocused : .unfocused }
-                        else { state = (app.id == input.activeAppID || app.isFocused) ? .focused : .unfocused }
-                        indicatorStates[app.id] = state
-                        
-                        let inset = theme.hover.inset
-                        hoverRects[app.id] = bFrame.insetBy(dx: inset, dy: inset)
-                        
-                        slotX += btnW + theme.icons.spacing
-                    }
-                } else if let widgetsInSlot = layoutInfo.sizesBySlot[slot] {
-                    for wReq in widgetsInSlot {
-                        let wFrame = CGRect(x: segFrame.minX + slotX, y: 0, width: wReq.size.width, height: g.height)
-                        widgetFrames[wReq.id] = wFrame
-                        slotX += wReq.size.width + theme.icons.spacing
+            // Convert zone's screen-absolute minX to panel-local.
+            var currentX: CGFloat = zFrame.minX - panelOriginX
+            for (idx, seg) in zl.segments.enumerated() {
+                let w = zl.measuredWidths[idx] ?? 0
+                // segFrame is panel-local: x starts at currentX (panel-relative), y=0
+                let segFrame = CGRect(x: currentX, y: 0, width: w, height: g.height)
+                segmentFrames[seg.id] = segFrame
+                currentX += w + (idx < zl.segments.count - 1 ? input.theme.zones.first(where: {$0.id == zl.id})?.interSegmentGap ?? 0 : 0)
+                
+                var slotX = seg.contentInsets.left
+                for slot in seg.slots {
+                    if slot == .taskArea {
+                        let btnW = input.theme.icons.hitTargetSize
+                        for app in input.apps {
+                            if slotX + btnW > segFrame.width - seg.contentInsets.right { break }
+                            
+                            // bFrame panel-local: segFrame.minX is already panel-local
+                            let bFrame = CGRect(x: segFrame.minX + slotX, y: (g.height - input.theme.icons.hitTargetSize)/2, width: btnW, height: input.theme.icons.hitTargetSize)
+                            taskButtonFrames[app.id] = bFrame
+                            
+                            let state: IndicatorState
+                            if !app.isRunning { state = .none }
+                            else if app.hasMultipleWindows { state = (app.id == input.activeAppID || app.isFocused) ? .groupedFocused : .unfocused }
+                            else { state = (app.id == input.activeAppID || app.isFocused) ? .focused : .unfocused }
+                            indicatorStates[app.id] = state
+                            
+                            let inset = input.theme.hover.inset
+                            hoverRects[app.id] = bFrame.insetBy(dx: inset, dy: inset)
+                            
+                            slotX += btnW + input.theme.icons.spacing
+                        }
+                    } else if let widgetsInSlot = zl.sizesBySlot[slot] {
+                        for wReq in widgetsInSlot {
+                            // wFrame panel-local: segFrame.minX is already panel-local
+                            let wFrame = CGRect(x: segFrame.minX + slotX, y: 0, width: wReq.size.width, height: g.height)
+                            widgetFrames[wReq.id] = wFrame
+                            slotX += wReq.size.width + input.theme.icons.spacing
+                        }
                     }
                 }
             }
         }
+        
+        // Invariant: every taskButtonFrame and widgetFrame must fall inside
+        // the panel bounds [0, panelFrame.width). Assert in debug builds.
+        assert(taskButtonFrames.values.allSatisfy { $0.minX >= -0.5 && $0.maxX <= panelFrame.width + 0.5 },
+               "taskButtonFrame out of panel bounds")
+        assert(widgetFrames.values.allSatisfy { $0.minX >= -0.5 && $0.maxX <= panelFrame.width + 0.5 },
+               "widgetFrame out of panel bounds")
         
         return ResolvedLayout(
             panelFrame: panelFrame,
@@ -275,7 +349,7 @@ public struct LayoutEngine {
             widgetFrames: widgetFrames,
             menuBarWidgets: placedInMenuBar,
             geometryInsets: g.screenInsets,
-            hasTaskOverflow: layoutInfo.hasTaskOverflow
+            hasTaskOverflow: zonesLayout.contains { $0.hasTaskOverflow }
         )
     }
 

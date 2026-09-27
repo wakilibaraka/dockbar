@@ -92,9 +92,7 @@ public struct ThemeRegistry {
             id: "fullWidth",
             displayName: "Full Width",
             geometry: BarGeometry(shape: .fullWidth, height: 44, screenInsets: .zero),
-            alignment: .leading,
-            interSegmentGap: 0,
-            segments: [unifiedFillSegment()],
+            zones: [Zone(id: "main", anchor: .leadingEdge, interSegmentGap: 0, segments: [unifiedFillSegment()])],
             icons: fullWidthIcons,
             indicator: dotsIndicator,
             hover: standardHover,
@@ -108,9 +106,7 @@ public struct ThemeRegistry {
             displayName: "Full Width (Glass)",
             geometry: BarGeometry(shape: .fullWidth, height: 44,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
                 Segment(
                     id: "unified",
                     surface: .adaptive(light: "glassLight", dark: "glassDark"),
@@ -120,10 +116,10 @@ public struct ThemeRegistry {
                     sizing: .fill,
                     slots: [.leading, .taskArea, .tray]
                 )
-            ],
+            ])],
             icons: fullWidthIcons,
             indicator: dotsIndicator,
-            hover: pillHover,
+            hover: standardHover,
             tray: trayStandard
         )
 
@@ -134,12 +130,10 @@ public struct ThemeRegistry {
             displayName: "Compact",
             geometry: BarGeometry(shape: .floating, height: 44,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [unifiedPillSegment()],
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [unifiedPillSegment()])],
             icons: compactIcons,
             indicator: dotsIndicator,
-            hover: pillHover,
+            hover: standardHover,
             tray: trayStandard
         )
 
@@ -149,14 +143,12 @@ public struct ThemeRegistry {
             displayName: "Compact (Glass)",
             geometry: BarGeometry(shape: .floating, height: 44,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
                 unifiedPillSegment(surface: .adaptive(light: "glassLight", dark: "glassDark"))
-            ],
+            ])],
             icons: compactIcons,
             indicator: dotsIndicator,
-            hover: pillHover,
+            hover: standardHover,
             tray: trayStandard
         )
 
@@ -167,14 +159,12 @@ public struct ThemeRegistry {
             displayName: "Floating Center",
             geometry: BarGeometry(shape: .floating, height: 44,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 12, right: 12)),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
                 unifiedPillSegment(surface: .adaptive(light: "glassLight", dark: "glassDark"))
-            ],
+            ])],
             icons: compactIcons,
             indicator: dotsIndicator,
-            hover: pillHover,
+            hover: standardHover,
             tray: trayStandard
         )
 
@@ -183,9 +173,7 @@ public struct ThemeRegistry {
             id: "windows11.fullWidth",
             displayName: "Windows 11 (Full Width)",
             geometry: BarGeometry(shape: .fullWidth, height: 44, screenInsets: .zero),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [unifiedFillSegment(slots: [.startButton, .leading, .taskArea, .tray])],
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [unifiedFillSegment(slots: [.startButton, .leading, .taskArea, .tray])])],
             icons: win11Icons,
             indicator: win11Indicator,
             hover: standardHover,
@@ -199,11 +187,9 @@ public struct ThemeRegistry {
             displayName: "Windows 11 (Floating)",
             geometry: BarGeometry(shape: .floating, height: 44,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            alignment: .center,
-            interSegmentGap: 0,
-            segments: [
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
                 unifiedPillSegment(slots: [.startButton, .leading, .taskArea, .tray])
-            ],
+            ])],
             icons: win11Icons,
             indicator: win11Indicator,
             hover: standardHover,
@@ -220,15 +206,13 @@ public struct ThemeRegistry {
             displayName: "Windows 11 (Split)",
             geometry: BarGeometry(shape: .floating, height: 48,
                                   screenInsets: EdgeInsets(top: 0, left: 12, bottom: 6, right: 12)),
-            alignment: .center,
-            interSegmentGap: 10,
-            segments: [
+            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 10, segments: [
                 Segment(
                     id: "task",
                     surface: .solid(colorToken: "barSurface"),
                     border: .default,
-                    cornerRadius: CornerRadius(all: 5),
-                    contentInsets: EdgeInsets(top: 0, left: 8, bottom: 0, right: 8),
+                    cornerRadius: CornerRadius(all: 24),
+                    contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
                     sizing: .hugContents,
                     slots: [.startButton, .leading, .taskArea]
                 ),
@@ -236,21 +220,69 @@ public struct ThemeRegistry {
                     id: "tray",
                     surface: .solid(colorToken: "barSurface"),
                     border: .default,
-                    cornerRadius: CornerRadius(all: 5),
-                    contentInsets: EdgeInsets(top: 0, left: 10, bottom: 0, right: 6),
+                    cornerRadius: CornerRadius(all: 24),
+                    contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
                     sizing: .fixed(width: 260),
                     slots: [.tray]
-                ),
-            ],
+                )
+            ])],
             icons: win11Icons,
             indicator: win11Indicator,
             hover: standardHover,
             tray: trayWin11
         )
 
+
+        
+        let threeZone = TaskbarTheme(
+            id: "macos.threeZone",
+            displayName: "macOS (3-Zone)",
+            geometry: BarGeometry(shape: .floating, height: 44,
+                                  screenInsets: EdgeInsets(top: 0, left: 16, bottom: 8, right: 16)),
+            zones: [
+                Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
+                    Segment(
+                        id: "weather_seg",
+                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
+                        border: .default,
+                        cornerRadius: CornerRadius(all: 12),
+                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
+                        sizing: .hugContents,
+                        slots: [.leading]
+                    )
+                ]),
+                Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
+                    Segment(
+                        id: "task_seg",
+                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
+                        border: .default,
+                        cornerRadius: CornerRadius(all: 16),
+                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
+                        sizing: .hugContents,
+                        slots: [.startButton, .taskArea]
+                    )
+                ]),
+                Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
+                    Segment(
+                        id: "tray_seg",
+                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
+                        border: .default,
+                        cornerRadius: CornerRadius(all: 12),
+                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
+                        sizing: .hugContents,
+                        slots: [.tray]
+                    )
+                ])
+            ],
+            icons: compactIcons,
+            indicator: dotsIndicator,
+            hover: standardHover,
+            tray: trayStandard
+        )
+
         themes = Dictionary(uniqueKeysWithValues: [
             fullWidth, fullWidthGlass, compact, compactGlass,
-            floatingCenter, win11FullWidth, win11Floating, win11Split
+            floatingCenter, win11FullWidth, win11Floating, win11Split, threeZone
         ].map { ($0.id, $0) })
     }
 
@@ -263,8 +295,12 @@ public struct ThemeRegistry {
         var t = theme
         t.id = theme.id + ".round"
         t.displayName = theme.displayName + " (Round)"
-        t.segments = theme.segments.map {
-            var s = $0; s.cornerRadius = CornerRadius(all: 25); return s
+        t.zones = theme.zones.map { z in
+            var nz = z
+            nz.segments = nz.segments.map {
+                var s = $0; s.cornerRadius = CornerRadius(all: 25); return s
+            }
+            return nz
         }
         return t
     }
@@ -274,10 +310,14 @@ public struct ThemeRegistry {
         var t = theme
         t.id = theme.id + ".acrylic"
         t.displayName = theme.displayName + " (Acrylic)"
-        t.segments = theme.segments.map {
-            var s = $0
-            s.surface = .acrylic(tintToken: "chromeAltHigh", opacity: 0.8)
-            return s
+        t.zones = theme.zones.map { z in
+            var nz = z
+            nz.segments = nz.segments.map {
+                var s = $0
+                s.surface = .acrylic(tintToken: "chromeAltHigh", opacity: 0.8)
+                return s
+            }
+            return nz
         }
         return t
     }
@@ -287,10 +327,14 @@ public struct ThemeRegistry {
         var t = theme
         t.id = theme.id + ".noWidgets"
         t.displayName = theme.displayName + " (No Widgets)"
-        t.segments = theme.segments.map {
-            var s = $0
-            s.slots = s.slots.filter { $0 != .leading }
-            return s
+        t.zones = theme.zones.map { z in
+            var nz = z
+            nz.segments = nz.segments.compactMap {
+                var s = $0
+                s.slots = s.slots.filter { $0 != .leading }
+                return s.slots.isEmpty ? nil : s
+            }
+            return nz
         }
         return t
     }

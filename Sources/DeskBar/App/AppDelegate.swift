@@ -574,14 +574,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             if let panel = panels[displayID] {
-                panel.updateFrame(for: screen)
+                panel.updateFrame(animated: false) // screen is tracked via displayID
                 continue
             }
 
             let panel = TaskbarPanel(
-                permissionsManager: permissionsManager,
                 settings: settings,
-                screen: screen
+                permissionsManager: permissionsManager,
+                screen: screen,
+                displayID: displayID
             )
             panel.updateCollectionBehavior(showOverFullScreenApps: settings.showOverFullScreenApps)
             
@@ -597,10 +598,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case .floatingCenter: themeID = "floatingCenter"
                 case .windows11FullWidth: themeID = "windows11.fullWidth"
                 case .windows11Floating: themeID = "windows11.floating"
+                case .macosThreeZone: themeID = "macos.threeZone"
                 }
             }
 
-            let coordinator = ThemeCoordinator(settings: settings, windowManager: windowManager, screen: screen, themeID: themeID, weatherService: weatherService, resourceMonitor: systemResourceMonitor, calendarService: calendarService)
+            let coordinator = ThemeCoordinator(settings: settings, windowManager: windowManager, screen: screen, themeID: themeID, pinnedAppManager: pinnedAppManager, weatherService: weatherService, resourceMonitor: systemResourceMonitor, calendarService: calendarService)
             panel.setContentSubview(coordinator.containerView)
             themeCoordinators[displayID] = coordinator
             panels[displayID] = panel

@@ -26,3 +26,4 @@ build_log*.txt
 /purge_*.py
 /popover_*.sh
 /test_*.swift
+DockBar-OLD.app/

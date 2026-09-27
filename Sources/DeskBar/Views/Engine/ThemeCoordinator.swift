@@ -9,6 +9,7 @@ final class ThemeCoordinator: ObservableObject {
     private let settings: TaskbarSettings
     private let windowManager: WindowManager
     private var cancellables = Set<AnyCancellable>()
+    private var screen: NSScreen
     private var screenFrame: CGRect
 
     private let themeID: String
@@ -16,14 +17,17 @@ final class ThemeCoordinator: ObservableObject {
     private var weatherService: WeatherService?
     private var resourceMonitor: SystemResourceMonitor?
     private var calendarService: CalendarEventService?
+    private let pinnedAppManager: PinnedAppManager
     
-    init(settings: TaskbarSettings, windowManager: WindowManager, screen: NSScreen, themeID: String, weatherService: WeatherService? = nil, resourceMonitor: SystemResourceMonitor? = nil, calendarService: CalendarEventService? = nil) {
+    init(settings: TaskbarSettings, windowManager: WindowManager, screen: NSScreen, themeID: String, pinnedAppManager: PinnedAppManager, weatherService: WeatherService? = nil, resourceMonitor: SystemResourceMonitor? = nil, calendarService: CalendarEventService? = nil) {
         self.themeID = themeID
         self.settings = settings
         self.windowManager = windowManager
+        self.pinnedAppManager = pinnedAppManager
         self.weatherService = weatherService
         self.resourceMonitor = resourceMonitor
         self.calendarService = calendarService
+        self.screen = screen
         self.screenFrame = screen.frame
         let theme = ThemeRegistry.shared.theme(for: themeID)!
         self.containerView = ThemeContainerView(theme: theme)
@@ -35,18 +39,58 @@ final class ThemeCoordinator: ObservableObject {
                 .icon
         }
 
+
+        // Instantiate widgets
+        for def in WidgetRegistry.shared.definitions {
+            switch def.id {
+            case "clock":
+                let clock = DockClockWidgetView()
+                containerView.setWidgetView(clock, for: def.id)
+            case "weather":
+                if let ws = weatherService {
+                    let weather = DockWeatherWidgetView(weatherService: ws, settings: settings)
+                    containerView.setWidgetView(weather, for: def.id)
+                }
+            case "battery":
+                if let ws = weatherService {
+                    let battery = DockBatteryWidgetView(settings: settings, weatherService: ws)
+                    containerView.setWidgetView(battery, for: def.id)
+                }
+            case "systemResources":
+                if let rm = resourceMonitor {
+                    let resources = SystemResourceWidgetView(settings: settings, monitor: rm, displayID: CGMainDisplayID())
+                    containerView.setWidgetView(resources, for: def.id)
+                }
+            case "connectivity":
+                let conn = ConnectivityTrayView(settings: settings)
+                containerView.setWidgetView(conn, for: def.id)
+            case "quickSettings":
+                let qs = QuickSettingsWidgetView(settings: settings)
+                containerView.setWidgetView(qs, for: def.id)
+            case "startButton":
+                let start = AppsLauncherButtonView()
+                containerView.setWidgetView(start, for: def.id)
+            default: break
+            }
+        }
+
         bind()
     }
 
     private func bind() {
         // Re-resolve whenever apps change
-        windowManager.$visibleWindows
+        windowManager.$visibleWindows.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$dockMode.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$weatherEnabled.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showSystemResourceWidget.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        pinnedAppManager.$pinnedApps
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.resolve() }
             .store(in: &cancellables)
     }
 
     func updateScreen(_ screen: NSScreen) {
+        self.screen = screen
         self.screenFrame = screen.frame
         resolve()
     }
@@ -63,7 +107,7 @@ final class ThemeCoordinator: ObservableObject {
         
         let frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         
-        let apps = groups.map { id, windows in
+        var apps = groups.map { id, windows in
             LayoutEngine.AppItem(
                 id: id,
                 isRunning: true,
@@ -71,6 +115,19 @@ final class ThemeCoordinator: ObservableObject {
                 hasMultipleWindows: windows.count > 1,
                 isMinimized: windows.allSatisfy { $0.isMinimized }
             )
+        }
+        
+        // Add pinned apps that are NOT running
+        for pinned in pinnedAppManager.pinnedApps {
+            if groups[pinned.bundleIdentifier] == nil {
+                apps.append(LayoutEngine.AppItem(
+                    id: pinned.bundleIdentifier,
+                    isRunning: false,
+                    isFocused: false,
+                    hasMultipleWindows: false,
+                    isMinimized: false
+                ))
+            }
         }
         var widgetRequests: [LayoutEngine.Input.WidgetRequest] = []
         for def in WidgetRegistry.shared.definitions {
@@ -85,7 +142,7 @@ final class ThemeCoordinator: ObservableObject {
                 isEnabled = settings.weatherEnabled
             case "battery":
                 rule = settings.batteryWidgetLocation
-            case "resources":
+            case "systemResources":
                 isEnabled = settings.showSystemResourceWidget
                 rule = settings.systemResourceWidgetLocation
             case "connectivity":
@@ -107,8 +164,8 @@ final class ThemeCoordinator: ObservableObject {
             apps: apps,
             activeAppID: frontmostApp,
             widgetRequests: widgetRequests,
-            isDockHidden: false, // Wire up to settings.dockMode later
-            isFullScreen: false // Wire up to fullscreen detector later
+            isDockHidden: settings.dockMode == .hidden,
+            isFullScreen: windowManager.hasFullScreenWindow(on: screen)
         )
         let resolved = LayoutEngine.resolve(input: input)
         containerView.applyTheme(theme)

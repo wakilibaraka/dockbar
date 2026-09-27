@@ -43,6 +43,11 @@ public final class ThemeContainerView: NSView {
         syncSegmentViews()
         syncTaskButtonViews()
         syncWidgetViews()
+        
+        // Invariant: no phantom slots allowed.
+        for id in resolved.widgetFrames.keys {
+            precondition(widgetViews[id] != nil, "Phantom slot detected: Widget '\(id)' reserved a slot in LayoutEngine but has no corresponding view mounted in ThemeContainerView.")
+        }
     }
 
     public func setWidgetView(_ view: NSView, for id: String) {
@@ -72,7 +77,7 @@ public final class ThemeContainerView: NSView {
         guard let layout else { return }
 
         var liveIDs = Set<String>()
-        for segment in theme.segments {
+        for segment in theme.zones.flatMap({ $0.segments }) {
             liveIDs.insert(segment.id)
             guard let frame = layout.segmentFrames[segment.id] else { continue }
 
