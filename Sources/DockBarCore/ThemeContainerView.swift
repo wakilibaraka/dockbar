@@ -12,7 +12,7 @@ public final class ThemeContainerView: NSView {
     // MARK: - Child views (keyed so they can be reused across re-layouts)
     private var segmentViews: [String: SegmentView] = [:]
     private var taskButtonViews: [String: TaskButtonEngineView] = [:]
-    private var widgetViews: [String: NSView] = [:]
+    public var widgetViews: [String: NSView] = [:]
 
     // MARK: - App icon cache (injected by caller)
     public var iconProvider: ((String) -> NSImage?)? // appID → icon

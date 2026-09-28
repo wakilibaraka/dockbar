@@ -5,6 +5,7 @@ import DockBarCore
 
 /// Coordinates between live services and ThemeContainerView.
 /// Reads WindowManager output only — does not call any WindowManager methods.
+@MainActor
 final class ThemeCoordinator: NSObject, ObservableObject {
     let containerView: ThemeContainerView
     private let settings: TaskbarSettings
@@ -44,6 +45,10 @@ final class ThemeCoordinator: NSObject, ObservableObject {
         theme.icons.size = min(28 * scale, currentHeight - 8)
         self.containerView = ThemeContainerView(theme: theme)
         super.init()
+        
+        WidgetEngine.shared.flyoutHandler = { [weak self] id, content in
+            self?.presentFlyout(for: id, content: content)
+        }
 
         // Icon provider: ask the system for the running app icon
         containerView.iconProvider = { appID in
@@ -54,75 +59,12 @@ final class ThemeCoordinator: NSObject, ObservableObject {
 
 
         // Instantiate widgets
-        for def in WidgetRegistry.shared.definitions {
-            switch def.id {
-            case "clock":
-                let clock = DockClockWidgetView()
-                containerView.setWidgetView(clock, for: def.id)
-            case "weather":
-                if let ws = weatherService {
-                    let weather = DockWeatherWidgetView(weatherService: ws, settings: settings)
-                    containerView.setWidgetView(weather, for: def.id)
-                }
-
-            case "systemStats":
-                if let rm = resourceMonitor {
-                    let resources = SystemStatsWidgetView(settings: settings, monitor: rm, windowManager: self.windowManager)
-                    containerView.setWidgetView(resources, for: def.id)
-                }
-            case "connectivity":
-                let conn = ConnectivityTrayView(settings: settings)
-                containerView.setWidgetView(conn, for: def.id)
-            case "quickSettings":
-                let qs = QuickSettingsWidgetView(settings: settings)
-                containerView.setWidgetView(qs, for: def.id)
-            case "startButton":
-                let start = AppsLauncherButtonView()
-                containerView.setWidgetView(start, for: def.id)
-            case "liveEvents":
-                if let ws = weatherService {
-                    let live = LiveEventsWidgetView(weatherService: ws, settings: settings)
-                    containerView.setWidgetView(live, for: def.id)
-                }
-
-
-            case "widgetsBoard":
-                let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.offgrid", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
-                v.bezelStyle = .texturedRounded
-                v.isBordered = false
-                containerView.setWidgetView(v, for: def.id)
-            case "trash":
-                let v = NSButton(image: NSImage(systemSymbolName: "trash", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
-                v.bezelStyle = .texturedRounded
-                v.isBordered = false
-                v.target = TrashActionHandler.shared
-                v.action = #selector(TrashActionHandler.shared.openTrash)
-                
-                // Add right-click menu
-                let menu = NSMenu()
-                let emptyItem = NSMenuItem(title: "Empty Trash", action: #selector(TrashActionHandler.shared.emptyTrash), keyEquivalent: "")
-                emptyItem.target = TrashActionHandler.shared
-                menu.addItem(emptyItem)
-                v.menu = menu
-                
-                containerView.setWidgetView(v, for: def.id)
-            case "downloads":
-                let v = DownloadsWidgetView(frame: .zero)
-                DownloadsActionHandler.shared.widgetView = v
-                DownloadsActionHandler.shared.settings = settings
-                v.target = DownloadsActionHandler.shared
-                v.action = #selector(DownloadsActionHandler.shared.openDownloads)
-                containerView.setWidgetView(v, for: def.id)
-                // Bind
-                DownloadsMonitor.shared.$activeDownloads
-                    .receive(on: DispatchQueue.main)
-                    .sink { actives in
-                    v.isDownloading = !actives.isEmpty
-                    if let first = actives.first {
-                        v.progress = first.progress
-                    }
-                }.store(in: &DownloadsActionHandler.shared.cancellables)
-            default: break
+        let activeWidgets = settings.leadingWidgets + settings.centerWidgets + settings.trailingWidgets
+        for id in activeWidgets {
+            if id == "appLauncher" { continue } // Natively handled by ThemeCoordinator
+            
+            if let widgetView = WidgetEngine.shared.makeView(for: id, settings: settings) {
+                containerView.setWidgetView(widgetView, for: id)
             }
         }
 
@@ -275,44 +217,25 @@ final class ThemeCoordinator: NSObject, ObservableObject {
             runningApps: runningApps
         )
         var widgetRequests: [LayoutEngine.Input.WidgetRequest] = []
-        for def in WidgetRegistry.shared.definitions {
-            var rule = def.defaultRule
-            var isEnabled = true
-            
-            switch def.id {
-            case "clock":
-                // no clock settings
-                break
-            case "weather":
-                isEnabled = settings.weatherEnabled
-                        case "systemStats":
-                isEnabled = settings.showSystemResourceWidget
-                rule = settings.systemResourceWidgetLocation
-            case "connectivity":
-                rule = settings.connectivityTrayLocation
-            case "startButton":
-                isEnabled = settings.showStartButton
-            case "search":
-                isEnabled = settings.showSearch
-
-            case "widgetsBoard":
-                isEnabled = settings.showWidgetsBoard
-            case "trash":
-                isEnabled = settings.showTrash
-            case "downloads":
-                isEnabled = settings.showDownloads
-            case "liveEvents":
-                isEnabled = settings.showLiveEvents
-            default: break
-            }
-            
-            if isEnabled {
-                widgetRequests.append(.init(id: def.id, slot: def.slotEligibility, rule: rule, size: def.fixedSize))
+        
+        // Leading Widgets
+        for id in settings.leadingWidgets {
+            if let desc = WidgetEngine.shared.descriptor(for: id) {
+                var rule = desc.defaultRule
+                if id == "weather" { rule = settings.weatherWidgetLocation }
+                widgetRequests.append(.init(id: id, slot: .leading, rule: rule, size: desc.preferredSize))
             }
         }
-
-
-
+        
+        // Trailing Widgets
+        for id in settings.trailingWidgets {
+            if let desc = WidgetEngine.shared.descriptor(for: id) {
+                var rule = desc.defaultRule
+                if id == "systemStats" { rule = settings.systemResourceWidgetLocation }
+                if id == "connectivity" { rule = settings.connectivityTrayLocation }
+                widgetRequests.append(.init(id: id, slot: .tray, rule: rule, size: desc.preferredSize))
+            }
+        }
         let input = LayoutEngine.Input(
             theme: theme,
             screenFrame: screenFrame,
@@ -332,6 +255,32 @@ final class ThemeCoordinator: NSObject, ObservableObject {
         containerView.applyLayout(resolved)
     }
     
+    private var activeFlyout: BorderlessFlyout?
+
+    private func presentFlyout(for id: String, content: AnyView) {
+        if activeFlyout?.isShown == true {
+            activeFlyout?.performClose(nil)
+            activeFlyout = nil
+            return
+        }
+        
+        guard let anchorView = containerView.widgetViews[id] else { return }
+        
+        let newFlyout = BorderlessFlyout()
+        newFlyout.onDismiss = { [weak self] in self?.activeFlyout = nil }
+        
+        let rootVC = NSHostingController(rootView: content)
+        rootVC.view.translatesAutoresizingMaskIntoConstraints = false
+        // Estimate size
+        rootVC.view.layoutSubtreeIfNeeded()
+        let fittingSize = rootVC.view.fittingSize
+        rootVC.view.frame = NSRect(origin: .zero, size: fittingSize)
+        rootVC.preferredContentSize = fittingSize
+        
+        newFlyout.show(contentViewController: rootVC, relativeTo: anchorView.bounds, of: anchorView)
+        self.activeFlyout = newFlyout
+    }
+
     @objc private func raiseWindow(_ sender: NSMenuItem) {
         guard let dict = sender.representedObject as? [String: Any],
               let pid = dict["pid"] as? pid_t,

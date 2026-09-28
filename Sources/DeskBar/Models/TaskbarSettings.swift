@@ -313,6 +313,15 @@ class TaskbarSettings: ObservableObject {
     @Published var appAlignment: DeskBarAppAlignment {
         didSet { defaults.set(appAlignment.rawValue, forKey: "appAlignment") }
     }
+    @Published var leadingWidgets: [String] {
+        didSet { defaults.set(leadingWidgets, forKey: "leadingWidgets") }
+    }
+    @Published var centerWidgets: [String] {
+        didSet { defaults.set(centerWidgets, forKey: "centerWidgets") }
+    }
+    @Published var trailingWidgets: [String] {
+        didSet { defaults.set(trailingWidgets, forKey: "trailingWidgets") }
+    }
     @Published var showStartButton: Bool {
         didSet { defaults.set(showStartButton, forKey: "showStartButton") }
     }
@@ -518,7 +527,34 @@ class TaskbarSettings: ObservableObject {
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
         appAlignment = DeskBarAppAlignment(rawValue: defaults.string(forKey: "appAlignment") ?? "") ?? .centered
-        showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
+        // Migration logic for widgets
+        if defaults.object(forKey: "leadingWidgets") == nil {
+            var leading: [String] = []
+            if defaults.object(forKey: "showStartButton") as? Bool ?? true { leading.append("startButton") }
+            if defaults.object(forKey: "showLiveEvents") as? Bool ?? false { leading.append("liveEvents") }
+            if defaults.object(forKey: "weatherEnabled") as? Bool ?? false { leading.append("weather") }
+            defaults.set(leading, forKey: "leadingWidgets")
+        }
+        if defaults.object(forKey: "centerWidgets") == nil {
+            let center: [String] = ["appLauncher"]
+            defaults.set(center, forKey: "centerWidgets")
+        }
+        if defaults.object(forKey: "trailingWidgets") == nil {
+            var trailing: [String] = []
+            trailing.append("connectivity")
+            if defaults.object(forKey: "showSystemResourceWidget") as? Bool ?? false { trailing.append("systemStats") }
+            trailing.append("battery")
+            trailing.append("clock")
+            if defaults.object(forKey: "showQuickSettings") as? Bool ?? false { trailing.append("quickSettings") }
+            if defaults.object(forKey: "showDownloads") as? Bool ?? false { trailing.append("downloads") }
+            if defaults.object(forKey: "showTrash") as? Bool ?? true { trailing.append("trash") }
+            defaults.set(trailing, forKey: "trailingWidgets")
+        }
+        
+        leadingWidgets = defaults.stringArray(forKey: "leadingWidgets") ?? ["startButton"]
+        centerWidgets = defaults.stringArray(forKey: "centerWidgets") ?? ["appLauncher"]
+        trailingWidgets = defaults.stringArray(forKey: "trailingWidgets") ?? ["connectivity", "battery", "clock"]
+                showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
         showSearch = defaults.object(forKey: "showSearch") as? Bool ?? true
         downloadsAction = defaults.object(forKey: "downloadsAction") as? Int ?? 2
         downloadsExternalApp = defaults.string(forKey: "downloadsExternalApp") ?? ""

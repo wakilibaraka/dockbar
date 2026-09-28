@@ -3,6 +3,7 @@ import SwiftUI
 import Combine
 import Darwin
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let minimumTaskbarReservationHeight: CGFloat = 32
 
@@ -72,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         wm.taskbarHeight = Self.taskbarReservationHeight(for: settings.taskbarHeight)
         windowManager = wm
+        WindowManager.shared = wm
 
         let badgeMonitor = BadgeMonitor()
         self.badgeMonitor = badgeMonitor
@@ -90,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let weatherService = WeatherService(settings: settings)
         self.weatherService = weatherService
+        WidgetEngine.shared.weatherService = weatherService
         weatherService.start()
 
         let windowLayoutSnapshotManager = WindowLayoutSnapshotManager(windowManager: wm)
@@ -289,16 +292,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         guard let validSettings = self.settings,
                               let validMonitor = self.systemResourceMonitor,
                               let validSMPlugin = self.smPluginService else { return }
-                        let view = SystemStatsWidgetView(settings: validSettings, monitor: validMonitor, windowManager: self.windowManager!)
-                        view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                        item.button?.addSubview(view)
-                        item.length = view.preferredContentWidth()
-
-                        view.preferredWidthDidChange = { [weak item, weak view] in
-                            if let item = item, let view = view {
-                                item.length = view.preferredContentWidth()
-                                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                            }
+                        if let view = WidgetEngine.shared.makeView(for: "systemStats", settings: validSettings) {
+                            view.frame = NSRect(x: 0, y: 0, width: 70, height: 22)
+                            item.button?.addSubview(view)
+                            item.length = 70
                         }
                     } else {
                         item.button?.subviews.forEach { $0.removeFromSuperview() }
@@ -563,7 +560,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func reconcilePanels() {
+    @MainActor private func reconcilePanels() {
         guard
             let settings,
             let windowManager,

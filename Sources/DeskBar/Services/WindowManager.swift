@@ -4,6 +4,7 @@ import Combine
 import Darwin
 
 final class WindowManager: ObservableObject {
+    static var shared: WindowManager!
     @Published var windows: [WindowInfo] = []
     @Published private(set) var visibleWindows: [WindowInfo] = []
     @Published private(set) var trayApps: [TrayApplicationInfo] = []

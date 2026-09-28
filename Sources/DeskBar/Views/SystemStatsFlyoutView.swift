@@ -6,7 +6,7 @@ struct SystemStatsFlyoutView: View {
     @ObservedObject var monitor: SystemResourceMonitor
     @ObservedObject var windowManager: WindowManager
     @StateObject private var samples = ResourceSamples()
-    @StateObject private var batteryService = SystemStatsService.shared
+    //@StateObject private var batteryService = SystemStatsService.shared
     
     var body: some View {
         VStack(spacing: 16) {
@@ -27,35 +27,35 @@ struct SystemStatsFlyoutView: View {
                 ResourceRow(title: "RAM", valueText: text, percent: memory, color: .green, samples: samples.memory)
             }
             
-            // Battery
-            if let bat = batteryService.batteryStats {
-                VStack(spacing: 6) {
-                    HStack {
-                        Text("Battery")
-                            .font(.system(size: 12, weight: .medium))
-                        Spacer()
-                        Text("\(Int(bat.percentage))% • \(bat.isCharging ? "Charging" : "Discharging")")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    MetricGraphView(
-                        samples: [bat.percentage],
-                        accent: bat.percentage < 20 && !bat.isCharging ? .red : .yellow,
-                        style: .filledWave,
-                        maximum: 100
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    HStack {
-                        Text("Health: \(bat.healthPercentage)%")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(bat.cycleCount) Cycles")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
+//            // Battery
+//            if let bat = batteryService.batteryStats {
+//                VStack(spacing: 6) {
+//                    HStack {
+//                        Text("Battery")
+//                            .font(.system(size: 12, weight: .medium))
+//                        Spacer()
+//                        Text("\(Int(bat.percentage))% • \(bat.isCharging ? "Charging" : "Discharging")")
+//                            .font(.system(size: 12, weight: .semibold))
+//                    }
+//                    MetricGraphView(
+//                        samples: [bat.percentage],
+//                        accent: bat.percentage < 20 && !bat.isCharging ? .red : .yellow,
+//                        style: .filledWave,
+//                        maximum: 100
+//                    )
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//                    
+//                    HStack {
+//                        Text("Health: \(bat.healthPercentage)%")
+//                            .font(.system(size: 10))
+//                            .foregroundColor(.secondary)
+//                        Spacer()
+//                        Text("\(bat.cycleCount) Cycles")
+//                            .font(.system(size: 10))
+//                            .foregroundColor(.secondary)
+//                    }
+//                }
+//            }
             
             Divider()
                 .background(Color.white.opacity(0.1))
