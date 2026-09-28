@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Combine
 import DockBarCore
 
@@ -107,9 +108,20 @@ final class ThemeCoordinator: NSObject, ObservableObject {
                 containerView.setWidgetView(v, for: def.id)
             case "downloads":
                 let v = DownloadsWidgetView(frame: .zero)
+                DownloadsActionHandler.shared.widgetView = v
+                DownloadsActionHandler.shared.settings = settings
                 v.target = DownloadsActionHandler.shared
                 v.action = #selector(DownloadsActionHandler.shared.openDownloads)
                 containerView.setWidgetView(v, for: def.id)
+                // Bind
+                DownloadsMonitor.shared.$activeDownloads
+                    .receive(on: DispatchQueue.main)
+                    .sink { actives in
+                    v.isDownloading = !actives.isEmpty
+                    if let first = actives.first {
+                        v.progress = first.progress
+                    }
+                }.store(in: &DownloadsActionHandler.shared.cancellables)
             default: break
             }
         }
@@ -385,6 +397,11 @@ class TrashActionHandler {
 
 class DownloadsActionHandler {
     static let shared = DownloadsActionHandler()
+    var widgetView: NSView?
+    var flyout: BorderlessFlyout?
+    var settings: TaskbarSettings?
+    var cancellables = Set<AnyCancellable>()
+    
     @objc func openDownloads() {
         let mode = UserDefaults.standard.integer(forKey: "downloadsAction")
         if mode == 3, let externalApp = UserDefaults.standard.string(forKey: "downloadsExternalApp") {
@@ -392,9 +409,24 @@ class DownloadsActionHandler {
                 NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
                 return
             }
+        } else if mode == 2 {
+            let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+            NSWorkspace.shared.open(downloadsURL)
+            return
         }
         
-        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
-        NSWorkspace.shared.open(downloadsURL)
+        // Mode 1 or fallback: Flyout
+        guard let view = widgetView else { return }
+        if let current = flyout, current.isShown {
+            current.performClose(nil)
+            return
+        }
+        
+        let popover = BorderlessFlyout()
+        popover.onDismiss = { [weak self] in self?.flyout = nil }
+        
+        let hc = SwiftUI.NSHostingController(rootView: DownloadsFlyoutView().environmentObject(settings!))
+        popover.show(contentViewController: hc, relativeTo: view.bounds, of: view)
+        flyout = popover
     }
 }
