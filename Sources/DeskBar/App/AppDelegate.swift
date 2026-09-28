@@ -289,7 +289,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         guard let validSettings = self.settings,
                               let validMonitor = self.systemResourceMonitor,
                               let validSMPlugin = self.smPluginService else { return }
-                        let view = SystemResourceWidgetView(settings: validSettings, monitor: validMonitor, displayID: CGMainDisplayID())
+                        let view = SystemStatsWidgetView(settings: validSettings, monitor: validMonitor)
                         view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
                         item.button?.addSubview(view)
                         item.length = view.preferredContentWidth()
@@ -443,7 +443,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.popoverEventMonitor = nil
             }
         }
-        newPopover.show(contentViewController: NSHostingController(rootView: BatteryFlyoutView(weatherService: self.weatherService!).environmentObject(self.settings!)), relativeTo: button.bounds, of: button)
+        newPopover.show(contentViewController: NSHostingController(rootView: SystemStatsFlyoutView(monitor: self.systemResourceMonitor!)), relativeTo: button.bounds, of: button)
         self.batteryFlyout = newPopover
         NSApp.activate(ignoringOtherApps: true)
         

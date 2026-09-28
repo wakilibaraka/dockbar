@@ -1,98 +1,68 @@
 import SwiftUI
+import Combine
+import AppKit
 
-struct SystemResourceDashboardView: View {
+struct SystemStatsFlyoutView: View {
     @ObservedObject var monitor: SystemResourceMonitor
-
-    
-    // Theme Colors
-    private let bgCard = Color.black.opacity(0.15)
-    private let bgAccent = Color(nsColor: NSColor(red: 0.12, green: 0.14, blue: 0.16, alpha: 1.0))
-    private let borderDark = Color.white.opacity(0.05)
+    @StateObject private var samples = ResourceSamples()
+    @StateObject private var batteryService = SystemStatsService.shared
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
+            // CPU & GPU
+            HStack(spacing: 12) {
+                if let cpu = monitor.snapshot.cpuPercent {
+                    ResourceRow(title: "CPU", valueText: String(format: "%.0f%%", cpu), percent: cpu, color: .blue, samples: samples.cpu)
+                }
+                
+                if let gpu = monitor.snapshot.gpuPercent {
+                    ResourceRow(title: "GPU", valueText: String(format: "%.0f%%", gpu), percent: gpu, color: .purple, samples: samples.gpu)
+                }
+            }
             
-            // 3. System Resources
-            SystemResourcesSectionView(monitor: monitor)
+            // RAM
+            if let memory = monitor.snapshot.memoryUsedPercent {
+                let text = "\(formatBytes(monitor.snapshot.memoryUsedBytes ?? 0)) / \(formatBytes(monitor.snapshot.memoryTotalBytes ?? 0))"
+                ResourceRow(title: "RAM", valueText: text, percent: memory, color: .green, samples: samples.memory)
+            }
             
-            Divider().overlay(borderDark)
+            // Battery
+            if let bat = batteryService.batteryStats {
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Battery")
+                            .font(.system(size: 12, weight: .medium))
+                        Spacer()
+                        Text("\(Int(bat.percentage))% • \(bat.isCharging ? "Charging" : "Discharging")")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    MetricGraphView(
+                        samples: [bat.percentage],
+                        accent: bat.percentage < 20 && !bat.isCharging ? .red : .yellow,
+                        style: .filledWave,
+                        maximum: 100
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    HStack {
+                        Text("Health: \(bat.healthPercentage)%")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(bat.cycleCount) Cycles")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
             
-            // 4. Background Processes
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
             BackgroundProcessesSectionView()
-            
         }
         .padding(16)
         .frame(width: 280)
-
-        .onAppear {
-            BluetoothStatsService.shared.startMonitoring()
-        }
-        .onDisappear {
-            BluetoothStatsService.shared.stopMonitoring()
-        }
-    }
-}
-
-
-
-
-// MARK: - System Resources
-struct SystemResourcesSectionView: View {
-    @ObservedObject var monitor: SystemResourceMonitor
-    @StateObject private var networkMonitor = NetworkThroughputMonitor()
-    @StateObject private var samples = ResourceSamples()
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("System Resources")
-                .font(.system(size: 14, weight: .semibold))
-            
-            VStack(spacing: 12) {
-                ResourceRow(
-                    title: "Memory",
-                    valueText: formatBytes(monitor.snapshot.memoryUsedBytes ?? 0),
-                    percent: monitor.snapshot.memoryPressurePercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.20, green: 0.49, blue: 0.93, alpha: 1.0)),
-                    samples: samples.memory
-                )
-                
-                ResourceRow(
-                    title: "CPU",
-                    valueText: String(format: "%.1f%%", monitor.snapshot.cpuPercent ?? 0),
-                    percent: monitor.snapshot.cpuPercent ?? 0,
-                    color: Color(nsColor: NSColor(red: 0.48, green: 0.67, blue: 0.96, alpha: 1.0)),
-                    samples: samples.cpu
-                )
-                
-                if let gpu = monitor.snapshot.gpuPercent {
-                    ResourceRow(
-                        title: "GPU",
-                        valueText: String(format: "%.1f%%", gpu),
-                        percent: gpu,
-                        color: Color.purple.opacity(0.7),
-                        samples: samples.gpu
-                    )
-                }
-
-                ResourceRow(
-                    title: "Download",
-                    valueText: formatRate(networkMonitor.downloadRate),
-                    percent: 0,
-                    color: .green,
-                    samples: networkMonitor.downloadSamples,
-                    maximum: max(networkMonitor.downloadSamples.max() ?? 1, 1)
-                )
-
-                ResourceRow(
-                    title: "Upload",
-                    valueText: formatRate(networkMonitor.uploadRate),
-                    percent: 0,
-                    color: .orange,
-                    samples: networkMonitor.uploadSamples,
-                    maximum: max(networkMonitor.uploadSamples.max() ?? 1, 1)
-                )
-            }
-        }
         .onReceive(monitor.$snapshot) { snapshot in
             if let cpu = snapshot.cpuPercent {
                 samples.cpu = Array((samples.cpu + [cpu]).suffix(60))
@@ -109,11 +79,6 @@ struct SystemResourcesSectionView: View {
     private func formatBytes(_ bytes: UInt64) -> String {
         let gb = Double(bytes) / 1_073_741_824
         return String(format: "%.1f GB", gb)
-    }
-
-    private func formatRate(_ bytesPerSecond: Double) -> String {
-        let megabits = bytesPerSecond * 8 / 1_000_000
-        return String(format: "%.1f Mbps", megabits)
     }
 }
 

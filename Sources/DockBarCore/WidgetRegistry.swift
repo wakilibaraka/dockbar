@@ -40,8 +40,7 @@ public class WidgetRegistry {
         self.definitions = [
             WidgetDefinition(id: "startButton", slotEligibility: .startButton, defaultRule: .dock, fixedSize: CGSize(width: 44, height: 44)),
             WidgetDefinition(id: "weather", slotEligibility: .leading, defaultRule: .auto, fixedSize: CGSize(width: 80, height: 44)),
-            WidgetDefinition(id: "systemResources", slotEligibility: .tray, defaultRule: .dock, fixedSize: CGSize(width: 50, height: 44)),
-            WidgetDefinition(id: "battery", slotEligibility: .tray, defaultRule: .auto, fixedSize: CGSize(width: 56, height: 44)),
+            WidgetDefinition(id: "systemStats", slotEligibility: .tray, defaultRule: .dock, fixedSize: CGSize(width: 100, height: 44)),
             WidgetDefinition(id: "connectivity", slotEligibility: .tray, defaultRule: .auto, fixedSize: CGSize(width: 60, height: 44)),
             WidgetDefinition(id: "clock", slotEligibility: .tray, defaultRule: .dock, fixedSize: CGSize(width: 80, height: 44)),
             WidgetDefinition(id: "quickSettings", slotEligibility: .tray, defaultRule: .dock, fixedSize: CGSize(width: 44, height: 44)),

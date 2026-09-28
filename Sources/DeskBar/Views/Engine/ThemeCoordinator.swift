@@ -63,14 +63,10 @@ final class ThemeCoordinator: NSObject, ObservableObject {
                     let weather = DockWeatherWidgetView(weatherService: ws, settings: settings)
                     containerView.setWidgetView(weather, for: def.id)
                 }
-            case "battery":
-                if let ws = weatherService {
-                    let battery = DockBatteryWidgetView(settings: settings, weatherService: ws)
-                    containerView.setWidgetView(battery, for: def.id)
-                }
-            case "systemResources":
+
+            case "systemStats":
                 if let rm = resourceMonitor {
-                    let resources = SystemResourceWidgetView(settings: settings, monitor: rm, displayID: CGMainDisplayID())
+                    let resources = SystemStatsWidgetView(settings: settings, monitor: rm)
                     containerView.setWidgetView(resources, for: def.id)
                 }
             case "connectivity":
@@ -277,9 +273,7 @@ final class ThemeCoordinator: NSObject, ObservableObject {
                 break
             case "weather":
                 isEnabled = settings.weatherEnabled
-            case "battery":
-                rule = settings.batteryWidgetLocation
-            case "systemResources":
+                        case "systemStats":
                 isEnabled = settings.showSystemResourceWidget
                 rule = settings.systemResourceWidgetLocation
             case "connectivity":
