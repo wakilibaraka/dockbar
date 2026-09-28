@@ -4,11 +4,12 @@ import DockBarCore
 
 /// Coordinates between live services and ThemeContainerView.
 /// Reads WindowManager output only — does not call any WindowManager methods.
-final class ThemeCoordinator: ObservableObject {
+final class ThemeCoordinator: NSObject, ObservableObject {
     let containerView: ThemeContainerView
     private let settings: TaskbarSettings
     private let windowManager: WindowManager
     private var cancellables = Set<AnyCancellable>()
+    private var unpinnedOrder: [String] = []
     private var screen: NSScreen
     private var screenFrame: CGRect
 
@@ -29,8 +30,19 @@ final class ThemeCoordinator: ObservableObject {
         self.calendarService = calendarService
         self.screen = screen
         self.screenFrame = screen.frame
-        let theme = ThemeRegistry.shared.theme(for: themeID)!
+        var theme = ThemeRegistry.shared.theme(for: themeID)!
+        
+        // Dynamically scale height and icon sizes
+        let baseHeight: CGFloat = 44.0
+        let currentHeight = settings.taskbarHeight
+        let scale = currentHeight / baseHeight
+        
+        theme.geometry.height = currentHeight
+        // Scale icon sizes while keeping the tight padding
+        theme.icons.hitTargetSize = currentHeight
+        theme.icons.size = min(28 * scale, currentHeight - 8)
         self.containerView = ThemeContainerView(theme: theme)
+        super.init()
 
         // Icon provider: ask the system for the running app icon
         containerView.iconProvider = { appID in
@@ -98,9 +110,7 @@ final class ThemeCoordinator: ObservableObject {
                 
                 containerView.setWidgetView(v, for: def.id)
             case "downloads":
-                let v = NSButton(image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
-                v.bezelStyle = .texturedRounded
-                v.isBordered = false
+                let v = DownloadsWidgetView(frame: .zero)
                 v.target = DownloadsActionHandler.shared
                 v.action = #selector(DownloadsActionHandler.shared.openDownloads)
                 containerView.setWidgetView(v, for: def.id)
@@ -108,7 +118,8 @@ final class ThemeCoordinator: ObservableObject {
             }
         }
 
-        containerView.onAppActivate = { appID in
+        containerView.onAppActivate = { [weak self] appID in
+            guard let self else { return }
             if !AXIsProcessTrusted() {
                 let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
                 AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
@@ -135,26 +146,70 @@ final class ThemeCoordinator: ObservableObject {
                 }
                 
                 if !app.isActive {
-                    app.activate(options: [.activateIgnoringOtherApps])
+                    app.activate()
+                    if app.isHidden { app.unhide() }
+                    
                     if unminimizedWindows.isEmpty && !minimizedWindows.isEmpty {
                         AXUIElementSetAttributeValue(minimizedWindows[0], kAXMinimizedAttribute as CFString, kCFBooleanFalse as CFTypeRef)
-                    } else if !unminimizedWindows.isEmpty {
-                        AXUIElementPerformAction(unminimizedWindows[0], kAXRaiseAction as CFString)
+                    } else {
+                        for window in unminimizedWindows.reversed() {
+                            AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+                        }
                     }
                 } else {
-                    // Running & frontmost -> minimize/hide/cycle
-                    if !unminimizedWindows.isEmpty {
-                        // If multiple unminimized, cycle by raising the last one? Or hide the app?
-                        // "minimize/hide/cycle its windows (match Vorssaint)" -> typical behavior is to hide if frontmost.
-                        app.hide()
-                    } else if !minimizedWindows.isEmpty {
-                        // All minimized -> restore
+                    if unminimizedWindows.isEmpty && !minimizedWindows.isEmpty {
                         AXUIElementSetAttributeValue(minimizedWindows[0], kAXMinimizedAttribute as CFString, kCFBooleanFalse as CFTypeRef)
+                    } else if app.isHidden {
+                        app.unhide()
+                    } else {
+                        if self.settings.minimizeOnAppClick {
+                            app.hide()
+                        }
                     }
                 }
             } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appID) {
                 NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
             }
+        }
+        
+        containerView.onAppRightClick = { [weak self] appID in
+            guard let self else { return nil }
+            let menu = NSMenu(title: "")
+            
+            var windowCount = 0
+            let windows = self.windowManager.visibleWindows.filter { $0.bundleIdentifier == appID }
+            for w in windows {
+                let title = w.title ?? "Window"
+                let item = NSMenuItem(title: title, action: #selector(self.raiseWindow(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = ["pid": w.pid, "cgWindowID": w.cgWindowID]
+                menu.addItem(item)
+                windowCount += 1
+            }
+            if windowCount > 0 { menu.addItem(.separator()) }
+            
+            let isPinned = self.settings.pinnedApps.contains(appID)
+            let pinItem = NSMenuItem(title: isPinned ? "Remove from Dock" : "Keep in Dock", action: #selector(self.togglePin(_:)), keyEquivalent: "")
+            pinItem.target = self
+            pinItem.representedObject = appID
+            menu.addItem(pinItem)
+            
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appID) {
+                let showItem = NSMenuItem(title: "Show in Finder", action: #selector(self.showInFinder(_:)), keyEquivalent: "")
+                showItem.target = self
+                showItem.representedObject = url
+                menu.addItem(showItem)
+            }
+            
+            if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == appID }) {
+                menu.addItem(.separator())
+                let quitItem = NSMenuItem(title: "Quit", action: #selector(self.quitApp(_:)), keyEquivalent: "")
+                quitItem.target = self
+                quitItem.representedObject = app
+                menu.addItem(quitItem)
+            }
+            
+            return menu
         }
         
         bind()
@@ -186,39 +241,31 @@ final class ThemeCoordinator: ObservableObject {
     }
 
     private func resolve() {
-        let theme = ThemeRegistry.shared.theme(for: themeID)!
+        var theme = ThemeRegistry.shared.theme(for: themeID)!
         
-        // Group visible windows by app
-        var groups: [String: [WindowInfo]] = [:]
-        for w in windowManager.visibleWindows {
-            let id = w.bundleIdentifier ?? w.appName ?? UUID().uuidString
-            groups[id, default: []].append(w)
+        // Dynamically scale height and icon sizes
+        let baseHeight: CGFloat = 44.0
+        let currentHeight = settings.taskbarHeight
+        let scale = currentHeight / baseHeight
+        
+        theme.geometry.height = currentHeight
+        // Scale icon sizes while keeping the tight padding
+        theme.icons.hitTargetSize = currentHeight
+        theme.icons.size = min(28 * scale, currentHeight - 8)
+        
+        let windowData = windowManager.visibleWindows.map { w in
+            WindowData(bundleIdentifier: w.bundleIdentifier ?? w.appName ?? UUID().uuidString, isMinimized: w.isMinimized)
         }
-        
+        let runningApps = Set(NSWorkspace.shared.runningApplications.compactMap { $0.bundleIdentifier })
         let frontmostApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         
-        var apps = groups.map { id, windows in
-            LayoutEngine.AppItem(
-                id: id,
-                isRunning: true,
-                isFocused: id == frontmostApp,
-                hasMultipleWindows: windows.count > 1,
-                isMinimized: windows.allSatisfy { $0.isMinimized }
-            )
-        }
-        
-        // Add pinned apps that are NOT running
-        for pinned in pinnedAppManager.pinnedApps {
-            if groups[pinned.bundleIdentifier] == nil {
-                apps.append(LayoutEngine.AppItem(
-                    id: pinned.bundleIdentifier,
-                    isRunning: false,
-                    isFocused: false,
-                    hasMultipleWindows: false,
-                    isMinimized: false
-                ))
-            }
-        }
+        let apps = LayoutEngine.buildAppItems(
+            visibleWindows: windowData,
+            pinnedApps: settings.pinnedApps,
+            unpinnedOrder: &unpinnedOrder,
+            frontmostApp: frontmostApp,
+            runningApps: runningApps
+        )
         var widgetRequests: [LayoutEngine.Input.WidgetRequest] = []
         for def in WidgetRegistry.shared.definitions {
             var rule = def.defaultRule
@@ -278,15 +325,55 @@ final class ThemeCoordinator: ObservableObject {
         containerView.applyTheme(theme)
         containerView.applyLayout(resolved)
     }
+    
+    @objc private func raiseWindow(_ sender: NSMenuItem) {
+        guard let dict = sender.representedObject as? [String: Any],
+              let pid = dict["pid"] as? pid_t,
+              let cgWindowID = dict["cgWindowID"] as? CGWindowID else { return }
+        
+        if let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == pid }) {
+            app.activate()
+            let axApp = AXUIElementCreateApplication(pid)
+            var windowsValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsValue) == .success,
+               let windows = windowsValue as? [AXUIElement] {
+                for window in windows {
+                    var minVal: CFTypeRef?
+                    if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minVal) == .success,
+                       let m = minVal as? Bool, m {
+                        AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse as CFTypeRef)
+                    }
+                    AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+                }
+            }
+        }
+    }
+    
+    @objc private func togglePin(_ sender: NSMenuItem) {
+        guard let appID = sender.representedObject as? String else { return }
+        if settings.pinnedApps.contains(appID) {
+            settings.pinnedApps.removeAll(where: { $0 == appID })
+        } else {
+            settings.pinnedApps.append(appID)
+        }
+    }
+    
+    @objc private func showInFinder(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+    
+    @objc private func quitApp(_ sender: NSMenuItem) {
+        guard let app = sender.representedObject as? NSRunningApplication else { return }
+        app.terminate()
+    }
 }
-
 class TrashActionHandler {
     static let shared = TrashActionHandler()
     @objc func openTrash() {
         let url = URL(fileURLWithPath: "/Users/" + NSUserName() + "/.Trash")
         NSWorkspace.shared.open(url)
     }
-    
     @objc func emptyTrash() {
         let alert = NSAlert()
         alert.messageText = "Empty Trash?"
@@ -305,9 +392,6 @@ class TrashActionHandler {
 class DownloadsActionHandler {
     static let shared = DownloadsActionHandler()
     @objc func openDownloads() {
-        // Mode 1: Flyout (Not implemented yet, fallback to Finder)
-        // Mode 2: Finder
-        // Mode 3: External App
         let mode = UserDefaults.standard.integer(forKey: "downloadsAction")
         if mode == 3, let externalApp = UserDefaults.standard.string(forKey: "downloadsExternalApp") {
             if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: externalApp) {
@@ -316,7 +400,6 @@ class DownloadsActionHandler {
             }
         }
         
-        // Fallback for Mode 1 & 2
         let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
         NSWorkspace.shared.open(downloadsURL)
     }

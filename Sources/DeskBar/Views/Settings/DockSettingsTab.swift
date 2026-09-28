@@ -74,6 +74,64 @@ struct DockSettingsTab: View {
                 }
             }
             
+            SettingsCard(title: "App Behavior", icon: "app.badge") {
+                SettingsRow(title: "Minimize active app on click", subtitle: "If the app is already frontmost, clicking it will hide/minimize it") {
+                    Toggle("", isOn: $settings.minimizeOnAppClick)
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                VStack(alignment: .leading) {
+                    Text("Pinned Apps")
+                        .font(.headline)
+                    Text("These apps will always appear in the dock.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    List {
+                        ForEach(settings.pinnedApps, id: \.self) { appID in
+                            HStack {
+                                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appID) {
+                                    Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text(url.deletingPathExtension().lastPathComponent)
+                                } else {
+                                    Text(appID)
+                                }
+                                Spacer()
+                                Button(action: {
+                                    settings.pinnedApps.removeAll(where: { $0 == appID })
+                                }) {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .onMove { indices, newOffset in
+                            settings.pinnedApps.move(fromOffsets: indices, toOffset: newOffset)
+                        }
+                    }
+                    .frame(height: 150)
+                    .border(Color.secondary.opacity(0.2))
+                    
+                    Button("Add App...") {
+                        let panel = NSOpenPanel()
+                        panel.allowedContentTypes = [.application]
+                        panel.allowsMultipleSelection = false
+                        panel.canChooseDirectories = false
+                        if panel.runModal() == .OK, let url = panel.url,
+                           let bundle = Bundle(url: url),
+                           let id = bundle.bundleIdentifier {
+                            if !settings.pinnedApps.contains(id) {
+                                settings.pinnedApps.append(id)
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+
             SettingsCard(title: "Task Items", icon: "rectangle.stack") {
                 SettingsRow(title: "Icons Only", subtitle: "Hide app and window titles") {
                     Toggle("", isOn: Binding(get: { !settings.showTitles }, set: { settings.showTitles = !$0 }))

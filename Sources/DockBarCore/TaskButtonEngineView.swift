@@ -96,6 +96,14 @@ public final class TaskButtonEngineView: NSView {
         onActivate?()
     }
     
+    public var rightClickMenuProvider: (() -> NSMenu?)?
+    
+    public override func rightMouseDown(with event: NSEvent) {
+        if let menu = rightClickMenuProvider?() {
+            NSMenu.popUpContextMenu(menu, with: event, for: self)
+        }
+    }
+    
     public override func hitTest(_ point: NSPoint) -> NSView? {
         let localPoint = convert(point, from: superview)
         if bounds.contains(localPoint) {

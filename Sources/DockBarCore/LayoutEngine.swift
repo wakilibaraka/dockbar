@@ -432,3 +432,81 @@ public struct LayoutEngine {
         return .unfocused
     }
 }
+
+    // MARK: - App List Builder
+    
+    public struct WindowData {
+        public let bundleIdentifier: String
+        public let isMinimized: Bool
+        public init(bundleIdentifier: String, isMinimized: Bool) {
+            self.bundleIdentifier = bundleIdentifier
+            self.isMinimized = isMinimized
+        }
+    }
+    
+extension LayoutEngine {
+    public static func buildAppItems(
+        visibleWindows: [WindowData],
+        pinnedApps: [String],
+        unpinnedOrder: inout [String],
+        frontmostApp: String?,
+        runningApps: Set<String>
+    ) -> [AppItem] {
+        var groups: [String: [WindowData]] = [:]
+        for w in visibleWindows {
+            groups[w.bundleIdentifier, default: []].append(w)
+        }
+        
+        var apps: [AppItem] = []
+        
+        // 1. Pinned apps
+        for pinned in pinnedApps {
+            let windows = groups[pinned] ?? []
+            let isRunning = !windows.isEmpty || runningApps.contains(pinned)
+            
+            apps.append(AppItem(
+                id: pinned,
+                isRunning: isRunning,
+                isFocused: pinned == frontmostApp,
+                hasMultipleWindows: windows.count > 1,
+                isMinimized: isRunning && !windows.isEmpty && windows.allSatisfy { $0.isMinimized }
+            ))
+            
+            groups.removeValue(forKey: pinned)
+        }
+        
+        // 2. Running-unpinned in stable order
+        var newUnpinned: [String] = []
+        for id in unpinnedOrder {
+            if let windows = groups[id] {
+                apps.append(AppItem(
+                    id: id,
+                    isRunning: true,
+                    isFocused: id == frontmostApp,
+                    hasMultipleWindows: windows.count > 1,
+                    isMinimized: windows.allSatisfy { $0.isMinimized }
+                ))
+                newUnpinned.append(id)
+                groups.removeValue(forKey: id)
+            }
+        }
+        
+        // Any new unpinned apps
+        let sortedNewUnpinned = groups.keys.sorted()
+        for id in sortedNewUnpinned {
+            if let windows = groups[id] {
+                apps.append(AppItem(
+                    id: id,
+                    isRunning: true,
+                    isFocused: id == frontmostApp,
+                    hasMultipleWindows: windows.count > 1,
+                    isMinimized: windows.allSatisfy { $0.isMinimized }
+                ))
+                newUnpinned.append(id)
+            }
+        }
+        unpinnedOrder = newUnpinned
+        
+        return apps
+    }
+}

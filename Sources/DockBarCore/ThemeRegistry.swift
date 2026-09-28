@@ -33,7 +33,7 @@ public struct ThemeRegistry {
     ]
 
         private init() {
-        let compactIcons = IconStyle(size: 24, spacing: 6, hitTargetSize: 32)
+        let compactIcons = IconStyle(size: 36, spacing: 6, hitTargetSize: 44)
         let win11Indicator = IndicatorStyle(
             kind: .win11Line,
             unfocusedWidth: 16, focusedWidth: 24, thickness: 3,

@@ -445,6 +445,54 @@ test("Clicking a task button fires onAppActivate") {
     assertEqual(activatedAppID, "com.apple.Safari", "Clicking the task button must fire onAppActivate with the correct app ID")
 }
 
+
+// ── 16. App Ordering ───────────────────────────────────────────────
+print("\n16. App Ordering (Native Semantics)")
+
+do {
+    var unpinnedOrder: [String] = []
+    
+    // Test 1: Pinned apps persist when not running, unpinned appear if running
+    let pinned = ["com.apple.Safari", "com.apple.Terminal"]
+    let visible1 = [
+        WindowData(bundleIdentifier: "com.apple.Terminal", isMinimized: false),
+        WindowData(bundleIdentifier: "com.unpinned.app1", isMinimized: false)
+    ]
+    let running1 = Set(["com.apple.Terminal", "com.unpinned.app1"])
+    let apps1 = LayoutEngine.buildAppItems(visibleWindows: visible1, pinnedApps: pinned, unpinnedOrder: &unpinnedOrder, frontmostApp: "com.apple.Terminal", runningApps: running1)
+    
+    assertEqual(apps1.count, 3, "Should have 2 pinned apps + 1 unpinned running app")
+    assertEqual(apps1[0].id, "com.apple.Safari", "First is pinned Safari (not running)")
+    assertEqual(apps1[0].isRunning, false, "Safari is not running")
+    assertEqual(apps1[1].id, "com.apple.Terminal", "Second is pinned Terminal (running)")
+    assertEqual(apps1[2].id, "com.unpinned.app1", "Third is unpinned app")
+    
+    // Test 2: Stable ordering - another unpinned app starts, unpinned app 1 minimized
+    let visible2 = [
+        WindowData(bundleIdentifier: "com.unpinned.app2", isMinimized: false),
+        WindowData(bundleIdentifier: "com.unpinned.app1", isMinimized: true),
+        WindowData(bundleIdentifier: "com.apple.Terminal", isMinimized: false)
+    ]
+    let running2 = Set(["com.apple.Terminal", "com.unpinned.app1", "com.unpinned.app2"])
+    let apps2 = LayoutEngine.buildAppItems(visibleWindows: visible2, pinnedApps: pinned, unpinnedOrder: &unpinnedOrder, frontmostApp: "com.unpinned.app2", runningApps: running2)
+    
+    assertEqual(apps2.count, 4, "Should have 4 apps total")
+    assertEqual(apps2[2].id, "com.unpinned.app1", "app1 stays in place")
+    assertEqual(apps2[3].id, "com.unpinned.app2", "app2 is appended at the end")
+    assertEqual(apps2[2].isMinimized, true, "app1 is minimized")
+    
+    // Test 3: Unpinned app1 quits -> removed. app2 stays.
+    let visible3 = [
+        WindowData(bundleIdentifier: "com.unpinned.app2", isMinimized: false),
+        WindowData(bundleIdentifier: "com.apple.Terminal", isMinimized: false)
+    ]
+    let running3 = Set(["com.apple.Terminal", "com.unpinned.app2"])
+    let apps3 = LayoutEngine.buildAppItems(visibleWindows: visible3, pinnedApps: pinned, unpinnedOrder: &unpinnedOrder, frontmostApp: "com.unpinned.app2", runningApps: running3)
+    
+    assertEqual(apps3.count, 3, "Should have 3 apps (app1 quit)")
+    assertEqual(apps3[2].id, "com.unpinned.app2", "app2 shifts up")
+}
+
 // ── Results ──────────────────────────────────────────────────────────
 print("\n═══════════════════════════════════════════════════")
 print("  Results: \(passCount) passed, \(failCount) failed")

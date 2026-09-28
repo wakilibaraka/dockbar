@@ -18,7 +18,8 @@ public final class ThemeContainerView: NSView {
     public var iconProvider: ((String) -> NSImage?)? // appID → icon
 
     // MARK: - Action callbacks (injected by the coordinator)
-    public var onAppActivate: ((String) -> Void)? // appID → activate
+        public var onAppActivate: ((String) -> Void)? // appID → activate
+    public var onAppRightClick: ((String) -> NSMenu?)? // appID → menu
 
     public init(theme: TaskbarTheme) {
         self.theme = theme
@@ -121,7 +122,8 @@ public final class ThemeContainerView: NSView {
                     hoverStyle: theme.hover,
                     iconStyle: theme.icons
                 )
-                tbv.onActivate = { [weak self] in self?.onAppActivate?(appID) }
+                                tbv.onActivate = { [weak self] in self?.onAppActivate?(appID) }
+                tbv.rightClickMenuProvider = { [weak self] in self?.onAppRightClick?(appID) }
                 // task buttons go inside the task segment
                 addSubview(tbv)
                 taskButtonViews[appID] = tbv

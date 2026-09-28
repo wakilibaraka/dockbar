@@ -167,6 +167,12 @@ class TaskbarSettings: ObservableObject {
     static let defaultThumbnailSize: CGFloat = 200
 
     private let defaults: UserDefaults
+    @Published var pinnedApps: [String] {
+        didSet { defaults.set(pinnedApps, forKey: "pinnedApps") }
+    }
+    @Published var minimizeOnAppClick: Bool {
+        didSet { defaults.set(minimizeOnAppClick, forKey: "minimizeOnAppClick") }
+    }
 
 
         @Published var enabledQuickSettings: [String] {
@@ -460,6 +466,9 @@ class TaskbarSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        
+        pinnedApps = defaults.object(forKey: "pinnedApps") as? [String] ?? ["com.apple.finder", "com.apple.Safari", "com.apple.systempreferences", "com.apple.Terminal"]
+        minimizeOnAppClick = defaults.bool(forKey: "minimizeOnAppClick")
         hasCompletedOnboarding = defaults.object(forKey: "hasCompletedOnboarding") as? Bool ?? false
                 showConnections = defaults.object(forKey: "showConnections") as? Bool ?? false
         notifyBluetoothConnect = defaults.object(forKey: "notifyBluetoothConnect") as? Bool ?? false
