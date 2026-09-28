@@ -126,8 +126,13 @@ public struct Segment: Codable, Equatable {
     public var contentInsets: EdgeInsets
     /// How the segment determines its own width.
     public var sizing: SegmentSizing
+    public var minWidth: CGFloat? = nil
     /// Which logical content this segment carries, in display order.
     public var slots: [SlotKind]
+
+    public init(id: String, surface: SurfaceStyle, border: SegmentBorder, cornerRadius: CornerRadius, contentInsets: EdgeInsets, sizing: SegmentSizing, minWidth: CGFloat? = nil, slots: [SlotKind]) {
+        self.id = id; self.surface = surface; self.border = border; self.cornerRadius = cornerRadius; self.contentInsets = contentInsets; self.sizing = sizing; self.minWidth = minWidth; self.slots = slots
+    }
 
     public init(
         id: String, surface: SurfaceStyle, border: SegmentBorder,

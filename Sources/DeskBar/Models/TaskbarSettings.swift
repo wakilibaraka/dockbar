@@ -1,6 +1,14 @@
 import DockBarCore
 
 import AppKit
+
+public enum DeskBarPreset: String, CaseIterable, Codable {
+    case fullWidth, compact, split
+}
+
+public enum DeskBarEdgeStyle: String, CaseIterable, Codable {
+    case rounded, sharp
+}
 import Combine
 
 enum DockMode: String, CaseIterable {
@@ -13,17 +21,6 @@ enum WindowGroupingMode: String, CaseIterable {
     case never
     case automatic
     case always
-}
-
-enum DeskBarLayoutMode: String, CaseIterable {
-    case fullWidth
-    case fullWidthGlass
-    case compact
-    case compactGlass
-    case floatingCenter
-    case windows11FullWidth
-    case windows11Floating
-    case macosThreeZone
 }
 
 enum BatteryIconSize: String, CaseIterable, Identifiable {
@@ -299,18 +296,15 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(showOnAllMonitors, forKey: "showOnAllMonitors") }
     }
 
-    @Published var layoutMode: DeskBarLayoutMode {
-        didSet {
-            defaults.set(layoutMode.rawValue, forKey: "layoutMode")
-            if layoutMode == .windows11FullWidth || layoutMode == .windows11Floating {
-                showTitles = false
-            }
-        }
+    @Published var preset: DeskBarPreset {
+        didSet { defaults.set(preset.rawValue, forKey: "preset") }
+    }
+    
+    @Published var edgeStyle: DeskBarEdgeStyle {
+        didSet { defaults.set(edgeStyle.rawValue, forKey: "edgeStyle") }
     }
 
-    @Published var useSplitTheme: Bool {
-        didSet { defaults.set(useSplitTheme, forKey: "useSplitTheme") }
-    }
+
 
     @Published var enableWindowSwitcher: Bool {
         didSet { defaults.set(enableWindowSwitcher, forKey: "enableWindowSwitcher") }
@@ -474,8 +468,31 @@ class TaskbarSettings: ObservableObject {
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
-        layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .compactGlass
-        useSplitTheme = defaults.object(forKey: "useSplitTheme") as? Bool ?? false
+        // Migrate old layoutMode to preset/edge if needed
+        let oldLayoutModeStr = defaults.string(forKey: "layoutMode") ?? ""
+        if !oldLayoutModeStr.isEmpty, let old = defaults.string(forKey: "layoutMode") {
+            switch old {
+            case "fullWidth", "fullWidthGlass", "windows11FullWidth":
+                preset = .fullWidth
+                edgeStyle = .sharp
+            case "compact", "compactGlass":
+                preset = .compact
+                edgeStyle = .rounded
+            case "windows11Floating", "floatingCenter", "macos.threeZone":
+                preset = .split
+                edgeStyle = .rounded
+            default:
+                preset = .split
+                edgeStyle = .rounded
+            }
+            defaults.removeObject(forKey: "layoutMode")
+            defaults.removeObject(forKey: "useSplitTheme")
+            edgeStyle = DeskBarEdgeStyle(rawValue: defaults.string(forKey: "edgeStyle") ?? "") ?? .rounded
+            preset = DeskBarPreset(rawValue: defaults.string(forKey: "preset") ?? "") ?? .split
+        } else {
+            preset = DeskBarPreset(rawValue: defaults.string(forKey: "preset") ?? "") ?? .split
+            edgeStyle = DeskBarEdgeStyle(rawValue: defaults.string(forKey: "edgeStyle") ?? "") ?? .rounded
+        }
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true
         appsLauncherShortcut = AppsLauncherShortcut(rawValue: defaults.string(forKey: "appsLauncherShortcut") ?? "") ?? .rightCommandTap

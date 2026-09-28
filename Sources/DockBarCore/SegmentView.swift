@@ -57,6 +57,16 @@ public final class SegmentView: NSView {
 
         // Shadow configuration based on surface
         let usesGlassChrome = (segment.surface != .solid(colorToken: "barSurface"))
+        
+        switch segment.surface {
+        case .solid:
+            effectView.material = .windowBackground
+            effectView.blendingMode = .withinWindow
+        case .adaptive, .acrylic:
+            effectView.material = .popover
+            effectView.blendingMode = .behindWindow
+        }
+
         if usesGlassChrome {
             layer?.shadowOpacity = 0.35
             layer?.shadowRadius = 12
@@ -94,8 +104,8 @@ public final class SegmentView: NSView {
         }
 
         switch segment.surface {
-        case .solid(let token):
-            surfaceLayer.backgroundColor = resolveColorToken(token).cgColor
+        case .solid:
+            surfaceLayer.backgroundColor = NSColor.clear.cgColor
         case .adaptive(let light, let dark):
             let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             surfaceLayer.backgroundColor = resolveColorToken(isDark ? dark : light).cgColor

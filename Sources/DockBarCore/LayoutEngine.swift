@@ -140,7 +140,8 @@ public struct LayoutEngine {
                     measuredWidths[idx] = w
                     fixedAndHugTotal += w
                 case .hugContents:
-                    let w = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: input.theme.icons), dockWidgets: sizesBySlot, icons: input.theme.icons)
+                    var w = huggingWidth(segment: seg, taskContentWidth: taskAreaWidth(apps: input.apps, icons: input.theme.icons), dockWidgets: sizesBySlot, icons: input.theme.icons)
+                    if let mw = seg.minWidth { w = max(w, mw) }
                     measuredWidths[idx] = w
                     fixedAndHugTotal += w
                 case .fill:

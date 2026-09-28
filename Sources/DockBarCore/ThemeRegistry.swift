@@ -32,258 +32,80 @@ public struct ThemeRegistry {
         "windows11.floatingSplit",
     ]
 
-    private init() {
-        // Shared style atoms
-        let win11Indicator = IndicatorStyle(
-            kind: .win11Line, unfocusedWidth: 16, focusedWidth: 24,
-            thickness: 3, groupedSegmented: true, colorToken: "accent",
-            minimizedIconOpacity: 0.5, animationDuration: 0.15
-        )
+        private init() {
+        let compactIcons = IconStyle(size: 24, spacing: 6, hitTargetSize: 32)
         let dotsIndicator = IndicatorStyle(
-            kind: .dots, unfocusedWidth: 4, focusedWidth: 4,
-            thickness: 4, groupedSegmented: false, colorToken: "accent",
+            kind: .dots,
+            unfocusedWidth: 4, focusedWidth: 6, thickness: 4,
+            groupedSegmented: false, colorToken: "indicator",
             minimizedIconOpacity: 0.5, animationDuration: 0.15
         )
         let standardHover = HoverStyle(cornerRadius: 4, inset: 2, fillOpacity: 0.08, animationDuration: 0.15)
-        let pillHover = HoverStyle(cornerRadius: 8, inset: 0, fillOpacity: 0.08, animationDuration: 0.15)
-
         let trayStandard = TrayStyle(iconSize: 16, clockUsesLocale: true, clockStacked: false, batteryAmberBelow: 20, batteryRedBelow: 10)
-        let trayWin11 = TrayStyle(iconSize: 16, clockUsesLocale: true, clockStacked: true, batteryAmberBelow: 20, batteryRedBelow: 10)
-
-        // icons: hitTargetSize = 40 for win11 (matches existing 40pt constraint),
-        //        36 for compact (existing 36-40 range)
-        let win11Icons = IconStyle(size: 24, spacing: 8, hitTargetSize: 40)
-        let compactIcons = IconStyle(size: 24, spacing: 8, hitTargetSize: 36)
-        let fullWidthIcons = IconStyle(size: 24, spacing: 8, hitTargetSize: 40)
-
-        // ── Shared segment builders ────────────────────────────────────────
-        // Full-width solid unified bar (fullWidth, windows11.fullWidth)
-        func unifiedFillSegment(slots: [SlotKind] = [.leading, .taskArea, .tray]) -> Segment {
-            Segment(
-                id: "unified",
-                surface: .solid(colorToken: "barSurface"),
-                border: .none,
-                cornerRadius: .zero,
-                contentInsets: EdgeInsets(top: 0, left: 10, bottom: 0, right: 10),
-                sizing: .fill,
-                slots: slots
-            )
-        }
-
-        // Floating solid unified pill (compact, windows11.floating)
-        // glass cornerRadius = min(44/2, 18) = 18 pt (from TaskbarPanel.updateVisualStyle)
-        func unifiedPillSegment(
-            surface: SurfaceStyle = .solid(colorToken: "barSurface"),
-            slots: [SlotKind] = [.leading, .taskArea, .tray]
-        ) -> Segment {
-            Segment(
-                id: "unified",
-                surface: surface,
-                border: SegmentBorder(colorToken: "surfaceStrokeDefault", thickness: 1, enabled: true),
-                cornerRadius: CornerRadius(all: 18),
-                contentInsets: EdgeInsets(top: 0, left: 10, bottom: 0, right: 10),
-                sizing: .hugContents,
-                slots: slots
-            )
-        }
-
-        // ── 1. fullWidth ──────────────────────────────────────────────────
-        let fullWidth = TaskbarTheme(
-            id: "fullWidth",
-            displayName: "Full Width",
-            geometry: BarGeometry(shape: .fullWidth, height: 44, screenInsets: .zero),
-            zones: [Zone(id: "main", anchor: .leadingEdge, interSegmentGap: 0, segments: [unifiedFillSegment()])],
-            icons: fullWidthIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        // ── 2. fullWidthGlass ──────────────────────────────────────────────
-        // glassHorizontalMargin=12 each side; cornerRadius min(h/2,18)=18
-        let fullWidthGlass = TaskbarTheme(
-            id: "fullWidthGlass",
-            displayName: "Full Width (Glass)",
-            geometry: BarGeometry(shape: .fullWidth, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
-                Segment(
-                    id: "unified",
-                    surface: .adaptive(light: "glassLight", dark: "glassDark"),
-                    border: SegmentBorder(colorToken: "surfaceStrokeGlass", thickness: 1, enabled: true),
-                    cornerRadius: CornerRadius(all: 18),
-                    contentInsets: EdgeInsets(top: 0, left: 10, bottom: 0, right: 10),
-                    sizing: .fill,
-                    slots: [.leading, .taskArea, .tray]
-                )
-            ])],
-            icons: fullWidthIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        // ── 3. compact ────────────────────────────────────────────────────
-        // compactHorizontalMargin=12; cornerRadius=18; hugContents → panel narrows to content
-        let compact = TaskbarTheme(
-            id: "compact",
-            displayName: "Compact",
-            geometry: BarGeometry(shape: .floating, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [unifiedPillSegment()])],
-            icons: compactIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        // ── 4. compactGlass ───────────────────────────────────────────────
-        let compactGlass = TaskbarTheme(
-            id: "compactGlass",
-            displayName: "Compact (Glass)",
-            geometry: BarGeometry(shape: .floating, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
-                unifiedPillSegment(surface: .adaptive(light: "glassLight", dark: "glassDark"))
-            ])],
-            icons: compactIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        // ── 5. floatingCenter ─────────────────────────────────────────────
-        // yPos += 12 from screen edge (TaskbarPanel.panelFrame); uses glass chrome
-        let floatingCenter = TaskbarTheme(
-            id: "floatingCenter",
-            displayName: "Floating Center",
-            geometry: BarGeometry(shape: .floating, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 12, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
-                unifiedPillSegment(surface: .adaptive(light: "glassLight", dark: "glassDark"))
-            ])],
-            icons: compactIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        // ── 6. windows11.fullWidth ────────────────────────────────────────
-        let win11FullWidth = TaskbarTheme(
-            id: "windows11.fullWidth",
-            displayName: "Windows 11 (Full Width)",
-            geometry: BarGeometry(shape: .fullWidth, height: 44, screenInsets: .zero),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [unifiedFillSegment(slots: [.startButton, .leading, .taskArea, .tray])])],
-            icons: win11Icons,
-            indicator: win11Indicator,
-            hover: standardHover,
-            tray: trayWin11
-        )
-
-        // ── 7. windows11.floating ─────────────────────────────────────────
-        // Same as compact but with win11 indicator + clock stacked
-        let win11Floating = TaskbarTheme(
-            id: "windows11.floating",
-            displayName: "Windows 11 (Floating)",
-            geometry: BarGeometry(shape: .floating, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 0, segments: [
-                unifiedPillSegment(slots: [.startButton, .leading, .taskArea, .tray])
-            ])],
-            icons: win11Icons,
-            indicator: win11Indicator,
-            hover: standardHover,
-            tray: trayWin11
-        )
-
-        // ── 8. windows11.floatingSplit ────────────────────────────────────
-        // Two-segment split translated from Windhawk "Modern Center Taskbar".
-        // Task segment: hugContents, cornerRadius=5, contentInsets leading=8 right=8
-        // Tray segment: fixed=260pt, cornerRadius=5, contentInsets leading=10 right=6
-        // interSegmentGap = 10 pt
-        let win11Split = TaskbarTheme(
-            id: "windows11.floatingSplit",
-            displayName: "Windows 11 (Split)",
-            geometry: BarGeometry(shape: .floating, height: 48,
-                                  screenInsets: EdgeInsets(top: 0, left: 12, bottom: 6, right: 12)),
-            zones: [Zone(id: "main", anchor: .center, interSegmentGap: 10, segments: [
-                Segment(
-                    id: "task",
-                    surface: .solid(colorToken: "barSurface"),
-                    border: .default,
-                    cornerRadius: CornerRadius(all: 24),
-                    contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
-                    sizing: .hugContents,
-                    slots: [.startButton, .leading, .taskArea]
-                ),
-                Segment(
-                    id: "tray",
-                    surface: .solid(colorToken: "barSurface"),
-                    border: .default,
-                    cornerRadius: CornerRadius(all: 24),
-                    contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
-                    sizing: .fixed(width: 260),
-                    slots: [.tray]
-                )
-            ])],
-            icons: win11Icons,
-            indicator: win11Indicator,
-            hover: standardHover,
-            tray: trayWin11
-        )
-
-
+        let glassSurface = SurfaceStyle.adaptive(light: "glassLight", dark: "glassDark")
+        let solidSurface = SurfaceStyle.solid(colorToken: "barSurface")
         
-        let threeZone = TaskbarTheme(
-            id: "macos.threeZone",
-            displayName: "macOS (3-Zone)",
-            geometry: BarGeometry(shape: .floating, height: 44,
-                                  screenInsets: EdgeInsets(top: 0, left: 16, bottom: 8, right: 16)),
-            zones: [
-                Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
-                    Segment(
-                        id: "weather_seg",
-                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
-                        border: .default,
-                        cornerRadius: CornerRadius(all: 12),
-                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
-                        sizing: .hugContents,
-                        slots: [.leading]
-                    )
-                ]),
-                Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
-                    Segment(
-                        id: "task_seg",
-                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
-                        border: .default,
-                        cornerRadius: CornerRadius(all: 16),
-                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
-                        sizing: .hugContents,
-                        slots: [.startButton, .taskArea]
-                    )
-                ]),
-                Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
-                    Segment(
-                        id: "tray_seg",
-                        surface: .adaptive(light: "glassLight", dark: "glassDark"),
-                        border: .default,
-                        cornerRadius: CornerRadius(all: 12),
-                        contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12),
-                        sizing: .hugContents,
-                        slots: [.tray]
-                    )
-                ])
-            ],
-            icons: compactIcons,
-            indicator: dotsIndicator,
-            hover: standardHover,
-            tray: trayStandard
-        )
-
-        themes = Dictionary(uniqueKeysWithValues: [
-            fullWidth, fullWidthGlass, compact, compactGlass,
-            floatingCenter, win11FullWidth, win11Floating, win11Split, threeZone
-        ].map { ($0.id, $0) })
+        var generatedThemes = [TaskbarTheme]()
+        
+        let presets = ["fullWidth", "compact", "split"]
+        let edgeStyles = ["rounded", "sharp"]
+        
+        for preset in presets {
+            for edgeStyle in edgeStyles {
+                let id = "\(preset)_\(edgeStyle)"
+                let isRounded = (edgeStyle == "rounded")
+                let shape: BarShape = (preset == "fullWidth" && !isRounded) ? .fullWidth : .floating
+                
+                let screenInsets = isRounded 
+                    ? EdgeInsets(top: 0, left: 16, bottom: 8, right: 16) 
+                    : .zero
+                    
+                let cornerRadius = CornerRadius(all: isRounded ? 22 : 0)
+                
+                var zones: [Zone] = []
+                
+                switch preset {
+                case "split":
+                    zones = [
+                        Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "left_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: [.leading])
+                        ]),
+                        Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
+                            Segment(id: "task_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16), sizing: .hugContents, minWidth: 420, slots: [.startButton, .taskArea])
+                        ]),
+                        Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "tray_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: [.tray])
+                        ])
+                    ]
+                case "compact":
+                    zones = [
+                        Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
+                            Segment(id: "unified", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: 420, slots: [.startButton, .leading, .taskArea, .tray])
+                        ])
+                    ]
+                case "fullWidth":
+                    zones = [
+                        Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
+                            Segment(id: "unified", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .fill, slots: [.startButton, .leading, .taskArea, .tray])
+                        ])
+                    ]
+                default: break
+                }
+                
+                generatedThemes.append(TaskbarTheme(
+                    id: id,
+                    displayName: "\(preset.capitalized) (\(edgeStyle.capitalized))",
+                    geometry: BarGeometry(shape: shape, height: 44, screenInsets: screenInsets),
+                    zones: zones,
+                    icons: compactIcons,
+                    indicator: dotsIndicator,
+                    hover: standardHover,
+                    tray: trayStandard
+                ))
+            }
+        }
+        
+        themes = Dictionary(uniqueKeysWithValues: generatedThemes.map { ($0.id, $0) })
     }
 
     public func theme(for id: String) -> TaskbarTheme? { themes[id] }

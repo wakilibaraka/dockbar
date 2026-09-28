@@ -150,7 +150,15 @@ func makeThemeSnapshot(themeID: String, appearance: NSAppearance.Name, scale: CG
     let resolved = LayoutEngine.resolve(input: input)
 
     let container = ThemeContainerView(theme: theme)
-    for id in reqs.map({ $0.id }) { container.setWidgetView(NSView(), for: id) }
+    for id in reqs.map({ $0.id }) {
+        let v = NSView()
+        v.wantsLayer = true
+        v.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.3).cgColor
+        v.layer?.borderColor = NSColor.systemBlue.cgColor
+        v.layer?.borderWidth = 1
+        v.layer?.cornerRadius = 4
+        container.setWidgetView(v, for: id)
+    }
     container.applyLayout(resolved)
 
     let panelSize = CGSize(width: 1512, height: theme.geometry.height)
@@ -187,9 +195,13 @@ print("════════════════════════�
 
 print("  Existing themes: guarded manually via install-and-confirm until migrated in Phase 2.")
 
-// Only windows11.floatingSplit is snapshot-guarded right now, because it's the only theme actually served by the new stack.
 let themeIDs = [
-    "windows11.floatingSplit"
+    "split_rounded",
+    "split_sharp",
+    "compact_rounded",
+    "compact_sharp",
+    "fullWidth_rounded",
+    "fullWidth_sharp"
 ]
 let appearances: [NSAppearance.Name] = [.aqua, .darkAqua]
 let scales: [CGFloat] = [1.0] // 2x requires screen — skip in headless for now

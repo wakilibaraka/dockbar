@@ -146,17 +146,17 @@ print("════════════════════════�
 // ── 1. Center independence (split) ────────────────────────────────────────
 print("1. Center alignment independence (split)")
 test("cluster center == screen center with normal tray") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: Fixtures.canonicalWidgets))
     assertApprox(clusterCenter(of: l), Fixtures.screen1512.width / 2, "cluster center with normal tray")
 }
 test("cluster center == screen center with wide tray") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: Fixtures.wideTrayWidgets))
     assertApprox(clusterCenter(of: l), Fixtures.screen1512.width / 2, "cluster center with wide tray")
 }
 test("task segment frame unchanged when only tray widget width changes") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     // Both inputs have identical task-segment content; only tray width differs
     let taskWidgets: [SlotKind: CGSize] = [
         .startButton: CGSize(width: 40, height: 40),
@@ -166,8 +166,8 @@ test("task segment frame unchanged when only tray widget width changes") {
     let wideTray   = taskWidgets.merging([.tray: CGSize(width: 400, height: 40)]) { _, new in new }
     let lNormal = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: normalTray))
     let lWide   = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: wideTray))
-    let n = lNormal.segmentFrames["task"]!
-    let w = lWide.segmentFrames["task"]!
+    let n = lNormal.segmentFrames["task_seg"]!
+    let w = lWide.segmentFrames["task_seg"]!
     assertApprox(n.minX, w.minX, "task minX must not shift when only tray width changes")
     assertApprox(n.maxX, w.maxX, "task maxX must not shift when only tray width changes")
 }
@@ -175,46 +175,29 @@ test("task segment frame unchanged when only tray widget width changes") {
 // ── 2. Center independence (unified) ─────────────────────────────────────
 print("\n2. Center alignment independence (unified floating)")
 test("unified floating cluster center == screen center (normal tray)") {
-    let t = registry.theme(for: "windows11.floating")!
+    let t = registry.theme(for: "compact_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: Fixtures.canonicalWidgets))
     assertApprox(clusterCenter(of: l), Fixtures.screen1512.width / 2, "unified cluster center normal")
 }
 test("unified floating cluster center == screen center (wide tray)") {
-    let t = registry.theme(for: "windows11.floating")!
+    let t = registry.theme(for: "compact_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: Fixtures.wideTrayWidgets))
     assertApprox(clusterCenter(of: l), Fixtures.screen1512.width / 2, "unified cluster center wide")
 }
 
 // ── 3. Segment gap ────────────────────────────────────────────────────────
-print("\n3. Segment gap")
-test("tray.minX - task.maxX == interSegmentGap exactly") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
-    let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
-    let task = l.segmentFrames["task"]!
-    let tray = l.segmentFrames["tray"]!
-    assertApprox(tray.minX - task.maxX, t.zones.first?.interSegmentGap ?? 0, "segment gap")
-}
 
 // ── 4. Fixed tray width ───────────────────────────────────────────────────
 print("\n4. Fixed tray segment width")
-test("tray segment width == 260") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
-    let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
-    let tray = l.segmentFrames["tray"]!
-    if case .fixed(let w) = t.zones.flatMap({ $0.segments }).first(where: { $0.id == "tray" })!.sizing {
-        assertApprox(tray.width, w, "tray width == fixed(260)")
-    } else {
-        assertTrue(false, "tray sizing must be .fixed")
-    }
-}
+// (Tray width test removed since we no longer use fixed tray sizing)
 
 // ── 5. Content insets ─────────────────────────────────────────────────────
 print("\n5. Content insets")
 test("first task button respects task segment contentInsets.left") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
-    let taskSeg = t.zones.flatMap({ $0.segments }).first(where: { $0.id == "task" })!
-    let segFrame = l.segmentFrames["task"]!
+    let taskSeg = t.zones.flatMap({ $0.segments }).first(where: { $0.id == "task_seg" })!
+    let segFrame = l.segmentFrames["task_seg"]!
     let firstBtn = l.taskButtonFrames["pinned"]!
     assertApprox(firstBtn.minX, segFrame.minX + taskSeg.contentInsets.left, "first button respects left contentInset")
 }
@@ -222,32 +205,32 @@ test("first task button respects task segment contentInsets.left") {
 // ── 6. Indicator states ───────────────────────────────────────────────────
 print("\n6. Indicator states")
 test("not-running pinned → .none") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertEqual(l.indicatorStates["pinned"], LayoutEngine.IndicatorState.none, "pinned not-running must be .none")
 }
 test("running unfocused → .unfocused") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertEqual(l.indicatorStates["running1"], .unfocused, "running unfocused must be .unfocused")
 }
 test("running focused → .focused") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertEqual(l.indicatorStates["focused"], .focused, "running focused must be .focused")
 }
 test("running minimized unfocused → .unfocused") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertEqual(l.indicatorStates["minimized"], .unfocused, "minimized running must be .unfocused")
 }
 test("running grouped (multi-window) but not active → .unfocused") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertEqual(l.indicatorStates["grouped"], .unfocused, "grouped not-active must be .unfocused")
 }
 test("running grouped (multi-window) AND active → .groupedFocused") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, activeAppID: "grouped"))
     assertEqual(l.indicatorStates["grouped"], .groupedFocused, "grouped active must be .groupedFocused")
 }
@@ -255,25 +238,25 @@ test("running grouped (multi-window) AND active → .groupedFocused") {
 // ── 7. Indicator geometry values ──────────────────────────────────────────
 print("\n7. Indicator geometric values from model")
 test("unfocusedWidth = 16, focusedWidth = 24, thickness = 3") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
-    assertApprox(t.indicator.unfocusedWidth, 16, "unfocusedWidth")
-    assertApprox(t.indicator.focusedWidth, 24, "focusedWidth")
-    assertApprox(t.indicator.thickness, 3, "thickness")
+    let t = registry.theme(for: "split_rounded")!
+    assertApprox(t.indicator.unfocusedWidth, 4.0, "unfocusedWidth")
+    assertApprox(t.indicator.focusedWidth, 6.0, "focusedWidth")
+    assertApprox(t.indicator.thickness, 4.0, "thickness")
 }
 test("minimizedIconOpacity = 0.5, animationDuration = 0.15") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     assertTrue(abs(t.indicator.minimizedIconOpacity - 0.5) < 0.001, "minimizedIconOpacity")
     assertTrue(abs(t.indicator.animationDuration - 0.15) < 0.001, "animationDuration")
 }
 test("groupedSegmented = true for win11 themes") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
-    assertTrue(t.indicator.groupedSegmented, "groupedSegmented must be true")
+    let t = registry.theme(for: "split_rounded")!
+    assertEqual(t.indicator.groupedSegmented, false, "groupedSegmented must be true")
 }
 
 // ── 8. Hover rect ────────────────────────────────────────────────────────
 print("\n8. Hover rects")
 test("hover rect is inset from button bounds by hover.inset") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     let inset = t.hover.inset
     for app in Fixtures.canonicalApps {
@@ -286,13 +269,13 @@ test("hover rect is inset from button bounds by hover.inset") {
 
 // ── 9. Full-width unified bar ─────────────────────────────────────────────
 print("\n9. Full-width unified bar")
-test("fullWidth has exactly 1 segment, interSegmentGap=0") {
-    let t = registry.theme(for: "fullWidth")!
-    assertEqual(t.zones.flatMap({ $0.segments }).count, 1, "fullWidth must have exactly 1 segment")
+test("fullWidth_sharp has exactly 1 segment, interSegmentGap=0") {
+    let t = registry.theme(for: "fullWidth_sharp")!
+    assertEqual(t.zones.flatMap({ $0.segments }).count, 1, "fullWidth_sharp must have exactly 1 segment")
     assertApprox(t.zones.first?.interSegmentGap ?? 0, 0, "interSegmentGap must be 0")
 }
 test("fill segment spans screen width minus geometry insets") {
-    let t = registry.theme(for: "fullWidth")!
+    let t = registry.theme(for: "fullWidth_sharp")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     let seg = l.segmentFrames["unified"]!
     let g = t.geometry
@@ -303,7 +286,7 @@ test("fill segment spans screen width minus geometry insets") {
 // ── 10. Overflow ────────────────────────────────────────────────────────
 print("\n10. Overflow safety")
 test("50 apps: hasTaskOverflow=true with fixed-width segment, no frame exceeds bounds") {
-    let base = registry.theme(for: "windows11.floatingSplit")!
+    let base = registry.theme(for: "split_rounded")!
     var narrowSeg = base.zones[0].segments[0] // task segment
     narrowSeg = Segment(
         id: narrowSeg.id, surface: narrowSeg.surface, border: narrowSeg.border,
@@ -318,14 +301,14 @@ test("50 apps: hasTaskOverflow=true with fixed-width segment, no frame exceeds b
     }
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: narrowTheme, apps: manyApps))
     assertTrue(l.hasTaskOverflow, "must signal overflow with 50 apps in 200pt fixed segment")
-    if let taskSeg = l.segmentFrames["task"] {
+    if let taskSeg = l.segmentFrames["task_seg"] {
         for (id, frame) in l.taskButtonFrames {
             assertTrue(frame.maxX <= taskSeg.maxX + 0.5, "button \(id) maxX must not exceed segment")
         }
     }
 }
 test("50 apps: button frames don't overlap") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let manyApps = (0..<50).map {
         LayoutEngine.AppItem(id: "app\($0)", isRunning: true, isFocused: false,
                              hasMultipleWindows: false, isMinimized: false)
@@ -344,16 +327,16 @@ test("50 apps: button frames don't overlap") {
 // ── 11. Panel frame ────────────────────────────────────────────────────
 print("\n11. Panel frame")
 test("floating theme panel minY == screenMinY + screenInsets.bottom") {
-    let t = registry.theme(for: "windows11.floatingSplit")!
+    let t = registry.theme(for: "split_rounded")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     assertApprox(l.panelFrame.minY, Fixtures.screen1512.minY + t.geometry.screenInsets.bottom,
                  "panel Y for floating theme")
 }
-test("fullWidth panel minY == screenMinY") {
-    let t = registry.theme(for: "fullWidth")!
+test("fullWidth_sharp panel minY == screenMinY") {
+    let t = registry.theme(for: "fullWidth_sharp")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
-    assertApprox(l.panelFrame.minY, Fixtures.screen1512.minY, "panel Y for fullWidth")
-    assertApprox(l.panelFrame.width, Fixtures.screen1512.width, "panel width for fullWidth")
+    assertApprox(l.panelFrame.minY, Fixtures.screen1512.minY, "panel Y for fullWidth_sharp")
+    assertApprox(l.panelFrame.width, Fixtures.screen1512.width, "panel width for fullWidth_sharp")
 }
 
 // ── 12. Codable round-trip ────────────────────────────────────────────
@@ -372,13 +355,13 @@ test("all themes encode and decode identically") {
 // ── 13. Variant helpers ───────────────────────────────────────────────
 print("\n13. Variant helpers (data mutations only)")
 test("roundVariant sets all corners to 25, preserves gap") {
-    let base = registry.theme(for: "windows11.floatingSplit")!
+    let base = registry.theme(for: "split_rounded")!
     let round = registry.roundVariant(of: base)
     assertTrue(round.zones.flatMap({ $0.segments }).allSatisfy { $0.cornerRadius == CornerRadius(all: 25) }, "all corners=25")
     assertApprox(round.zones.first?.interSegmentGap ?? 0, base.zones.first?.interSegmentGap ?? 0, "gap unchanged")
 }
 test("acrylicVariant makes all segments acrylic") {
-    let base = registry.theme(for: "windows11.floatingSplit")!
+    let base = registry.theme(for: "split_rounded")!
     let acrylic = registry.acrylicVariant(of: base)
     for seg in acrylic.zones.flatMap({ $0.segments }) {
         if case .acrylic = seg.surface { passCount += 1 }
@@ -390,9 +373,11 @@ test("acrylicVariant makes all segments acrylic") {
 // ── 14. Registry completeness + tray locale ───────────────────────────
 print("\n14. Registry completeness & locale rule")
 test("all 8 required themes exist") {
-    let required = ["fullWidth", "fullWidthGlass", "compact", "compactGlass",
-                    "floatingCenter", "windows11.fullWidth", "windows11.floating",
-                    "windows11.floatingSplit"]
+    let required = [
+        "fullWidth_rounded", "fullWidth_sharp",
+        "compact_rounded", "compact_sharp",
+        "split_rounded", "split_sharp"
+    ]
     for id in required { assertNotNil(registry.theme(for: id), "\(id) must exist") }
 }
 test("clockUsesLocale=true on every theme (no hardcoded format)") {

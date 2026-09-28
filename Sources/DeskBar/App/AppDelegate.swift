@@ -496,6 +496,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        settings.$preset
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildAllPanels()
+            }
+            .store(in: &cancellables)
+
+        settings.$edgeStyle
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildAllPanels()
+            }
+            .store(in: &cancellables)
+
         settings.$taskbarHeight
             .receive(on: RunLoop.main)
             .sink { [weak self] height in
@@ -586,21 +600,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             panel.updateCollectionBehavior(showOverFullScreenApps: settings.showOverFullScreenApps)
             
-            let themeID: String
-            if settings.useSplitTheme {
-                themeID = "windows11.floatingSplit"
-            } else {
-                switch settings.layoutMode {
-                case .fullWidth: themeID = "fullWidth"
-                case .fullWidthGlass: themeID = "fullWidthGlass"
-                case .compact: themeID = "compact"
-                case .compactGlass: themeID = "compactGlass"
-                case .floatingCenter: themeID = "floatingCenter"
-                case .windows11FullWidth: themeID = "windows11.fullWidth"
-                case .windows11Floating: themeID = "windows11.floating"
-                case .macosThreeZone: themeID = "macos.threeZone"
-                }
-            }
+            let themeID = "\(settings.preset.rawValue)_\(settings.edgeStyle.rawValue)"
 
             let coordinator = ThemeCoordinator(settings: settings, windowManager: windowManager, screen: screen, themeID: themeID, pinnedAppManager: pinnedAppManager, weatherService: weatherService, resourceMonitor: systemResourceMonitor, calendarService: calendarService)
             panel.setContentSubview(coordinator.containerView)
@@ -616,6 +616,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         windowManager.activeDisplayIDs = Set(panels.keys)
+    }
+
+    private func rebuildAllPanels() {
+        for panel in panels.values {
+            panel.close()
+        }
+        panels.removeAll()
+        themeCoordinators.removeAll()
+        refreshPanelsForCurrentConfiguration()
     }
 
     private func refreshPanelsForCurrentConfiguration() {
