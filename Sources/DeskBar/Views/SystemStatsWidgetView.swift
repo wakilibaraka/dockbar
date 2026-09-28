@@ -5,6 +5,7 @@ import SwiftUI
 final class SystemStatsWidgetView: NSView {
     private let settings: TaskbarSettings
     private let monitor: SystemResourceMonitor
+    private let windowManager: WindowManager
     
     private let containerView = NSStackView()
     private let batteryIcon = NSImageView()
@@ -15,9 +16,10 @@ final class SystemStatsWidgetView: NSView {
     
     private let isCollapsedInstance: Bool
     
-    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, isCollapsedInstance: Bool = false) {
+    init(settings: TaskbarSettings, monitor: SystemResourceMonitor, windowManager: WindowManager, isCollapsedInstance: Bool = false) {
         self.settings = settings
         self.monitor = monitor
+        self.windowManager = windowManager
         self.isCollapsedInstance = isCollapsedInstance
         super.init(frame: .zero)
         
@@ -137,7 +139,7 @@ final class SystemStatsWidgetView: NSView {
         let newFlyout = BorderlessFlyout()
         newFlyout.onDismiss = { [weak self] in self?.flyout = nil }
         
-        let rootVC = NSHostingController(rootView: SystemStatsFlyoutView(monitor: monitor))
+        let rootVC = NSHostingController(rootView: SystemStatsFlyoutView(monitor: monitor, windowManager: windowManager))
         rootVC.view.translatesAutoresizingMaskIntoConstraints = false
         rootVC.view.widthAnchor.constraint(equalToConstant: 280).isActive = true
         rootVC.view.layoutSubtreeIfNeeded()

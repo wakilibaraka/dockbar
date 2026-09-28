@@ -67,7 +67,7 @@ final class ThemeCoordinator: NSObject, ObservableObject {
 
             case "systemStats":
                 if let rm = resourceMonitor {
-                    let resources = SystemStatsWidgetView(settings: settings, monitor: rm)
+                    let resources = SystemStatsWidgetView(settings: settings, monitor: rm, windowManager: self.windowManager)
                     containerView.setWidgetView(resources, for: def.id)
                 }
             case "connectivity":

@@ -4,6 +4,7 @@ import AppKit
 
 struct SystemStatsFlyoutView: View {
     @ObservedObject var monitor: SystemResourceMonitor
+    @ObservedObject var windowManager: WindowManager
     @StateObject private var samples = ResourceSamples()
     @StateObject private var batteryService = SystemStatsService.shared
     
@@ -279,6 +280,143 @@ class AccessoryAppsViewModel: ObservableObject {
             self.isRefreshing = false
         } else {
             DispatchQueue.global(qos: .userInitiated).async { _ = work() }
+        }
+    }
+}
+
+// MARK: - Windows Section
+struct ClosedWindowInfo: Identifiable, Equatable {
+    let id = UUID()
+    let windowInfo: WindowInfo
+    let closedAt: Date
+    
+    static func == (lhs: ClosedWindowInfo, rhs: ClosedWindowInfo) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+class WindowHistoryTracker: ObservableObject {
+    @Published var recentlyClosed: [ClosedWindowInfo] = []
+    private var previousWindows: [WindowInfo] = []
+    
+    func update(with newWindows: [WindowInfo]) {
+        let newIDs = Set(newWindows.map { $0.id })
+        var newClosed = recentlyClosed
+        
+        for oldWindow in previousWindows {
+            if !newIDs.contains(oldWindow.id) {
+                guard !oldWindow.isProvisional, !oldWindow.appName.isEmpty else { continue }
+                if !newClosed.contains(where: { $0.windowInfo.id == oldWindow.id }) {
+                    newClosed.insert(ClosedWindowInfo(windowInfo: oldWindow, closedAt: Date()), at: 0)
+                }
+            }
+        }
+        
+        newClosed.removeAll { closed in
+            newIDs.contains(closed.windowInfo.id)
+        }
+        
+        if newClosed.count > 10 {
+            newClosed = Array(newClosed.prefix(10))
+        }
+        
+        recentlyClosed = newClosed
+        previousWindows = newWindows
+    }
+}
+
+struct WindowsSectionView: View {
+    @ObservedObject var windowManager: WindowManager
+    @StateObject private var tracker = WindowHistoryTracker()
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Open Windows")
+                .font(.system(size: 14, weight: .semibold))
+            
+            if windowManager.visibleWindows.isEmpty {
+                Text("No open windows")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(windowManager.visibleWindows.filter({ !$0.isProvisional && !$0.appName.isEmpty }).prefix(5), id: \.id) { win in
+                        WindowRowView(window: win)
+                    }
+                }
+            }
+            
+            if !tracker.recentlyClosed.isEmpty {
+                Text("Recently Closed")
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding(.top, 4)
+                
+                VStack(spacing: 8) {
+                    ForEach(tracker.recentlyClosed.prefix(5)) { closed in
+                        WindowRowView(window: closed.windowInfo, isClosed: true)
+                    }
+                }
+            }
+        }
+        .onReceive(windowManager.$visibleWindows) { newWindows in
+            tracker.update(with: newWindows)
+        }
+        .onAppear {
+            tracker.update(with: windowManager.visibleWindows)
+        }
+    }
+}
+
+struct WindowRowView: View {
+    let window: WindowInfo
+    var isClosed: Bool = false
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            if let icon = window.icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 16, height: 16)
+                    .opacity(isClosed ? 0.6 : 1.0)
+            } else {
+                Image(systemName: "macwindow")
+                    .resizable()
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(.secondary)
+                    .opacity(isClosed ? 0.6 : 1.0)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(window.appName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isClosed ? .secondary : .primary)
+                    .lineLimit(1)
+                
+                if !window.title.isEmpty && window.title != window.appName {
+                    Text(window.title)
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            if !isClosed {
+                Button(action: {
+                    if let app = NSWorkspace.shared.runningApplications.first(where: { $0.processIdentifier == window.pid }) {
+                        app.activate(options: .activateIgnoringOtherApps)
+                    }
+                }) {
+                    Text("Focus")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
+            }
         }
     }
 }
