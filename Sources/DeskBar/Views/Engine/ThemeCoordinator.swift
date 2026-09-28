@@ -109,6 +109,10 @@ final class ThemeCoordinator: ObservableObject {
         }
 
         containerView.onAppActivate = { appID in
+            if !AXIsProcessTrusted() {
+                let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+                AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
+            }
             if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == appID }) {
                 let pid = app.processIdentifier
                 let axApp = AXUIElementCreateApplication(pid)

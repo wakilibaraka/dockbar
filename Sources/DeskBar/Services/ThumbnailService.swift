@@ -43,9 +43,11 @@ final class ThumbnailService: ObservableObject {
             return cached.image
         }
 
-        guard CGPreflightScreenCaptureAccess() else {
-            isScreenRecordingGranted = false
-            return nil
+        if !CGPreflightScreenCaptureAccess() {
+            let granted = requestScreenRecordingPermission()
+            if !granted {
+                return nil
+            }
         }
 
         isScreenRecordingGranted = true
@@ -78,12 +80,14 @@ final class ThumbnailService: ObservableObject {
     func makeCaptureSession() async -> ThumbnailCaptureSession {
         pruneExpiredCache()
 
-        guard CGPreflightScreenCaptureAccess() else {
-            isScreenRecordingGranted = false
-            return ThumbnailCaptureSession(
-                thumbnailService: self,
-                screenCaptureWindowsByID: nil
-            )
+        if !CGPreflightScreenCaptureAccess() {
+            let granted = requestScreenRecordingPermission()
+            if !granted {
+                return ThumbnailCaptureSession(
+                    thumbnailService: self,
+                    screenCaptureWindowsByID: nil
+                )
+            }
         }
 
         isScreenRecordingGranted = true

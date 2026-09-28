@@ -44,13 +44,13 @@ struct OnboardingView: View {
                         
                         VStack(spacing: 12) {
                             PermissionRow(
-                                title: "Accessibility (Required)",
+                                title: "Accessibility (Recommended)",
                                 description: "Required to monitor active windows and bring them to the front.",
                                 isGranted: permissionsManager.isAccessibilityGranted,
                                 action: { permissionsManager.requestAccessibilityPermission() }
                             )
                             PermissionRow(
-                                title: "Screen Recording (Required)",
+                                title: "Screen Recording (Recommended)",
                                 description: "Required to show window thumbnails when hovering.",
                                 isGranted: thumbnailService.isScreenRecordingGranted,
                                 action: {
@@ -158,9 +158,6 @@ struct OnboardingView: View {
     }
     
     private var isNextButtonDisabled: Bool {
-        if state.step == 1 {
-            return !permissionsManager.isAccessibilityGranted || !thumbnailService.isScreenRecordingGranted
-        }
         return false
     }
 }
