@@ -1,5 +1,7 @@
 import AppKit
 
+import DockBarCore
+
 open class BorderlessFlyout: NSPanel {
     private var localMouseDownMonitor: Any?
     private var globalMouseDownMonitor: Any?
@@ -44,47 +46,29 @@ open class BorderlessFlyout: NSPanel {
         if fit.height <= 0 { fit.height = 300 }
         
         let visibleFrame = screen.visibleFrame
-        let spacing: CGFloat = 12
+        let finalFrame = FlyoutGeometry.calculateFrame(
+            anchor: anchor,
+            contentSize: fit,
+            visibleFrame: visibleFrame,
+            spacing: 12
+        )
         
-        var panelWidth = fit.width
-        var panelHeight = fit.height
+        let opensUpward = anchor.minY <= visibleFrame.midY
+        let startFrame = NSRect(
+            x: finalFrame.origin.x,
+            y: opensUpward ? finalFrame.origin.y - 10 : finalFrame.origin.y + 10,
+            width: finalFrame.width,
+            height: finalFrame.height
+        )
         
-        var originY: CGFloat
-        if anchor.minY > visibleFrame.midY {
-            // Anchor is in the top half of the screen (e.g. top dock). Open DOWNWARD.
-            originY = anchor.minY - spacing - panelHeight
-            if originY < visibleFrame.minY + spacing {
-                let overflow = (visibleFrame.minY + spacing) - originY
-                panelHeight -= overflow
-                originY = visibleFrame.minY + spacing
-            }
-        } else {
-            // Anchor is in the bottom half of the screen (e.g. bottom dock). Open UPWARD.
-            originY = anchor.maxY + spacing
-            if originY + panelHeight > visibleFrame.maxY - spacing {
-                panelHeight = (visibleFrame.maxY - spacing) - originY
-            }
-        }
-        
-        var originX = anchor.midX - (panelWidth / 2)
-        if panelWidth > visibleFrame.width { panelWidth = visibleFrame.width }
-        
-        if originX < visibleFrame.minX + spacing {
-            originX = visibleFrame.minX + spacing
-        } else if originX + panelWidth > visibleFrame.maxX - spacing {
-            originX = visibleFrame.maxX - panelWidth - spacing
-        }
-        
-        let finalFrame = NSRect(x: originX, y: originY, width: panelWidth, height: panelHeight)
-        self.setFrame(finalFrame, display: true)
+        self.alphaValue = 0
+        self.setFrame(startFrame, display: true)
         
         if let effectView = contentViewController.view as? NSVisualEffectView {
             setupRoundedCorners(for: effectView)
             self.contentView = effectView
         } else {
-            // Check if we need to wrap in a scroll view because we capped the height
-            let needsScroll = panelHeight < fit.height && !(contentViewController.view is NSScrollView)
-            
+            let needsScroll = finalFrame.height < fit.height && !(contentViewController.view is NSScrollView)
             let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: finalFrame.size))
             effectView.material = NSVisualEffectView.Material.popover
             effectView.blendingMode = NSVisualEffectView.BlendingMode.behindWindow
@@ -96,7 +80,7 @@ open class BorderlessFlyout: NSPanel {
                 scrollView.hasVerticalScroller = true
                 scrollView.drawsBackground = false
                 scrollView.autoresizingMask = [.width, .height]
-                contentViewController.view.frame = NSRect(x: 0, y: 0, width: panelWidth, height: fit.height)
+                contentViewController.view.frame = NSRect(x: 0, y: 0, width: finalFrame.width, height: fit.height)
                 scrollView.documentView = contentViewController.view
                 effectView.addSubview(scrollView)
             } else {
@@ -104,7 +88,6 @@ open class BorderlessFlyout: NSPanel {
                 contentViewController.view.frame = effectView.bounds
                 effectView.addSubview(contentViewController.view)
             }
-            
             self.contentView = effectView
         }
         
@@ -114,21 +97,11 @@ open class BorderlessFlyout: NSPanel {
         
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             guard let self = self else { return event }
-            
-            // If the event is in the flyout window, don't close.
             if event.window == self { return event }
-            
-            // If the event is in the window containing the positioning view...
             if let posView = self.positioningView, event.window == posView.window {
-                // Convert event location to posView coordinates
                 let pointInPosView = posView.convert(event.locationInWindow, from: nil)
-                if posView.bounds.contains(pointInPosView) {
-                    // Clicked exactly on the toggle button! Let the button's action handle closing.
-                    return event
-                }
+                if posView.bounds.contains(pointInPosView) { return event }
             }
-            
-            // Clicked somewhere else in our app's windows. Close the flyout.
             self.performClose(nil)
             return event
         }
@@ -136,7 +109,7 @@ open class BorderlessFlyout: NSPanel {
             self?.performClose(nil)
         }
         localKeyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 {
+            if event.keyCode == 53 { // Esc
                 self?.performClose(nil)
                 return nil
             }
@@ -145,6 +118,13 @@ open class BorderlessFlyout: NSPanel {
         
         self.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            self.animator().alphaValue = 1
+            self.animator().setFrame(finalFrame, display: true)
+        })
     }
     
     private func setupRoundedCorners(for view: NSVisualEffectView) {
@@ -165,7 +145,23 @@ open class BorderlessFlyout: NSPanel {
             hasFiredDismiss = true
             onDismiss?()
         }
-        super.close()
+        
+        let opensUpward = (self.positioningView?.window?.frame.minY ?? 0) <= (NSScreen.main?.visibleFrame.midY ?? 0)
+        let endFrame = NSRect(
+            x: frame.origin.x,
+            y: opensUpward ? frame.origin.y - 10 : frame.origin.y + 10,
+            width: frame.width,
+            height: frame.height
+        )
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            self.animator().alphaValue = 0
+            self.animator().setFrame(endFrame, display: true)
+        }, completionHandler: {
+            super.close()
+        })
     }
     
     open override func performClose(_ sender: Any?) {

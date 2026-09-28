@@ -505,3 +505,51 @@ if failCount > 0 {
     print("  ✅ All tests passed")
 }
 print("═══════════════════════════════════════════════════")
+
+// MARK: - 17. Flyout Positioning
+do {
+    print("--- 17. Flyout Positioning ---")
+    let visibleFrame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+    
+    // Bottom dock, middle of screen
+    let anchorBottom = CGRect(x: 900, y: 0, width: 44, height: 44) 
+    let frame1 = FlyoutGeometry.calculateFrame(
+        anchor: anchorBottom,
+        contentSize: CGSize(width: 300, height: 400),
+        visibleFrame: visibleFrame,
+        spacing: 12
+    )
+    assertEqual(frame1.origin.y, 56.0, "Should open UPWARD from bottom dock")
+    assertEqual(frame1.origin.x, 772.0, "Should be centered horizontally")
+    
+    // Top dock, middle of screen
+    let anchorTop = CGRect(x: 900, y: 1036, width: 44, height: 44) 
+    let frame2 = FlyoutGeometry.calculateFrame(
+        anchor: anchorTop,
+        contentSize: CGSize(width: 300, height: 400),
+        visibleFrame: visibleFrame,
+        spacing: 12
+    )
+    assertEqual(frame2.origin.y, 624.0, "Should open DOWNWARD from top dock")
+    assertEqual(frame2.origin.x, 772.0, "Should be centered horizontally")
+    
+    // Bottom dock, left edge
+    let anchorLeft = CGRect(x: 10, y: 0, width: 44, height: 44)
+    let frame3 = FlyoutGeometry.calculateFrame(
+        anchor: anchorLeft,
+        contentSize: CGSize(width: 300, height: 400),
+        visibleFrame: visibleFrame,
+        spacing: 12
+    )
+    assertEqual(frame3.origin.x, 12.0, "Should be clamped to left edge")
+    
+    // Bottom dock, right edge
+    let anchorRight = CGRect(x: 1900, y: 0, width: 44, height: 44)
+    let frame4 = FlyoutGeometry.calculateFrame(
+        anchor: anchorRight,
+        contentSize: CGSize(width: 300, height: 400),
+        visibleFrame: visibleFrame,
+        spacing: 12
+    )
+    assertEqual(frame4.origin.x, 1608.0, "Should be clamped to right edge (1920 - 300 - 12)")
+}
