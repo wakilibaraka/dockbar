@@ -180,7 +180,6 @@ enum SnapshotFixtures {
         .leading:     CGSize(width: 80, height: 28),
         .liveEvents:  CGSize(width: 80, height: 28),
         .startButton: CGSize(width: 44, height: 44),
-        .taskView:    CGSize(width: 44, height: 44),
         .search:      CGSize(width: 150, height: 44),
         .widgetsBoard:CGSize(width: 44, height: 44),
         .downloads:   CGSize(width: 44, height: 44),

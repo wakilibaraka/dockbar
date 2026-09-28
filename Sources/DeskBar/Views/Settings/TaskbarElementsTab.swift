@@ -143,10 +143,7 @@ struct TaskbarElementsTab: View {
                 SettingsRow(title: "Show Search Field") {
                     Toggle("", isOn: $settings.showSearch).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 }
-                SettingsDivider()
-                SettingsRow(title: "Show Task View Button") {
-                    Toggle("", isOn: $settings.showTaskView).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                }
+
                 SettingsDivider()
                 SettingsRow(title: "Show Widgets Board Button") {
                     Toggle("", isOn: $settings.showWidgetsBoard).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
@@ -154,6 +151,28 @@ struct TaskbarElementsTab: View {
                 SettingsDivider()
                 SettingsRow(title: "Show Downloads Button") {
                     Toggle("", isOn: $settings.showDownloads).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                SettingsDivider()
+                SettingsRow(title: "Show Trash Button") {
+                    Toggle("", isOn: $settings.showTrash).labelsHidden().toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                }
+                if settings.showDownloads {
+                    SettingsDivider()
+                    SettingsRow(title: "Downloads Action", subtitle: "What happens when you click the Downloads button") {
+                        Picker("", selection: $settings.downloadsAction) {
+                            Text("Open Downloads Flyout (Coming soon)").tag(1)
+                            Text("Open in Finder").tag(2)
+                            Text("Open in External App").tag(3)
+                        }.labelsHidden().frame(width: 200)
+                    }
+                    if settings.downloadsAction == 3 {
+                        SettingsDivider()
+                        SettingsRow(title: "External App Bundle ID") {
+                            TextField("com.example.App", text: $settings.downloadsExternalApp)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .frame(width: 200)
+                        }
+                    }
                 }
             }
         }

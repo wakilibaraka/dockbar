@@ -75,25 +75,34 @@ final class ThemeCoordinator: ObservableObject {
                 let v = NSButton(title: "Live Events", target: nil, action: nil)
                 v.bezelStyle = .texturedRounded
                 containerView.setWidgetView(v, for: def.id)
-            case "taskView":
-                let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
-                v.bezelStyle = .texturedRounded
-                v.isBordered = false
-                v.target = TaskViewActionHandler.shared
-                v.action = #selector(TaskViewActionHandler.shared.openMissionControl)
-                containerView.setWidgetView(v, for: def.id)
+
 
             case "widgetsBoard":
                 let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.offgrid", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
                 v.bezelStyle = .texturedRounded
                 v.isBordered = false
                 containerView.setWidgetView(v, for: def.id)
+            case "trash":
+                let v = NSButton(image: NSImage(systemSymbolName: "trash", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
+                v.bezelStyle = .texturedRounded
+                v.isBordered = false
+                v.target = TrashActionHandler.shared
+                v.action = #selector(TrashActionHandler.shared.openTrash)
+                
+                // Add right-click menu
+                let menu = NSMenu()
+                let emptyItem = NSMenuItem(title: "Empty Trash", action: #selector(TrashActionHandler.shared.emptyTrash), keyEquivalent: "")
+                emptyItem.target = TrashActionHandler.shared
+                menu.addItem(emptyItem)
+                v.menu = menu
+                
+                containerView.setWidgetView(v, for: def.id)
             case "downloads":
                 let v = NSButton(image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
                 v.bezelStyle = .texturedRounded
                 v.isBordered = false
-                v.target = TaskViewActionHandler.shared
-                v.action = #selector(TaskViewActionHandler.shared.openDownloads)
+                v.target = DownloadsActionHandler.shared
+                v.action = #selector(DownloadsActionHandler.shared.openDownloads)
                 containerView.setWidgetView(v, for: def.id)
             default: break
             }
@@ -101,10 +110,43 @@ final class ThemeCoordinator: ObservableObject {
 
         containerView.onAppActivate = { appID in
             if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == appID }) {
-                if app.isActive {
-                    app.hide()
-                } else {
+                let pid = app.processIdentifier
+                let axApp = AXUIElementCreateApplication(pid)
+                var windowsValue: CFTypeRef?
+                var minimizedWindows: [AXUIElement] = []
+                var unminimizedWindows: [AXUIElement] = []
+                
+                if AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsValue) == .success,
+                   let windows = windowsValue as? [AXUIElement] {
+                    for window in windows {
+                        var minVal: CFTypeRef?
+                        var isMin = false
+                        if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minVal) == .success,
+                           let m = minVal as? Bool, m {
+                            isMin = true
+                        }
+                        if isMin { minimizedWindows.append(window) }
+                        else { unminimizedWindows.append(window) }
+                    }
+                }
+                
+                if !app.isActive {
                     app.activate(options: [.activateIgnoringOtherApps])
+                    if unminimizedWindows.isEmpty && !minimizedWindows.isEmpty {
+                        AXUIElementSetAttributeValue(minimizedWindows[0], kAXMinimizedAttribute as CFString, kCFBooleanFalse as CFTypeRef)
+                    } else if !unminimizedWindows.isEmpty {
+                        AXUIElementPerformAction(unminimizedWindows[0], kAXRaiseAction as CFString)
+                    }
+                } else {
+                    // Running & frontmost -> minimize/hide/cycle
+                    if !unminimizedWindows.isEmpty {
+                        // If multiple unminimized, cycle by raising the last one? Or hide the app?
+                        // "minimize/hide/cycle its windows (match Vorssaint)" -> typical behavior is to hide if frontmost.
+                        app.hide()
+                    } else if !minimizedWindows.isEmpty {
+                        // All minimized -> restore
+                        AXUIElementSetAttributeValue(minimizedWindows[0], kAXMinimizedAttribute as CFString, kCFBooleanFalse as CFTypeRef)
+                    }
                 }
             } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appID) {
                 NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
@@ -122,9 +164,9 @@ final class ThemeCoordinator: ObservableObject {
         settings.$showSystemResourceWidget.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showStartButton.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showSearch.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
-        settings.$showTaskView.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showWidgetsBoard.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showDownloads.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showTrash.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showLiveEvents.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$appAlignment.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         pinnedAppManager.$pinnedApps
@@ -195,10 +237,11 @@ final class ThemeCoordinator: ObservableObject {
                 isEnabled = settings.showStartButton
             case "search":
                 isEnabled = settings.showSearch
-            case "taskView":
-                isEnabled = settings.showTaskView
+
             case "widgetsBoard":
                 isEnabled = settings.showWidgetsBoard
+            case "trash":
+                isEnabled = settings.showTrash
             case "downloads":
                 isEnabled = settings.showDownloads
             case "liveEvents":
@@ -233,14 +276,43 @@ final class ThemeCoordinator: ObservableObject {
     }
 }
 
-class TaskViewActionHandler {
-    static let shared = TaskViewActionHandler()
-    @objc func openMissionControl() {
-        let url = URL(fileURLWithPath: "/System/Applications/Mission Control.app")
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+class TrashActionHandler {
+    static let shared = TrashActionHandler()
+    @objc func openTrash() {
+        let url = URL(fileURLWithPath: "/Users/" + NSUserName() + "/.Trash")
+        NSWorkspace.shared.open(url)
     }
     
+    @objc func emptyTrash() {
+        let alert = NSAlert()
+        alert.messageText = "Empty Trash?"
+        alert.informativeText = "Are you sure you want to permanently erase the items in the Trash?"
+        alert.addButton(withTitle: "Empty Trash")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", "tell application \"Finder\" to empty trash"]
+            try? task.run()
+        }
+    }
+}
+
+class DownloadsActionHandler {
+    static let shared = DownloadsActionHandler()
     @objc func openDownloads() {
+        // Mode 1: Flyout (Not implemented yet, fallback to Finder)
+        // Mode 2: Finder
+        // Mode 3: External App
+        let mode = UserDefaults.standard.integer(forKey: "downloadsAction")
+        if mode == 3, let externalApp = UserDefaults.standard.string(forKey: "downloadsExternalApp") {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: externalApp) {
+                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+                return
+            }
+        }
+        
+        // Fallback for Mode 1 & 2
         let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
         NSWorkspace.shared.open(downloadsURL)
     }

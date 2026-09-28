@@ -943,24 +943,11 @@ final class WindowManager: ObservableObject {
     }
 
     static func visibleWindowPIDs(from windows: [WindowInfo]) -> Set<pid_t> {
-        Set(
-            Dictionary(grouping: windows, by: \.pid)
-                .compactMap { pid, appWindows in
-                    appWindows.contains(where: { !$0.isMinimized && !$0.isHidden }) ? pid : nil
-                }
-        )
+        Set(windows.map { $0.pid })
     }
 
     static func visibleWindowBundleIdentifiers(from windows: [WindowInfo]) -> Set<String> {
-        Set(
-            windows.compactMap { window in
-                guard !window.isMinimized, !window.isHidden else {
-                    return nil
-                }
-
-                return window.bundleIdentifier
-            }
-        )
+        Set(windows.compactMap { $0.bundleIdentifier })
     }
 
     private func trayApplicationInfoByCandidateKey() -> [String: TrayApplicationInfo] {

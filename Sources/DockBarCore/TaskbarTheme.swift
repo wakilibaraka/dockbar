@@ -150,10 +150,10 @@ public enum SlotKind: String, Codable, Equatable {
     case leading        // left-side widgets (weather, etc.)
     case taskArea       // running app buttons (core)
     case tray           // clock, battery, connectivity, quick-settings
-    case taskView
-    case search
+        case search
     case widgetsBoard
     case downloads
+    case trash
     case liveEvents
 
 }

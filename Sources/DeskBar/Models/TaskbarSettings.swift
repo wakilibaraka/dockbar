@@ -313,8 +313,16 @@ class TaskbarSettings: ObservableObject {
     @Published var showSearch: Bool {
         didSet { defaults.set(showSearch, forKey: "showSearch") }
     }
-    @Published var showTaskView: Bool {
-        didSet { defaults.set(showTaskView, forKey: "showTaskView") }
+    @Published var downloadsAction: Int {
+        didSet { defaults.set(downloadsAction, forKey: "downloadsAction") }
+    }
+    
+    @Published var downloadsExternalApp: String {
+        didSet { defaults.set(downloadsExternalApp, forKey: "downloadsExternalApp") }
+    }
+
+    @Published var showTrash: Bool {
+        didSet { defaults.set(showTrash, forKey: "showTrash") }
     }
     @Published var showWidgetsBoard: Bool {
         didSet { defaults.set(showWidgetsBoard, forKey: "showWidgetsBoard") }
@@ -503,7 +511,9 @@ class TaskbarSettings: ObservableObject {
         appAlignment = DeskBarAppAlignment(rawValue: defaults.string(forKey: "appAlignment") ?? "") ?? .centered
         showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
         showSearch = defaults.object(forKey: "showSearch") as? Bool ?? true
-        showTaskView = defaults.object(forKey: "showTaskView") as? Bool ?? true
+        downloadsAction = defaults.object(forKey: "downloadsAction") as? Int ?? 2
+        downloadsExternalApp = defaults.string(forKey: "downloadsExternalApp") ?? ""
+        showTrash = defaults.object(forKey: "showTrash") as? Bool ?? true
         showWidgetsBoard = defaults.object(forKey: "showWidgetsBoard") as? Bool ?? false
         showDownloads = defaults.object(forKey: "showDownloads") as? Bool ?? true
         showLiveEvents = defaults.object(forKey: "showLiveEvents") as? Bool ?? true

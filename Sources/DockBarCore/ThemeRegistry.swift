@@ -68,8 +68,8 @@ public struct ThemeRegistry {
                 var zones: [Zone] = []
                 
                 let leadingSlots: [SlotKind] = [.leading, .liveEvents]
-                let centerSlots: [SlotKind] = [.startButton, .taskView, .search, .widgetsBoard, .taskArea, .downloads]
-                let trailingSlots: [SlotKind] = [.tray]
+                let centerSlots: [SlotKind] = [.startButton, .search, .widgetsBoard, .taskArea, .downloads]
+                let trailingSlots: [SlotKind] = [.tray, .trash]
 
                 switch preset {
                 case "split":
