@@ -148,6 +148,18 @@ enum ResourceDisplayStyle: String, CaseIterable, Identifiable {
     }
 }
 
+public enum DeskBarAppAlignment: String, Codable, CaseIterable, Identifiable {
+    case centered
+    case leading
+    public var id: String { rawValue }
+    public var displayName: String {
+        switch self {
+        case .centered: return "Centered"
+        case .leading: return "Leading"
+        }
+    }
+}
+
 class TaskbarSettings: ObservableObject {
     static let defaultTaskbarHeight: CGFloat = 44
     static let defaultTitleFontSize: CGFloat = 12
@@ -292,6 +304,27 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
     }
 
+    @Published var appAlignment: DeskBarAppAlignment {
+        didSet { defaults.set(appAlignment.rawValue, forKey: "appAlignment") }
+    }
+    @Published var showStartButton: Bool {
+        didSet { defaults.set(showStartButton, forKey: "showStartButton") }
+    }
+    @Published var showSearch: Bool {
+        didSet { defaults.set(showSearch, forKey: "showSearch") }
+    }
+    @Published var showTaskView: Bool {
+        didSet { defaults.set(showTaskView, forKey: "showTaskView") }
+    }
+    @Published var showWidgetsBoard: Bool {
+        didSet { defaults.set(showWidgetsBoard, forKey: "showWidgetsBoard") }
+    }
+    @Published var showDownloads: Bool {
+        didSet { defaults.set(showDownloads, forKey: "showDownloads") }
+    }
+    @Published var showLiveEvents: Bool {
+        didSet { defaults.set(showLiveEvents, forKey: "showLiveEvents") }
+    }
     @Published var showOnAllMonitors: Bool {
         didSet { defaults.set(showOnAllMonitors, forKey: "showOnAllMonitors") }
     }
@@ -467,6 +500,13 @@ class TaskbarSettings: ObservableObject {
             systemResourceWidgetPinnedDisplayID = nil
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
+        appAlignment = DeskBarAppAlignment(rawValue: defaults.string(forKey: "appAlignment") ?? "") ?? .centered
+        showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
+        showSearch = defaults.object(forKey: "showSearch") as? Bool ?? true
+        showTaskView = defaults.object(forKey: "showTaskView") as? Bool ?? true
+        showWidgetsBoard = defaults.object(forKey: "showWidgetsBoard") as? Bool ?? true
+        showDownloads = defaults.object(forKey: "showDownloads") as? Bool ?? true
+        showLiveEvents = defaults.object(forKey: "showLiveEvents") as? Bool ?? true
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
         // Migrate old layoutMode to preset/edge if needed
         let oldLayoutModeStr = defaults.string(forKey: "layoutMode") ?? ""

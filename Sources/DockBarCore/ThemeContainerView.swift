@@ -87,7 +87,8 @@ public final class ThemeContainerView: NSView {
                 sv.updateSegment(segment)
             } else {
                 sv = SegmentView(segment: segment)
-                addSubview(sv)
+                // Insert segments at the bottom (z-index 0) so they don't cover widgets/buttons
+                addSubview(sv, positioned: .below, relativeTo: nil)
                 segmentViews[segment.id] = sv
             }
             sv.frame = frame

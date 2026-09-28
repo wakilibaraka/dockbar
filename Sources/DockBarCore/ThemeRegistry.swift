@@ -34,10 +34,10 @@ public struct ThemeRegistry {
 
         private init() {
         let compactIcons = IconStyle(size: 24, spacing: 6, hitTargetSize: 32)
-        let dotsIndicator = IndicatorStyle(
-            kind: .dots,
-            unfocusedWidth: 4, focusedWidth: 6, thickness: 4,
-            groupedSegmented: false, colorToken: "indicator",
+        let win11Indicator = IndicatorStyle(
+            kind: .win11Line,
+            unfocusedWidth: 16, focusedWidth: 24, thickness: 3,
+            groupedSegmented: true, colorToken: "indicator",
             minimizedIconOpacity: 0.5, animationDuration: 0.15
         )
         let standardHover = HoverStyle(cornerRadius: 4, inset: 2, fillOpacity: 0.08, animationDuration: 0.15)
@@ -54,7 +54,10 @@ public struct ThemeRegistry {
             for edgeStyle in edgeStyles {
                 let id = "\(preset)_\(edgeStyle)"
                 let isRounded = (edgeStyle == "rounded")
-                let shape: BarShape = (preset == "fullWidth" && !isRounded) ? .fullWidth : .floating
+                let shape: BarShape
+                if preset == "compact" { shape = .compact }
+                else if preset == "fullWidth" && !isRounded { shape = .fullWidth }
+                else { shape = .floating }
                 
                 let screenInsets = isRounded 
                     ? EdgeInsets(top: 0, left: 16, bottom: 8, right: 16) 
@@ -64,29 +67,45 @@ public struct ThemeRegistry {
                 
                 var zones: [Zone] = []
                 
+                let leadingSlots: [SlotKind] = [.leading, .liveEvents]
+                let centerSlots: [SlotKind] = [.startButton, .taskView, .search, .widgetsBoard, .taskArea, .downloads]
+                let trailingSlots: [SlotKind] = [.tray]
+
                 switch preset {
                 case "split":
                     zones = [
                         Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
-                            Segment(id: "left_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: [.leading])
+                            Segment(id: "left_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: leadingSlots)
                         ]),
                         Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
-                            Segment(id: "task_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16), sizing: .hugContents, minWidth: 420, slots: [.startButton, .taskArea])
+                            Segment(id: "task_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16), sizing: .hugContents, minWidth: nil, slots: centerSlots)
                         ]),
                         Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
-                            Segment(id: "tray_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: [.tray])
+                            Segment(id: "tray_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: trailingSlots)
                         ])
                     ]
                 case "compact":
                     zones = [
+                        Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "left_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: leadingSlots)
+                        ]),
                         Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
-                            Segment(id: "unified", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: 420, slots: [.startButton, .leading, .taskArea, .tray])
+                            Segment(id: "task_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16), sizing: .hugContents, minWidth: nil, slots: centerSlots)
+                        ]),
+                        Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "tray_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: trailingSlots)
                         ])
                     ]
                 case "fullWidth":
                     zones = [
+                        Zone(id: "left", anchor: .leadingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "left_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: leadingSlots)
+                        ]),
                         Zone(id: "center", anchor: .center, interSegmentGap: 0, segments: [
-                            Segment(id: "unified", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .fill, slots: [.startButton, .leading, .taskArea, .tray])
+                            Segment(id: "task_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 16, bottom: 0, right: 16), sizing: .fill, minWidth: nil, slots: centerSlots)
+                        ]),
+                        Zone(id: "right", anchor: .trailingEdge, interSegmentGap: 0, segments: [
+                            Segment(id: "tray_seg", surface: isRounded ? glassSurface : solidSurface, border: .default, cornerRadius: cornerRadius, contentInsets: EdgeInsets(top: 0, left: 12, bottom: 0, right: 12), sizing: .hugContents, minWidth: nil, slots: trailingSlots)
                         ])
                     ]
                 default: break
@@ -98,7 +117,7 @@ public struct ThemeRegistry {
                     geometry: BarGeometry(shape: shape, height: 44, screenInsets: screenInsets),
                     zones: zones,
                     icons: compactIcons,
-                    indicator: dotsIndicator,
+                    indicator: win11Indicator,
                     hover: standardHover,
                     tray: trayStandard
                 ))

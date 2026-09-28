@@ -37,6 +37,16 @@ struct DockSettingsTab: View {
                     .frame(width: 170)
                 }
                 SettingsDivider()
+                SettingsRow(title: "App Alignment", subtitle: "Position of running apps within the center zone") {
+                    Picker("", selection: $settings.appAlignment) {
+                        ForEach(DeskBarAppAlignment.allCases) { alignment in
+                            Text(alignment.displayName).tag(alignment)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 170)
+                }
+                SettingsDivider()
                 SettingsRow(title: "Edge Style", subtitle: "Corners and edge flushness") {
                     Picker("", selection: $settings.edgeStyle) {
                         Text("Rounded (Floating)").tag(DeskBarEdgeStyle.rounded)

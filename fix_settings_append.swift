@@ -3,23 +3,6 @@ import Foundation
 let path = "Sources/DeskBar/Models/TaskbarSettings.swift"
 var content = try! String(contentsOfFile: path)
 
-let enumCode = """
-public enum DeskBarAppAlignment: String, Codable, CaseIterable, Identifiable {
-    case centered
-    case leading
-    public var id: String { rawValue }
-    public var displayName: String {
-        switch self {
-        case .centered: return "Centered"
-        case .leading: return "Leading"
-        }
-    }
-}
-
-class TaskbarSettings
-"""
-content = content.replacingOccurrences(of: "class TaskbarSettings", with: enumCode)
-
 let togglesCode = """
     @Published var appAlignment: DeskBarAppAlignment {
         didSet { defaults.set(appAlignment.rawValue, forKey: "appAlignment") }
@@ -42,9 +25,7 @@ let togglesCode = """
     @Published var showLiveEvents: Bool {
         didSet { defaults.set(showLiveEvents, forKey: "showLiveEvents") }
     }
-    @Published var useAppIconAsLauncherButton: Bool
 """
-content = content.replacingOccurrences(of: "@Published var useAppIconAsLauncherButton: Bool", with: togglesCode)
 
 let initCode = """
         appAlignment = DeskBarAppAlignment(rawValue: defaults.string(forKey: "appAlignment") ?? "") ?? .centered
@@ -54,8 +35,9 @@ let initCode = """
         showWidgetsBoard = defaults.object(forKey: "showWidgetsBoard") as? Bool ?? true
         showDownloads = defaults.object(forKey: "showDownloads") as? Bool ?? true
         showLiveEvents = defaults.object(forKey: "showLiveEvents") as? Bool ?? true
-        useAppIconAsLauncherButton = defaults.object(forKey: "useAppIconAsLauncherButton") as? Bool ?? false
 """
-content = content.replacingOccurrences(of: "useAppIconAsLauncherButton = defaults.object(forKey: \"useAppIconAsLauncherButton\") as? Bool ?? false", with: initCode)
+
+content = content.replacingOccurrences(of: "    @Published var showOnAllMonitors: Bool", with: togglesCode + "\n    @Published var showOnAllMonitors: Bool")
+content = content.replacingOccurrences(of: "        showOnAllMonitors = defaults.object(forKey: \"showOnAllMonitors\") as? Bool ?? true", with: initCode + "\n        showOnAllMonitors = defaults.object(forKey: \"showOnAllMonitors\") as? Bool ?? true")
 
 try! content.write(toFile: path, atomically: true, encoding: .utf8)

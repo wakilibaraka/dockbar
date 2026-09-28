@@ -46,15 +46,17 @@ public struct LayoutEngine {
         public var widgetRequests: [Input.WidgetRequest]
         public var isDockHidden: Bool
         public var isFullScreen: Bool
+        public var appAlignment: String
 
         public init(
             theme: TaskbarTheme, screenFrame: CGRect, visibleFrame: CGRect,
             apps: [AppItem], activeAppID: String?,
-            widgetRequests: [Input.WidgetRequest], isDockHidden: Bool, isFullScreen: Bool
+            widgetRequests: [Input.WidgetRequest], isDockHidden: Bool, isFullScreen: Bool, appAlignment: String = "centered"
         ) {
             self.theme = theme; self.screenFrame = screenFrame; self.visibleFrame = visibleFrame
             self.apps = apps; self.activeAppID = activeAppID
             self.widgetRequests = widgetRequests; self.isDockHidden = isDockHidden; self.isFullScreen = isFullScreen
+            self.appAlignment = appAlignment
         }
     }
 
@@ -211,24 +213,45 @@ public struct LayoutEngine {
         
         var zoneFrames: [String: CGRect] = [:]
         
-        // Place Left & Right firmly (they don't compress per requirements)
-        var curX = availableXMin
-        for zl in leftZones {
-            zoneFrames[zl.id] = CGRect(x: curX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
-            curX += zl.naturalWidth
-        }
-        
-        var rCurX = availableXMax
-        for zl in rightZones.reversed() {
-            rCurX -= zl.naturalWidth
-            zoneFrames[zl.id] = CGRect(x: rCurX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
-        }
-        
-        // Center compresses if needed
-        if let centerZone = centerZones.first {
-            let naturalW = centerZone.naturalWidth
-            let preferredMinX = screen.minX + floor((screen.width - naturalW) / 2)
-            let preferredMaxX = preferredMinX + naturalW
+        if g.shape == .compact {
+            let centerZoneW = centerZones.first?.naturalWidth ?? 0
+            let totalW = leftWidth + centerZoneW + rightWidth
+            let gap: CGFloat = 8 // small gap between zones in compact mode
+            let totalWithGaps = totalW + (leftZones.isEmpty ? 0 : gap) + (rightZones.isEmpty ? 0 : gap)
+            
+            var startX = screen.minX + floor((screen.width - totalWithGaps) / 2)
+            
+            for zl in leftZones {
+                zoneFrames[zl.id] = CGRect(x: startX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+                startX += zl.naturalWidth + gap
+            }
+            if let centerZone = centerZones.first {
+                zoneFrames[centerZone.id] = CGRect(x: startX, y: screen.minY + g.screenInsets.bottom, width: centerZone.naturalWidth, height: g.height)
+                startX += centerZone.naturalWidth + gap
+            }
+            for zl in rightZones {
+                zoneFrames[zl.id] = CGRect(x: startX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+                startX += zl.naturalWidth + gap
+            }
+        } else {
+            // Place Left & Right firmly (they don't compress per requirements)
+            var curX = availableXMin
+            for zl in leftZones {
+                zoneFrames[zl.id] = CGRect(x: curX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+                curX += zl.naturalWidth
+            }
+            
+            var rCurX = availableXMax
+            for zl in rightZones.reversed() {
+                rCurX -= zl.naturalWidth
+                zoneFrames[zl.id] = CGRect(x: rCurX, y: screen.minY + g.screenInsets.bottom, width: zl.naturalWidth, height: g.height)
+            }
+            
+            // Center compresses if needed
+            if let centerZone = centerZones.first {
+                let naturalW = centerZone.naturalWidth
+                let preferredMinX = screen.minX + floor((screen.width - naturalW) / 2)
+                let preferredMaxX = preferredMinX + naturalW
             
             var constrainedMinX = preferredMinX
             var constrainedMaxX = preferredMaxX
@@ -268,6 +291,7 @@ public struct LayoutEngine {
                 zonesLayout[idx] = newCenterZone
             }
         }
+        } // close else block
         
         let panelFrame = CGRect(
             x: screen.minX,
@@ -304,10 +328,28 @@ public struct LayoutEngine {
                 for slot in seg.slots {
                     if slot == .taskArea {
                         let btnW = input.theme.icons.hitTargetSize
+                        let areaWidth = taskAreaWidth(apps: input.apps, icons: input.theme.icons)
+                        
+                        var alignOffset: CGFloat = 0
+                        if input.appAlignment == "centered" && (seg.sizing == .fill || seg.minWidth != nil) {
+                            // If we have extra space in this segment, center the task area
+                            // Calculate total width of all slots in this segment
+                            var allSlotsW: CGFloat = 0
+                            for s in seg.slots {
+                                if s == .taskArea { allSlotsW += areaWidth }
+                                else if let ws = zl.sizesBySlot[s] {
+                                    for w in ws { allSlotsW += w.size.width + input.theme.icons.spacing }
+                                }
+                            }
+                            let extraSpace = segFrame.width - seg.contentInsets.left - seg.contentInsets.right - allSlotsW
+                            if extraSpace > 0 { alignOffset = extraSpace / 2.0 }
+                        }
+                        
+                        slotX += alignOffset
+                        
                         for app in input.apps {
-                            if slotX + btnW > segFrame.width - seg.contentInsets.right { break }
+                            if slotX + btnW > segFrame.width - seg.contentInsets.right + alignOffset { break } // allow overflowing visually if centered
                             
-                            // bFrame panel-local: segFrame.minX is already panel-local
                             let bFrame = CGRect(x: segFrame.minX + slotX, y: (g.height - input.theme.icons.hitTargetSize)/2, width: btnW, height: input.theme.icons.hitTargetSize)
                             taskButtonFrames[app.id] = bFrame
                             

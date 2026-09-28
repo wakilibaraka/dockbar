@@ -70,6 +70,30 @@ final class ThemeCoordinator: ObservableObject {
             case "startButton":
                 let start = AppsLauncherButtonView()
                 containerView.setWidgetView(start, for: def.id)
+            case "liveEvents":
+                // Minimal placeholder for now
+                let v = NSButton(title: "Live Events", target: nil, action: nil)
+                v.bezelStyle = .texturedRounded
+                containerView.setWidgetView(v, for: def.id)
+            case "taskView":
+                let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
+                v.bezelStyle = .texturedRounded
+                v.isBordered = false
+                containerView.setWidgetView(v, for: def.id)
+            case "search":
+                let v = NSSearchField()
+                v.placeholderString = "Search"
+                containerView.setWidgetView(v, for: def.id)
+            case "widgetsBoard":
+                let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.offgrid", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
+                v.bezelStyle = .texturedRounded
+                v.isBordered = false
+                containerView.setWidgetView(v, for: def.id)
+            case "downloads":
+                let v = NSButton(image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
+                v.bezelStyle = .texturedRounded
+                v.isBordered = false
+                containerView.setWidgetView(v, for: def.id)
             default: break
             }
         }
@@ -83,6 +107,13 @@ final class ThemeCoordinator: ObservableObject {
         settings.$dockMode.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$weatherEnabled.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         settings.$showSystemResourceWidget.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showStartButton.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showSearch.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showTaskView.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showWidgetsBoard.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showDownloads.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$showLiveEvents.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
+        settings.$appAlignment.receive(on: RunLoop.main).sink { [weak self] _ in self?.resolve() }.store(in: &cancellables)
         pinnedAppManager.$pinnedApps
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.resolve() }
@@ -147,6 +178,18 @@ final class ThemeCoordinator: ObservableObject {
                 rule = settings.systemResourceWidgetLocation
             case "connectivity":
                 rule = settings.connectivityTrayLocation
+            case "startButton":
+                isEnabled = settings.showStartButton
+            case "search":
+                isEnabled = settings.showSearch
+            case "taskView":
+                isEnabled = settings.showTaskView
+            case "widgetsBoard":
+                isEnabled = settings.showWidgetsBoard
+            case "downloads":
+                isEnabled = settings.showDownloads
+            case "liveEvents":
+                isEnabled = settings.showLiveEvents
             default: break
             }
             
@@ -165,9 +208,13 @@ final class ThemeCoordinator: ObservableObject {
             activeAppID: frontmostApp,
             widgetRequests: widgetRequests,
             isDockHidden: settings.dockMode == .hidden,
-            isFullScreen: windowManager.hasFullScreenWindow(on: screen)
+            isFullScreen: windowManager.hasFullScreenWindow(on: screen),
+            appAlignment: settings.appAlignment.rawValue
         )
         let resolved = LayoutEngine.resolve(input: input)
+        print("Widget Requests: \(widgetRequests.map { $0.id })")
+        print("Resolved Widget Frames: \(resolved.widgetFrames)")
+
         containerView.applyTheme(theme)
         containerView.applyLayout(resolved)
     }

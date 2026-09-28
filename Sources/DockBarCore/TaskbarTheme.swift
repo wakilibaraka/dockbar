@@ -150,6 +150,12 @@ public enum SlotKind: String, Codable, Equatable {
     case leading        // left-side widgets (weather, etc.)
     case taskArea       // running app buttons (core)
     case tray           // clock, battery, connectivity, quick-settings
+    case taskView
+    case search
+    case widgetsBoard
+    case downloads
+    case liveEvents
+
 }
 
 public enum SegmentSizing: Codable, Equatable {
@@ -232,6 +238,7 @@ public enum BarShape: String, Codable, Equatable {
     case fullWidth
     /// Pill / card floating above the dock with configurable screen-edge insets.
     case floating
+    case compact
 }
 
 public struct BarGeometry: Codable, Equatable {
