@@ -504,7 +504,7 @@ class TaskbarSettings: ObservableObject {
         showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
         showSearch = defaults.object(forKey: "showSearch") as? Bool ?? true
         showTaskView = defaults.object(forKey: "showTaskView") as? Bool ?? true
-        showWidgetsBoard = defaults.object(forKey: "showWidgetsBoard") as? Bool ?? true
+        showWidgetsBoard = defaults.object(forKey: "showWidgetsBoard") as? Bool ?? false
         showDownloads = defaults.object(forKey: "showDownloads") as? Bool ?? true
         showLiveEvents = defaults.object(forKey: "showLiveEvents") as? Bool ?? true
         showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true

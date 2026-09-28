@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import CoreGraphics
 import DockBarCore
@@ -403,6 +404,45 @@ test("clockUsesLocale=true on every theme (no hardcoded format)") {
     for (id, theme) in registry.themes {
         assertTrue(theme.tray.clockUsesLocale, "\(id): clockUsesLocale must be true")
     }
+}
+
+// ── 15. Interaction Wiring ───────────────────────────────────────────
+print("\n15. Interaction Wiring")
+test("Clicking a task button fires onAppActivate") {
+    let t = registry.theme(for: "split_rounded")!
+    let container = ThemeContainerView(theme: t)
+    
+    var activatedAppID: String? = nil
+    container.onAppActivate = { appID in
+        activatedAppID = appID
+    }
+    
+    let apps = [
+        LayoutEngine.AppItem(id: "com.apple.Safari", isRunning: true, isFocused: false, hasMultipleWindows: false, isMinimized: false)
+    ]
+    let input = Fixtures.input(theme: t, apps: apps)
+    for req in input.widgetRequests {
+        container.setWidgetView(AppKit.NSView(), for: req.id)
+    }
+    let l = LayoutEngine.resolve(input: input)
+    
+    container.applyLayout(l)
+    
+    // Find the task button view
+    var taskButton: TaskButtonEngineView? = nil
+    for view in container.subviews {
+        if let tb = view as? TaskButtonEngineView {
+            taskButton = tb
+            break
+        }
+    }
+    
+    assertNotNil(taskButton, "TaskButtonEngineView must be mounted")
+    
+    // Simulate click
+    taskButton?.onActivate?()
+    
+    assertEqual(activatedAppID, "com.apple.Safari", "Clicking the task button must fire onAppActivate with the correct app ID")
 }
 
 // ── Results ──────────────────────────────────────────────────────────

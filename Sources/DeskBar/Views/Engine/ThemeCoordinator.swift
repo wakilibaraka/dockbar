@@ -79,6 +79,8 @@ final class ThemeCoordinator: ObservableObject {
                 let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
                 v.bezelStyle = .texturedRounded
                 v.isBordered = false
+                v.target = TaskViewActionHandler.shared
+                v.action = #selector(TaskViewActionHandler.shared.openMissionControl)
                 containerView.setWidgetView(v, for: def.id)
 
             case "widgetsBoard":
@@ -90,11 +92,25 @@ final class ThemeCoordinator: ObservableObject {
                 let v = NSButton(image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
                 v.bezelStyle = .texturedRounded
                 v.isBordered = false
+                v.target = TaskViewActionHandler.shared
+                v.action = #selector(TaskViewActionHandler.shared.openDownloads)
                 containerView.setWidgetView(v, for: def.id)
             default: break
             }
         }
 
+        containerView.onAppActivate = { appID in
+            if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == appID }) {
+                if app.isActive {
+                    app.hide()
+                } else {
+                    app.activate(options: [.activateIgnoringOtherApps])
+                }
+            } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appID) {
+                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+            }
+        }
+        
         bind()
     }
 
@@ -214,5 +230,18 @@ final class ThemeCoordinator: ObservableObject {
 
         containerView.applyTheme(theme)
         containerView.applyLayout(resolved)
+    }
+}
+
+class TaskViewActionHandler {
+    static let shared = TaskViewActionHandler()
+    @objc func openMissionControl() {
+        let url = URL(fileURLWithPath: "/System/Applications/Mission Control.app")
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+    }
+    
+    @objc func openDownloads() {
+        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+        NSWorkspace.shared.open(downloadsURL)
     }
 }

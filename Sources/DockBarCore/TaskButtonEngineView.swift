@@ -95,4 +95,12 @@ public final class TaskButtonEngineView: NSView {
     public override func mouseDown(with event: NSEvent) {
         onActivate?()
     }
+    
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        let localPoint = convert(point, from: superview)
+        if bounds.contains(localPoint) {
+            return self
+        }
+        return super.hitTest(point)
+    }
 }
