@@ -80,10 +80,7 @@ final class ThemeCoordinator: ObservableObject {
                 v.bezelStyle = .texturedRounded
                 v.isBordered = false
                 containerView.setWidgetView(v, for: def.id)
-            case "search":
-                let v = NSSearchField()
-                v.placeholderString = "Search"
-                containerView.setWidgetView(v, for: def.id)
+
             case "widgetsBoard":
                 let v = NSButton(image: NSImage(systemSymbolName: "rectangle.3.offgrid", accessibilityDescription: nil) ?? NSImage(), target: nil, action: nil)
                 v.bezelStyle = .texturedRounded

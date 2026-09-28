@@ -44,6 +44,8 @@ public final class ThemeContainerView: NSView {
         syncTaskButtonViews()
         syncWidgetViews()
         
+
+        
         // Invariant: no phantom slots allowed.
         for id in resolved.widgetFrames.keys {
             assert(widgetViews[id] != nil, "Phantom slot detected: Widget '\(id)' reserved a slot in LayoutEngine but has no corresponding view mounted in ThemeContainerView.")
