@@ -46,7 +46,7 @@ public final class ThemeContainerView: NSView {
         
         // Invariant: no phantom slots allowed.
         for id in resolved.widgetFrames.keys {
-            precondition(widgetViews[id] != nil, "Phantom slot detected: Widget '\(id)' reserved a slot in LayoutEngine but has no corresponding view mounted in ThemeContainerView.")
+            assert(widgetViews[id] != nil, "Phantom slot detected: Widget '\(id)' reserved a slot in LayoutEngine but has no corresponding view mounted in ThemeContainerView.")
         }
     }
 

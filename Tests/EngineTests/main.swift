@@ -192,7 +192,7 @@ test("tray.minX - task.maxX == interSegmentGap exactly") {
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     let task = l.segmentFrames["task"]!
     let tray = l.segmentFrames["tray"]!
-    assertApprox(tray.minX - task.maxX, t.interSegmentGap, "segment gap")
+    assertApprox(tray.minX - task.maxX, t.zones.first?.interSegmentGap ?? 0, "segment gap")
 }
 
 // ── 4. Fixed tray width ───────────────────────────────────────────────────
@@ -201,7 +201,7 @@ test("tray segment width == 260") {
     let t = registry.theme(for: "windows11.floatingSplit")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
     let tray = l.segmentFrames["tray"]!
-    if case .fixed(let w) = t.segments.first(where: { $0.id == "tray" })!.sizing {
+    if case .fixed(let w) = t.zones.flatMap({ $0.segments }).first(where: { $0.id == "tray" })!.sizing {
         assertApprox(tray.width, w, "tray width == fixed(260)")
     } else {
         assertTrue(false, "tray sizing must be .fixed")
@@ -213,7 +213,7 @@ print("\n5. Content insets")
 test("first task button respects task segment contentInsets.left") {
     let t = registry.theme(for: "windows11.floatingSplit")!
     let l = LayoutEngine.resolve(input: Fixtures.input(theme: t, widgets: [:]))
-    let taskSeg = t.segments.first(where: { $0.id == "task" })!
+    let taskSeg = t.zones.flatMap({ $0.segments }).first(where: { $0.id == "task" })!
     let segFrame = l.segmentFrames["task"]!
     let firstBtn = l.taskButtonFrames["pinned"]!
     assertApprox(firstBtn.minX, segFrame.minX + taskSeg.contentInsets.left, "first button respects left contentInset")
@@ -288,8 +288,8 @@ test("hover rect is inset from button bounds by hover.inset") {
 print("\n9. Full-width unified bar")
 test("fullWidth has exactly 1 segment, interSegmentGap=0") {
     let t = registry.theme(for: "fullWidth")!
-    assertEqual(t.segments.count, 1, "fullWidth must have exactly 1 segment")
-    assertApprox(t.interSegmentGap, 0, "interSegmentGap must be 0")
+    assertEqual(t.zones.flatMap({ $0.segments }).count, 1, "fullWidth must have exactly 1 segment")
+    assertApprox(t.zones.first?.interSegmentGap ?? 0, 0, "interSegmentGap must be 0")
 }
 test("fill segment spans screen width minus geometry insets") {
     let t = registry.theme(for: "fullWidth")!
@@ -304,14 +304,14 @@ test("fill segment spans screen width minus geometry insets") {
 print("\n10. Overflow safety")
 test("50 apps: hasTaskOverflow=true with fixed-width segment, no frame exceeds bounds") {
     let base = registry.theme(for: "windows11.floatingSplit")!
-    var narrowSeg = base.segments[0] // task segment
+    var narrowSeg = base.zones[0].segments[0] // task segment
     narrowSeg = Segment(
         id: narrowSeg.id, surface: narrowSeg.surface, border: narrowSeg.border,
         cornerRadius: narrowSeg.cornerRadius, contentInsets: narrowSeg.contentInsets,
         sizing: .fixed(width: 200), slots: narrowSeg.slots
     )
     var narrowTheme = base
-    narrowTheme.segments[0] = narrowSeg
+    narrowTheme.zones[0].segments[0] = narrowSeg
     let manyApps = (0..<50).map {
         LayoutEngine.AppItem(id: "app\($0)", isRunning: true, isFocused: false,
                              hasMultipleWindows: false, isMinimized: false)
@@ -374,17 +374,17 @@ print("\n13. Variant helpers (data mutations only)")
 test("roundVariant sets all corners to 25, preserves gap") {
     let base = registry.theme(for: "windows11.floatingSplit")!
     let round = registry.roundVariant(of: base)
-    assertTrue(round.segments.allSatisfy { $0.cornerRadius == CornerRadius(all: 25) }, "all corners=25")
-    assertApprox(round.interSegmentGap, base.interSegmentGap, "gap unchanged")
+    assertTrue(round.zones.flatMap({ $0.segments }).allSatisfy { $0.cornerRadius == CornerRadius(all: 25) }, "all corners=25")
+    assertApprox(round.zones.first?.interSegmentGap ?? 0, base.zones.first?.interSegmentGap ?? 0, "gap unchanged")
 }
 test("acrylicVariant makes all segments acrylic") {
     let base = registry.theme(for: "windows11.floatingSplit")!
     let acrylic = registry.acrylicVariant(of: base)
-    for seg in acrylic.segments {
+    for seg in acrylic.zones.flatMap({ $0.segments }) {
         if case .acrylic = seg.surface { passCount += 1 }
         else { assertTrue(false, "segment \(seg.id) must be .acrylic") }
     }
-    assertEqual(acrylic.segments.count, base.segments.count, "segment count unchanged")
+    assertEqual(acrylic.zones.flatMap({ $0.segments }).count, base.zones.flatMap({ $0.segments }).count, "segment count unchanged")
 }
 
 // ── 14. Registry completeness + tray locale ───────────────────────────

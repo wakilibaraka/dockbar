@@ -150,6 +150,7 @@ func makeThemeSnapshot(themeID: String, appearance: NSAppearance.Name, scale: CG
     let resolved = LayoutEngine.resolve(input: input)
 
     let container = ThemeContainerView(theme: theme)
+    for id in reqs.map({ $0.id }) { container.setWidgetView(NSView(), for: id) }
     container.applyLayout(resolved)
 
     let panelSize = CGSize(width: 1512, height: theme.geometry.height)
