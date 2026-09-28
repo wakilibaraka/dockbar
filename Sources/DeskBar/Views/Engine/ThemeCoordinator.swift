@@ -80,10 +80,10 @@ final class ThemeCoordinator: NSObject, ObservableObject {
                 let start = AppsLauncherButtonView()
                 containerView.setWidgetView(start, for: def.id)
             case "liveEvents":
-                // Minimal placeholder for now
-                let v = NSButton(title: "Live Events", target: nil, action: nil)
-                v.bezelStyle = .texturedRounded
-                containerView.setWidgetView(v, for: def.id)
+                if let ws = weatherService {
+                    let live = LiveEventsWidgetView(weatherService: ws, settings: settings)
+                    containerView.setWidgetView(live, for: def.id)
+                }
 
 
             case "widgetsBoard":
