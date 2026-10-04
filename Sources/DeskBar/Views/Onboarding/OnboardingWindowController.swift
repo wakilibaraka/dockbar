@@ -4,7 +4,7 @@ import SwiftUI
 final class OnboardingWindowController: NSWindowController {
     convenience init(settings: TaskbarSettings, permissionsManager: PermissionsManager, thumbnailService: ThumbnailService, completion: @escaping () -> Void) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -12,6 +12,7 @@ final class OnboardingWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
+        // The window hosts a fixed-size view, so it should not be resizable.
         window.center()
         
         // Blurred background like modern setup assistants

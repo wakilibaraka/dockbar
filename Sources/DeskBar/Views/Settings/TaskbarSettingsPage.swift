@@ -15,16 +15,7 @@ struct TaskbarSettingsPage: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
-                        ForEach(TaskbarMode.allCases) { mode in
-                            TaskbarStyleCard(
-                                mode: mode,
-                                isSelected: settings.taskbarMode == mode
-                            ) {
-                                settings.taskbarMode = mode
-                            }
-                        }
-                    }
+                    TaskbarStylePicker(selection: $settings.taskbarMode)
                 }
             }
 
@@ -109,112 +100,6 @@ struct TaskbarSettingsPage: View {
                     formatter: { String(format: "%.2f s", $0) }
                 )
             }
-        }
-    }
-}
-
-/// A selectable card describing one `TaskbarMode`.
-struct TaskbarStyleCard: View {
-    let mode: TaskbarMode
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: mode.symbolName)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    Text(mode.displayName)
-                        .font(.body.weight(.semibold))
-                    Spacer(minLength: 0)
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(Color.accentColor)
-                    }
-                }
-                TaskbarStylePreview(mode: mode)
-                    .frame(height: 34)
-                Text(mode.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Shape.cardCornerRadius, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.Shape.cardCornerRadius, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? Color.accentColor : Color.secondary.opacity(0.15),
-                        lineWidth: DesignSystem.Shape.hairline
-                    )
-            )
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .help(mode.subtitle)
-    }
-}
-
-/// A tiny schematic of what each bar style looks like. Purely decorative, but it turns
-/// a list of names into something you can actually choose between.
-struct TaskbarStylePreview: View {
-    let mode: TaskbarMode
-
-    private var segments: [CGFloat] {
-        switch mode {
-        case .custom: return [10, 10, 10, 10, 10]
-        case .windows: return [8, 10, 10, 10, 10, 10]
-        case .mac: return [8, 9, 9, 9]
-        case .classic: return [10, 10, 10, 10, 10, 10, 10]
-        case .eskele: return [9, 9, 9, 9]
-        }
-    }
-
-    private var width: CGFloat {
-        switch mode {
-        case .custom, .classic: return 1
-        case .windows: return 1
-        case .mac: return 0.82
-        case .eskele: return 0.66
-        }
-    }
-
-    private var isGlass: Bool {
-        switch mode {
-        case .custom, .classic, .eskele, .windows: return false
-        case .mac: return true
-        }
-    }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let barWidth = proxy.size.width * width
-            HStack(spacing: 3) {
-                HStack(spacing: 3) {
-                    ForEach(Array(segments.enumerated()), id: \.offset) { _, width in
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(.secondary.opacity(0.45))
-                            .frame(width: width)
-                    }
-                }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 3)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Shape.chipCornerRadius, style: .continuous)
-                        .fill(.quaternary)
-                )
-                Spacer(minLength: 0)
-            }
-            .frame(width: barWidth)
-            .frame(maxWidth: .infinity)
         }
     }
 }
