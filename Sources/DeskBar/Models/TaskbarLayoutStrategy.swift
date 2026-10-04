@@ -1,12 +1,19 @@
 import AppKit
 
+/// The behavioural half of a taskbar style.
+///
+/// Layout and appearance decisions live in `TaskbarStyleSpec`, which is pure data and
+/// unit-testable. What stays here is what genuinely differs in behaviour: which view
+/// hosts the widgets, what a click does, and whether a hover preview opens.
 protocol TaskbarLayoutStrategy {
+    var spec: TaskbarStyleSpec { get }
+
     // Panel Chrome
     var visualEffectMaterial: NSVisualEffectView.Material { get }
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode
     func dockPosition(defaultPosition: DockPosition) -> DockPosition
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool
-    
+
     // Content Layout
     func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat]
     func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView?
@@ -14,7 +21,7 @@ protocol TaskbarLayoutStrategy {
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool
     var combinesPinnedApps: Bool { get }
     var groupsSingleWindows: Bool { get }
-    
+
     // Click Handling
     func handleGroupClick(
         group: AppGroup,
@@ -24,480 +31,351 @@ protocol TaskbarLayoutStrategy {
         accessibilityService: AccessibilityService,
         defaultHide: () -> Void
     )
-    
+
     // TaskZoneGroupButtonView Hooks
     func mouseUp(
-        appGroup: AppGroup, 
-        popover: GroupThumbnailPopover, 
-        activationHandler: @escaping () -> Void, 
+        appGroup: AppGroup,
+        popover: GroupThumbnailPopover,
+        activationHandler: @escaping () -> Void,
         showHoverPreview: @escaping () -> Void
     )
-    
+
     func configureAppearance(
         appGroup: AppGroup,
-        titleLabel: NSTextField, 
-        titleLeadingConstraint: NSLayoutConstraint?, 
-        titleTrailingConstraint: NSLayoutConstraint?, 
-        windowsIconCenterConstraint: NSLayoutConstraint?, 
-        maxWidthConstraint: NSLayoutConstraint?, 
+        titleLabel: NSTextField,
+        titleLeadingConstraint: NSLayoutConstraint?,
+        titleTrailingConstraint: NSLayoutConstraint?,
+        windowsIconCenterConstraint: NSLayoutConstraint?,
+        maxWidthConstraint: NSLayoutConstraint?,
         settings: TaskbarSettings,
         preferredWidth: CGFloat,
         widthCap: CGFloat?
     )
-    
+
     func configureBackgroundColor(
-        layer: CALayer?, 
-        windowsRunningIndicatorView: NSView, 
-        macRunningIndicatorView: NSView, 
-        isActive: Bool, 
-        needsAttention: Bool, 
-        isHovered: Bool, 
+        layer: CALayer?,
+        windowsRunningIndicatorView: NSView,
+        macRunningIndicatorView: NSView,
+        isActive: Bool,
+        needsAttention: Bool,
+        isHovered: Bool,
         appGroupWindowCount: Int
     )
 }
 
-struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
-    var visualEffectMaterial: NSVisualEffectView.Material { .popover }
-    
+// MARK: - Shared behaviour
+
+/// Implements everything a style does not need to override, in terms of `spec`.
+extension TaskbarLayoutStrategy {
+    var visualEffectMaterial: NSVisualEffectView.Material { spec.material }
+
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
-        defaultLayoutMode
+        spec.resolvedLayoutMode(userChoice: defaultLayoutMode)
     }
-    
+
     func dockPosition(defaultPosition: DockPosition) -> DockPosition {
-        defaultPosition
+        spec.resolvedDockPosition(userChoice: defaultPosition)
     }
-    
+
     func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        true
+        spec.resolvedCompactContentWidth(userChoice: defaultUsesCompactWidth)
     }
-    
+
+    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
+        spec.resolvedGrouping(userChoice: defaultGrouping)
+    }
+
+    var combinesPinnedApps: Bool { spec.combinesPinnedApps }
+    var groupsSingleWindows: Bool { spec.groupsSingleWindows }
+
+    /// Styles that trail the window cluster after the widgets put the cluster in its own
+    /// hosted view; the rest keep widgets in the main stack.
     func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
-        originalWidths
+        guard spec.windowClusterTrailsWidgets else { return originalWidths }
+        return originalWidths + [clusterWidth + DesignSystem.Metrics.widgetClusterSpacing]
     }
-    
+
     func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
+        if spec.windowClusterTrailsWidgets {
+            if windowsTrayClusterView.superview == nil {
+                zonesStackView.addArrangedSubview(windowsTrayClusterView)
+                zonesStackView.setCustomSpacing(4, after: windowsTrayClusterView)
+            }
+            return windowsTrayClusterView
+        }
         windowsTrayClusterView.removeFromSuperview()
         return zonesStackView
     }
-    
-    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
-        zonesStackView.edgeInsets = defaultZoneEdgeInsets
+
+    func applyModeLayout(
+        zonesStackView: NSStackView,
+        launcherButtonView: NSView,
+        launcherZoneView: NSView,
+        defaultZoneEdgeInsets: NSEdgeInsets
+    ) {
+        zonesStackView.edgeInsets = spec.zoneInsets
         // One launcher affordance, not two: the button and the zone are alternative
-        // launchers, and showing both leaves a duplicate control on the bar.
+        // launchers, and showing both leaves a duplicate control on the bar. Every style
+        // keeps the button visible, because hiding both left icons-only bars with no way
+        // to open the launcher at all.
         launcherButtonView.isHidden = false
         launcherZoneView.isHidden = true
     }
-    
-    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
-        defaultGrouping
-    }
-    
-    var combinesPinnedApps: Bool { false }
-    var groupsSingleWindows: Bool { false }
-    
-    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
-        if isActive {
-            if group.windows.count > 1 {
-                let axWindows = accessibilityService.enumerateWindows(for: app)
-                if let lastWindow = axWindows.last {
-                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
-                }
-            } else {
-                defaultHide()
-            }
+
+    func configureAppearance(
+        appGroup: AppGroup,
+        titleLabel: NSTextField,
+        titleLeadingConstraint: NSLayoutConstraint?,
+        titleTrailingConstraint: NSLayoutConstraint?,
+        windowsIconCenterConstraint: NSLayoutConstraint?,
+        maxWidthConstraint: NSLayoutConstraint?,
+        settings: TaskbarSettings,
+        preferredWidth: CGFloat,
+        widthCap: CGFloat?
+    ) {
+        let iconOnlyWidth = appGroup.windows.count > 1 || !settings.showTitles
+            ? nil
+            : settings.taskbarHeight + 8
+
+        switch spec.taskTitle {
+        case .hidden:
+            titleLabel.isHidden = true
+            titleLeadingConstraint?.isActive = false
+            titleTrailingConstraint?.isActive = false
+            windowsIconCenterConstraint?.isActive = true
+            maxWidthConstraint?.constant = DesignSystem.Metrics.iconOnlyTaskWidth
+
+        case .hiddenSizedToBar:
+            titleLabel.isHidden = true
+            titleLeadingConstraint?.isActive = false
+            titleTrailingConstraint?.isActive = false
+            windowsIconCenterConstraint?.isActive = true
+            maxWidthConstraint?.constant = settings.taskbarHeight + 8
+
+        case .whenItFits:
+            let title = appGroup.appName
+            let cappedWidth = widthCap
+                .map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) }
+                ?? preferredWidth
+            let shouldShowTitle = settings.showTitles
+                && !title.isEmpty
+                && cappedWidth >= DesignSystem.Metrics.minimumWidthForTitle
+
+            titleLabel.isHidden = !shouldShowTitle
+            titleLeadingConstraint?.isActive = shouldShowTitle
+            titleTrailingConstraint?.isActive = shouldShowTitle
+            windowsIconCenterConstraint?.isActive = !shouldShowTitle
+            maxWidthConstraint?.constant = shouldShowTitle ? cappedWidth : (iconOnlyWidth ?? preferredWidth)
         }
     }
-    
-    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
+
+    func configureBackgroundColor(
+        layer: CALayer?,
+        windowsRunningIndicatorView: NSView,
+        macRunningIndicatorView: NSView,
+        isActive: Bool,
+        needsAttention: Bool,
+        isHovered: Bool,
+        appGroupWindowCount: Int
+    ) {
+        windowsRunningIndicatorView.isHidden = !spec.showsRunningIndicator(forWindowCount: appGroupWindowCount)
+        macRunningIndicatorView.isHidden = spec.runningIndicator != .dot
+
+        guard let color = spec.backgroundColor(
+            isActive: isActive,
+            needsAttention: needsAttention,
+            isHovered: isHovered
+        ) else {
+            layer?.backgroundColor = NSColor.clear.cgColor
+            return
+        }
+        layer?.backgroundColor = color.cgColor
+    }
+}
+
+// MARK: - Click behaviour
+
+extension TaskbarLayoutStrategy {
+    /// Clicking the already-focused app: either cycle to its last window, or hide it.
+    func cycleToLastWindowOrHide(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        guard isActive else { return }
+        if group.windows.count > 1 {
+            let axWindows = accessibilityService.enumerateWindows(for: app)
+            if let lastWindow = axWindows.last {
+                accessibilityService.raiseAndActivate(element: lastWindow, app: app)
+            }
+        } else {
+            defaultHide()
+        }
+    }
+
+    func mouseUp(
+        appGroup: AppGroup,
+        popover: GroupThumbnailPopover,
+        activationHandler: @escaping () -> Void,
+        showHoverPreview: @escaping () -> Void
+    ) {
         activationHandler()
     }
-    
-    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        let title = appGroup.appName
-        let showsTitle = settings.showTitles && !title.isEmpty
-        let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
-        
-        let hasRoomForText = cappedWidth >= 120
-        let shouldShowTitle = showsTitle && hasRoomForText
-        
-        titleLabel.isHidden = !shouldShowTitle
-        titleLeadingConstraint?.isActive = shouldShowTitle
-        titleTrailingConstraint?.isActive = shouldShowTitle
-        windowsIconCenterConstraint?.isActive = !shouldShowTitle
-        
-        if shouldShowTitle {
-            maxWidthConstraint?.constant = cappedWidth
-        } else {
-            maxWidthConstraint?.constant = settings.taskbarHeight + 8
-        }
-    }
-    
-    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
-        windowsRunningIndicatorView.isHidden = true
-        macRunningIndicatorView.isHidden = true
-        
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
-        } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
-        }
+}
+
+// MARK: - The five styles
+
+/// Fully user-controlled: the bar people can reshape into anything.
+struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
+    let spec: TaskbarStyleSpec = .custom
+
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        cycleToLastWindowOrHide(
+            group: group,
+            isActive: isActive,
+            app: app,
+            accessibilityService: accessibilityService,
+            defaultHide: defaultHide
+        )
     }
 }
 
+/// A Windows 11 taskbar: grouped windows and a run count on each button.
 struct WindowsTaskbarStrategy: TaskbarLayoutStrategy {
-    var visualEffectMaterial: NSVisualEffectView.Material { .sidebar }
-    
-    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
-        .fullWidthGlass
-    }
-    
-    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
-        .bottomCenter
-    }
-    
-    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        false
-    }
-    
-    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
-        originalWidths + [clusterWidth + 12]
-    }
-    
-    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
-        if windowsTrayClusterView.superview == nil {
-            zonesStackView.addArrangedSubview(windowsTrayClusterView)
-            zonesStackView.setCustomSpacing(4, after: windowsTrayClusterView)
-        }
-        return windowsTrayClusterView
-    }
-    
-    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
-        zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
-        launcherButtonView.isHidden = false
-        launcherZoneView.isHidden = true
-    }
-    
-    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
-        true
-    }
-    
-    var combinesPinnedApps: Bool { true }
-    var groupsSingleWindows: Bool { false }
-    
-    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
-        if isActive {
-            if group.windows.count > 1 {
-                let axWindows = accessibilityService.enumerateWindows(for: app)
-                if let lastWindow = axWindows.last {
-                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
-                }
-            } else {
-                if let axWindow = TaskButtonView.resolveWindowElement(for: firstWindow, application: app, accessibilityService: accessibilityService) {
-                    accessibilityService.minimize(element: axWindow)
-                } else {
-                    defaultHide()
-                }
-            }
-        }
-    }
-    
-    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
-        if appGroup.windows.count > 1 {
-            activationHandler()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                showHoverPreview()
-            }
+    let spec: TaskbarStyleSpec = .windows
+
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        guard isActive else { return }
+        if group.windows.count > 1 {
+            cycleToLastWindowOrHide(
+                group: group,
+                isActive: isActive,
+                app: app,
+                accessibilityService: accessibilityService,
+                defaultHide: defaultHide
+            )
+        } else if let axWindow = TaskButtonView.resolveWindowElement(
+            for: firstWindow,
+            application: app,
+            accessibilityService: accessibilityService
+        ) {
+            accessibilityService.minimize(element: axWindow)
         } else {
-            activationHandler()
+            defaultHide()
         }
     }
-    
-    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        titleLabel.isHidden = true
-        titleLeadingConstraint?.isActive = false
-        titleTrailingConstraint?.isActive = false
-        windowsIconCenterConstraint?.isActive = true
-        maxWidthConstraint?.constant = 48
-    }
-    
-    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
-        windowsRunningIndicatorView.isHidden = appGroupWindowCount == 0
-        macRunningIndicatorView.isHidden = true
-        
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
-        } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
+
+    /// A short delay before the window picker opens, so the click that raised the window
+    /// is not immediately swallowed by the picker.
+    func mouseUp(
+        appGroup: AppGroup,
+        popover: GroupThumbnailPopover,
+        activationHandler: @escaping () -> Void,
+        showHoverPreview: @escaping () -> Void
+    ) {
+        activationHandler()
+        guard appGroup.windows.count > 1 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + DesignSystem.Motion.groupedPreviewDelay) {
+            showHoverPreview()
         }
     }
 }
 
-
-
+/// A macOS-style floating dock: always grouped, icons only, and no widgets in the bar.
 struct MacTaskbarStrategy: TaskbarLayoutStrategy {
-    var visualEffectMaterial: NSVisualEffectView.Material { .popover }
-    
-    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
-        .compactGlass
-    }
-    
-    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
-        .floatingCenter
-    }
-    
-    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        true
-    }
-    
-    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
-        []
-    }
-    
+    let spec: TaskbarStyleSpec = .mac
+
+    /// The Mac style puts widgets in the menu bar only, so anything still parented to the
+    /// tray cluster has to be detached: switching away would otherwise strand those
+    /// widgets inside a detached view and they would silently disappear.
     func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
-        // Detach anything still parented to the tray cluster first: switching away from
-        // the Windows style would otherwise strand those widgets inside a detached view,
-        // and they would silently disappear from every other mode.
         for widget in windowsTrayClusterView.subviews {
             widget.removeFromSuperview()
         }
         windowsTrayClusterView.removeFromSuperview()
-        return nil // Mac mode uses NSStatusItems managed by AppDelegate, so no dock container
+        return nil
     }
-    
-    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
-        zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
-        // The launcher stays reachable in dock styles too: hiding both affordances left
-        // these bars with no way to open the start menu at all.
-        launcherButtonView.isHidden = false
-        launcherZoneView.isHidden = true
-    }
-    
-    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
-        true
-    }
-    
-    var combinesPinnedApps: Bool { true }
-    var groupsSingleWindows: Bool { true }
-    
-    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
-        if isActive {
-            // Mac dock does not minimize or hide on click.
-        }
-    }
-    
-    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
+
+    /// The Mac dock neither minimises nor hides on click, so there is nothing to do.
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {}
+
+    func mouseUp(
+        appGroup: AppGroup,
+        popover: GroupThumbnailPopover,
+        activationHandler: @escaping () -> Void,
+        showHoverPreview: @escaping () -> Void
+    ) {
         activationHandler()
-        if appGroup.windows.count > 1 {
-            if !popover.isShown {
-                showHoverPreview()
-            }
-        }
-    }
-    
-    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        titleLabel.isHidden = true
-        titleLeadingConstraint?.isActive = false
-        titleTrailingConstraint?.isActive = false
-        windowsIconCenterConstraint?.isActive = true
-        
-        maxWidthConstraint?.constant = 48
-    }
-    
-    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
-        windowsRunningIndicatorView.isHidden = true
-        macRunningIndicatorView.isHidden = appGroupWindowCount == 0
-        
-        if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.08).cgColor
-        } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
+        if appGroup.windows.count > 1, !popover.isShown {
+            showHoverPreview()
         }
     }
 }
 
-/// The original DeskBar look: a solid, edge-to-edge bar with one button per window,
-/// the launcher at the leading edge and the widgets trailing the window cluster.
+/// The original solid bar: edge to edge, one button per window, no grouping.
 struct ClassicTaskbarStrategy: TaskbarLayoutStrategy {
-    var visualEffectMaterial: NSVisualEffectView.Material { .contentBackground }
-    
-    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
-        .fullWidth
-    }
-    
-    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
-        .bottomCenter
-    }
-    
-    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        false
-    }
-    
-    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
-        originalWidths + [clusterWidth + 12]
-    }
-    
-    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
-        if windowsTrayClusterView.superview == nil {
-            zonesStackView.addArrangedSubview(windowsTrayClusterView)
-            zonesStackView.setCustomSpacing(4, after: windowsTrayClusterView)
-        }
-        return windowsTrayClusterView
-    }
-    
-    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
-        zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
-        launcherButtonView.isHidden = false
-        launcherZoneView.isHidden = true
-    }
-    
-    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
-        false
-    }
-    
-    var combinesPinnedApps: Bool { false }
-    var groupsSingleWindows: Bool { false }
-    
-    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
-        if isActive {
-            if group.windows.count > 1 {
-                let axWindows = accessibilityService.enumerateWindows(for: app)
-                if let lastWindow = axWindows.last {
-                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
-                }
-            } else {
-                defaultHide()
-            }
-        }
-    }
-    
-    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
-        activationHandler()
-    }
-    
-    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        let title = appGroup.appName
-        let showsTitle = settings.showTitles && !title.isEmpty
-        let cappedWidth = widthCap.map { min(preferredWidth, max(TaskButtonView.minimumTaskWidth, $0)) } ?? preferredWidth
-        
-        let hasRoomForText = cappedWidth >= 120
-        let shouldShowTitle = showsTitle && hasRoomForText
-        
-        titleLabel.isHidden = !shouldShowTitle
-        titleLeadingConstraint?.isActive = shouldShowTitle
-        titleTrailingConstraint?.isActive = shouldShowTitle
-        windowsIconCenterConstraint?.isActive = !shouldShowTitle
-        
-        if shouldShowTitle {
-            maxWidthConstraint?.constant = cappedWidth
-        } else {
-            maxWidthConstraint?.constant = settings.taskbarHeight + 8
-        }
-    }
-    
-    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
-        windowsRunningIndicatorView.isHidden = true
-        macRunningIndicatorView.isHidden = true
-        
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.3).cgColor
-        } else if needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.14).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.1).cgColor
-        } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
-        }
+    let spec: TaskbarStyleSpec = .classic
+
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        cycleToLastWindowOrHide(
+            group: group,
+            isActive: isActive,
+            app: app,
+            accessibilityService: accessibilityService,
+            defaultHide: defaultHide
+        )
     }
 }
 
-/// Eskele's bar: a floating pill that fits its contents, icons only, no Start button and
-/// no launcher strip. Each window keeps its own button instead of grouping by app.
+/// Eskele's pill: fits its contents, icons only, one button per window.
 struct EskeleTaskbarStrategy: TaskbarLayoutStrategy {
-    var visualEffectMaterial: NSVisualEffectView.Material { .hudWindow }
-    
-    func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
-        .compactGlass
-    }
-    
-    func dockPosition(defaultPosition: DockPosition) -> DockPosition {
-        .floatingCenter
-    }
-    
-    func usesCompactContentWidth(defaultUsesCompactWidth: Bool) -> Bool {
-        true
-    }
-    
-    func dockWidgetWidths(originalWidths: [CGFloat], clusterWidth: CGFloat) -> [CGFloat] {
-        originalWidths
-    }
-    
-    func container(for widgetID: String, zonesStackView: NSStackView, windowsTrayClusterView: NSView) -> NSView? {
-        windowsTrayClusterView.removeFromSuperview()
-        return zonesStackView
-    }
-    
-    func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
-        zonesStackView.edgeInsets = defaultZoneEdgeInsets
-        // Icons-only bar, but the launcher still has to be reachable.
-        launcherButtonView.isHidden = false
-        launcherZoneView.isHidden = true
-    }
-    
-    func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
-        false
-    }
-    
-    var combinesPinnedApps: Bool { false }
-    var groupsSingleWindows: Bool { false }
-    
-    func handleGroupClick(group: AppGroup, isActive: Bool, app: NSRunningApplication, firstWindow: WindowInfo, accessibilityService: AccessibilityService, defaultHide: () -> Void) {
-        if isActive {
-            if group.windows.count > 1 {
-                let axWindows = accessibilityService.enumerateWindows(for: app)
-                if let lastWindow = axWindows.last {
-                    accessibilityService.raiseAndActivate(element: lastWindow, app: app)
-                }
-            } else {
-                defaultHide()
-            }
-        }
-    }
-    
-    func mouseUp(appGroup: AppGroup, popover: GroupThumbnailPopover, activationHandler: @escaping () -> Void, showHoverPreview: @escaping () -> Void) {
-        activationHandler()
-    }
-    
-    // Icons only: the pill is sized by its contents, so labels would break the fit.
-    func configureAppearance(appGroup: AppGroup, titleLabel: NSTextField, titleLeadingConstraint: NSLayoutConstraint?, titleTrailingConstraint: NSLayoutConstraint?, windowsIconCenterConstraint: NSLayoutConstraint?, maxWidthConstraint: NSLayoutConstraint?, settings: TaskbarSettings, preferredWidth: CGFloat, widthCap: CGFloat?) {
-        titleLabel.isHidden = true
-        titleLeadingConstraint?.isActive = false
-        titleTrailingConstraint?.isActive = false
-        windowsIconCenterConstraint?.isActive = true
-        
-        maxWidthConstraint?.constant = settings.taskbarHeight + 8
-    }
-    
-    func configureBackgroundColor(layer: CALayer?, windowsRunningIndicatorView: NSView, macRunningIndicatorView: NSView, isActive: Bool, needsAttention: Bool, isHovered: Bool, appGroupWindowCount: Int) {
-        windowsRunningIndicatorView.isHidden = true
-        macRunningIndicatorView.isHidden = true
-        
-        if isActive {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.35).cgColor
-        } else if needsAttention {
-            layer?.backgroundColor = NSColor.systemOrange.withAlphaComponent(0.18).cgColor
-        } else if isHovered {
-            layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.12).cgColor
-        } else {
-            layer?.backgroundColor = NSColor.clear.cgColor
-        }
+    let spec: TaskbarStyleSpec = .eskele
+
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        cycleToLastWindowOrHide(
+            group: group,
+            isActive: isActive,
+            app: app,
+            accessibilityService: accessibilityService,
+            defaultHide: defaultHide
+        )
     }
 }
 

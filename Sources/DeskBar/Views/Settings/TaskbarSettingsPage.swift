@@ -145,12 +145,15 @@ struct TaskbarStyleCard: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Shape.cardCornerRadius, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DesignSystem.Shape.cardCornerRadius, style: .continuous)
+                    .strokeBorder(
+                        isSelected ? Color.accentColor : Color.secondary.opacity(0.15),
+                        lineWidth: DesignSystem.Shape.hairline
+                    )
             )
             .contentShape(.rect)
         }
@@ -205,13 +208,13 @@ struct TaskbarStylePreview: View {
                 .padding(.horizontal, 4)
                 .padding(.vertical, 3)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Shape.chipCornerRadius, style: .continuous)
                         .fill(.quaternary)
                 )
                 Spacer(minLength: 0)
             }
             .frame(width: barWidth)
-            .frame(maxWidth: .infinity, alignment: mode == .classic ? .center : .center)
+            .frame(maxWidth: .infinity)
         }
     }
 }

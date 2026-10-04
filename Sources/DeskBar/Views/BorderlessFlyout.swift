@@ -94,7 +94,7 @@ open class BorderlessFlyout: NSPanel {
     /// deliberately no notch or pointer here - those belong to the menu-bar panels, which
     /// are allowed to point back at their status item.
     private func setupRoundedCorners(for view: NSVisualEffectView) {
-        view.layer?.cornerRadius = 14
+        view.layer?.cornerRadius = DesignSystem.Shape.flyoutCornerRadius
         view.layer?.cornerCurve = .continuous
         view.layer?.masksToBounds = true
         view.layer?.borderWidth = 1
