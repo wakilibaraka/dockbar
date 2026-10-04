@@ -6,6 +6,37 @@ so the bundle version and the release tag always agree.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-04
+
+### Added
+
+- **Two new taskbar styles.** DeskBar reproduces the original edge-to-edge bar (solid
+  chrome, one button per window, launcher leading, widgets trailing the window cluster);
+  Eskele mirrors the dock from the eskele port (a pill that fits its contents, icons only).
+  Both join Custom, Windows and Mac in Settings and onboarding, so the layouts can be
+  compared side by side.
+- **A display model instead of a boolean.** `showOnAllMonitors` becomes `TaskbarScreenMode`
+  - all displays, per display, menu-bar display, plus focused display so upgrading installs
+  do not silently move their bar. Legacy installs migrate from the old key.
+
+### Fixed
+
+- **Tall flyouts are no longer squashed.** A panel that did not fit below its anchor had
+  its height clamped instead of moving, crushing the calendar and quick settings panels.
+  Placement now prefers below, flips above, and clamps only as a last resort; the rules
+  live in `FlyoutLayout` and are unit-tested.
+- **The launcher is reachable in every style.** Mac and Eskele hid both the launcher
+  button and the launcher zone, leaving those bars with no way to open the start menu.
+  Custom showed both at once, which put a duplicate control on the bar. Every style now
+  shows exactly one, enforced by a test over the strategy protocol.
+- Widgets no longer disappear when switching away from the Windows style: the tray cluster
+  is emptied before it is detached.
+
+### Notes
+
+- Taskbar flyouts are corner-continuous rounded rectangles with no notch or pointer.
+  Only the menu-bar panels are allowed to point back at their status item.
+
 ## [0.3.0] - 2026-10-04
 
 ### Added

@@ -41,26 +41,16 @@ open class BorderlessFlyout: NSPanel {
         let visibleFrame = screen.visibleFrame
         let spacing: CGFloat = 12
         
-        var panelWidth = fit.width
-        var panelHeight = fit.height
-        
-        var originY = anchor.maxY + spacing
-        var originX = anchor.midX - (panelWidth / 2)
-        
-        if panelWidth > visibleFrame.width { panelWidth = visibleFrame.width }
-        
-        if originY + panelHeight > visibleFrame.maxY {
-            panelHeight = visibleFrame.maxY - originY - spacing
-        }
-        
-        if originX < visibleFrame.minX {
-            originX = visibleFrame.minX + spacing
-        } else if originX + panelWidth > visibleFrame.maxX {
-            originX = visibleFrame.maxX - panelWidth - spacing
-        }
-        
-        let finalFrame = NSRect(x: originX, y: originY, width: panelWidth, height: panelHeight)
-        self.setFrame(finalFrame, display: true)
+        // Placement rules live in FlyoutLayout so they are unit-tested: prefer below the
+        // anchor, flip above when it does not fit, and only clamp as a last resort so a
+        // tall panel is never squashed into unreadability.
+        let placement = FlyoutLayout.placement(
+            anchor: anchor,
+            contentSize: fit,
+            visibleFrame: visibleFrame,
+            spacing: spacing
+        )
+        self.setFrame(placement.frame, display: true)
         
         if let effectView = contentViewController.view as? NSVisualEffectView {
             setupRoundedCorners(for: effectView)
@@ -100,6 +90,9 @@ open class BorderlessFlyout: NSPanel {
         NSApp.activateCompat()
     }
     
+    /// Taskbar flyouts are smooth, corner-continuous rounded rectangles. There is
+    /// deliberately no notch or pointer here - those belong to the menu-bar panels, which
+    /// are allowed to point back at their status item.
     private func setupRoundedCorners(for view: NSVisualEffectView) {
         view.layer?.cornerRadius = 14
         view.layer?.cornerCurve = .continuous

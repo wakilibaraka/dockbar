@@ -82,8 +82,10 @@ struct CustomTaskbarStrategy: TaskbarLayoutStrategy {
     
     func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = defaultZoneEdgeInsets
+        // One launcher affordance, not two: the button and the zone are alternative
+        // launchers, and showing both leaves a duplicate control on the bar.
         launcherButtonView.isHidden = false
-        launcherZoneView.isHidden = false
+        launcherZoneView.isHidden = true
     }
     
     func shouldGroupWindows(defaultGrouping: Bool) -> Bool {
@@ -272,7 +274,9 @@ struct MacTaskbarStrategy: TaskbarLayoutStrategy {
     
     func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
-        launcherButtonView.isHidden = true
+        // The launcher stays reachable in dock styles too: hiding both affordances left
+        // these bars with no way to open the start menu at all.
+        launcherButtonView.isHidden = false
         launcherZoneView.isHidden = true
     }
     
@@ -442,7 +446,8 @@ struct EskeleTaskbarStrategy: TaskbarLayoutStrategy {
     
     func applyModeLayout(zonesStackView: NSStackView, launcherButtonView: NSView, launcherZoneView: NSView, defaultZoneEdgeInsets: NSEdgeInsets) {
         zonesStackView.edgeInsets = defaultZoneEdgeInsets
-        launcherButtonView.isHidden = true
+        // Icons-only bar, but the launcher still has to be reachable.
+        launcherButtonView.isHidden = false
         launcherZoneView.isHidden = true
     }
     
