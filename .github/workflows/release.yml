@@ -73,6 +73,17 @@ jobs:
           TAG: ${{ steps.tag.outputs.value }}
         run: bash scripts/release.sh "${TAG#v}"
 
+      # The publish step is tooling, not the app, so it must not be versioned by the tag:
+      # a tag cut before publish-release.sh existed would otherwise fail with "command not
+      # found". Always take it from the default branch, which carries the current version.
+      - name: Fetch release tooling from the default branch
+        env:
+          TOOLING_REF: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch origin "$TOOLING_REF" --depth=1
+          git show "origin/$TOOLING_REF:scripts/publish-release.sh" > scripts/publish-release.sh
+          chmod +x scripts/publish-release.sh
+
       - name: Publish release with DMG
         env:
           GH_TOKEN: ${{ github.token }}
