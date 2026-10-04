@@ -1,0 +1,10 @@
+--swiftversion 5.9
+--indent 4
+--maxwidth none
+--trimwhitespace always
+--commas always
+--commaspaces always
+--wraparguments before-first
+--wrapcollections before-first
+--stripcomments never
+--self remove

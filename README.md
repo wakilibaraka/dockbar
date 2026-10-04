@@ -26,7 +26,8 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 ---
 
 ## What's New
-We are gearing up for a `v1.0` release! Recent major additions include:
+This fork tracks the `0.x` line — the current release is listed on [Releases](https://github.com/wakilibaraka/dockbar/releases), and every release is recorded in [CHANGELOG.md](CHANGELOG.md). Recent major additions include:
+- **Check for Updates:** "Check for Updates..." in the taskbar context menu compares the installed build against the latest GitHub release. No third-party auto-updater.
 - **100% Native macOS Settings Window:** Overhauled settings UI using 7 perfectly categorized native macOS preference tabs.
 - **Start Menu Overhaul:** Spotlight integration for **Most Used Apps**, plus a robust drag-and-drop editor for pinned applications.
 - **Hold-to-Quit Prevention:** Configurable safeguard (Cmd+Q and optionally Cmd+W) with a visual hold timer to prevent accidentally closing apps.
@@ -75,9 +76,10 @@ We are gearing up for a `v1.0` release! Recent major additions include:
 
 ---
 
-## ⚠️ Upgrading to v1.4.0+
+## ⚠️ Upgrading from the original DeskBar app
 
-> **Important Upgrade Note:** As of v1.4.0, the app's bundle identifier has been officially renamed to `com.dockbar.app`. macOS will treat this as a completely new application. 
+> **Important Upgrade Note:** DockBar ships under the bundle identifier `com.dockbar.app`. Any
+> earlier install that used `com.deskbar.app` is treated by macOS as a completely different application.
 > * You will need to **re-grant Accessibility and Screen Recording permissions**.
 > * Your old settings (stored under `com.deskbar.app`) will not automatically carry over.
 
@@ -86,7 +88,7 @@ We are gearing up for a `v1.0` release! Recent major additions include:
 ## Install
 
 ### Download (Recommended)
-Download the latest **DockBar.dmg** or **DockBar.zip** from [Releases](https://github.com/wakilibaraka/dockbar/releases), open the DMG, and drag `DockBar.app` into your `/Applications` folder.
+Download the latest **DockBar-vX.Y.Z.dmg** from [Releases](https://github.com/wakilibaraka/dockbar/releases), open the DMG, and drag `DockBar.app` into your `/Applications` folder.
 
 ### Build from Source
 ```bash
