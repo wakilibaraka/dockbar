@@ -99,7 +99,7 @@ struct OnboardingView: View {
                         HStack(spacing: 20) {
                             ForEach(TaskbarMode.allCases) { mode in
                                 VStack(spacing: 12) {
-                                    Image(systemName: mode == .custom ? "macwindow" : mode == .windows ? "window.cascading" : "dock.rectangle")
+                                    Image(systemName: mode.symbolName)
                                         .font(.system(size: 40))
                                         .foregroundColor(settings.taskbarMode == mode ? .white : .secondary)
                                     Text(mode.displayName)
