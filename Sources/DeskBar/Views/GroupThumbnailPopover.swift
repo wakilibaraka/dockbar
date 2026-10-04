@@ -169,7 +169,7 @@ private final class ClickableThumbnailView: NSView {
         imageView.imageAlignment = .alignCenter
         imageView.image = item.thumbnail
 
-        let resolvedSize = item.thumbnail.map { resolvedSize(for: $0, boundingSize: size) } ?? .zero
+        let resolvedSize = item.thumbnail.map { resolvedSize(for: $0, boundingSize: size) } ?? NSSize.zero
         
         actionBar.translatesAutoresizingMaskIntoConstraints = false
         actionBar.wantsLayer = true

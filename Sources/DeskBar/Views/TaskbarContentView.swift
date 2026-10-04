@@ -2784,7 +2784,7 @@ private final class TaskZoneGroupButtonView: NSView, NSDraggingSource, TaskbarWi
             
             if let popoverWindow = self.popover.contentViewController?.view.window {
                 let mouseLoc = NSEvent.mouseLocation
-                let buttonScreenRect = self.window?.convertToScreen(self.convert(self.bounds, to: nil)) ?? .zero
+                let buttonScreenRect = self.window?.convertToScreen(self.convert(self.bounds, to: nil)) ?? NSRect.zero
                 
                 let inPopover = NSMouseInRect(mouseLoc, popoverWindow.frame, false)
                 let inButton = NSMouseInRect(mouseLoc, buttonScreenRect, false)

@@ -65,7 +65,7 @@ open class BorderlessFlyout: NSPanel {
         if let effectView = contentViewController.view as? NSVisualEffectView {
             setupRoundedCorners(for: effectView)
         } else {
-            let effectView = NSVisualEffectView(frame: self.contentView?.bounds ?? .zero)
+            let effectView = NSVisualEffectView(frame: self.contentView?.bounds ?? NSRect.zero)
             effectView.material = NSVisualEffectView.Material.popover
             effectView.blendingMode = NSVisualEffectView.BlendingMode.behindWindow
             effectView.state = NSVisualEffectView.State.active

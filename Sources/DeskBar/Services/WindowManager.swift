@@ -150,7 +150,7 @@ final class WindowManager: ObservableObject {
             for axWindow in axWindows {
                 let isMinimized = axIsMinimized(axWindow)
                 let isHidden = application.isHidden
-                let frame = axFrame(for: axWindow) ?? .zero
+                let frame = axFrame(for: axWindow) ?? CGRect.zero
                 
                 guard isEligibleAXWindow(axWindow, frame: frame, isMinimized: isMinimized, isHidden: isHidden) else {
                     continue
