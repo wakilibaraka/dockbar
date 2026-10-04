@@ -61,7 +61,7 @@ fi
 echo "Created $DMG"
 
 if [ "$UPLOAD" = true ]; then
-  echo "Creating GitHub release v${VERSION}..."
-  gh release create "v${VERSION}" "$DMG" --latest --verify-tag --generate-notes \
-    --title "DockBar v${VERSION}"
+  # publish-release.sh is idempotent: it attaches to an existing release if one is
+  # already there, so a hand-published release or a rerun cannot fail the build.
+  bash scripts/publish-release.sh "v${VERSION}" "$DMG"
 fi

@@ -21,6 +21,4 @@ jobs:
       - name: Publish release with DMG
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "$GITHUB_REF_NAME" "DockBar-${GITHUB_REF_NAME}.dmg"
-          --latest --verify-tag --generate-notes --title "DockBar ${GITHUB_REF_NAME}"
+        run: bash scripts/publish-release.sh "${GITHUB_REF_NAME}"
