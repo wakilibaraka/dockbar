@@ -30,12 +30,13 @@ final class TaskbarPanel: NSPanel {
         self.permissionsManager = permissionsManager
         self.settings = settings
 
-        let frame = Self.panelFrame(
-            isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
+        let layout = Self.barLayout(
+            spec: settings.taskbarMode.spec,
             taskbarHeight: settings.taskbarHeight,
             dockPosition: settings.dockPosition,
             screen: screen
         )
+        let frame = layout.panel
 
         rootView = TaskbarPanelRootView(settings: settings, frame: NSRect(origin: .zero, size: frame.size))
         rootView.setPreferredCarrierSize(frame.size)
@@ -175,12 +176,13 @@ final class TaskbarPanel: NSPanel {
         let strategy = settings.taskbarMode.strategy
         let resolvedPosition = strategy.dockPosition(defaultPosition: settings.dockPosition)
 
-        let nextFrame = Self.panelFrame(
-            isAccessibilityGranted: permissionsManager.isAccessibilityGranted,
+        let layout = Self.barLayout(
+            spec: strategy.spec,
             taskbarHeight: settings.taskbarHeight,
             dockPosition: resolvedPosition,
             screen: resolvedScreen
         )
+        let nextFrame = layout.panel
 
         rootView.setPreferredCarrierSize(nextFrame.size)
         let frameChanged = !Self.framesApproximatelyEqual(frame, nextFrame)
@@ -200,12 +202,35 @@ final class TaskbarPanel: NSPanel {
 
         let resolvedPosition = strategy.dockPosition(defaultPosition: settings.dockPosition)
 
-        let chromeFrame = Self.chromeFrame(
-            layoutMode: layoutMode,
-            dockPosition: resolvedPosition,
-            compactContentWidth: compactWidth,
-            bounds: rootView.bounds
-        )
+        // `chromeFrame` can only describe a strip along the bottom: it takes its height
+        // from the bar height and its width from the layout mode, and has no idea which
+        // edge the bar is on. A vertical bar's chrome therefore comes from BarPanelLayout
+        // instead, which knows about edges.
+        let chromeFrame: NSRect
+        let spec = strategy.spec
+        let edge = spec.resolvedEdge(userChoice: .bottom)
+        if edge.isVertical {
+            let layout = Self.barLayout(
+                spec: spec,
+                taskbarHeight: settings.taskbarHeight,
+                dockPosition: resolvedPosition,
+                screen: self.screen
+            )
+            // The chrome is expressed in screen coordinates; the panel's subviews are not.
+            chromeFrame = NSRect(
+                x: layout.chrome.minX - frame.minX,
+                y: 0,
+                width: layout.chrome.width,
+                height: layout.chrome.height
+            )
+        } else {
+            chromeFrame = Self.chromeFrame(
+                layoutMode: layoutMode,
+                dockPosition: resolvedPosition,
+                compactContentWidth: compactWidth,
+                bounds: rootView.bounds
+            )
+        }
 
         if !Self.framesApproximatelyEqual(chromeShadowView.frame, chromeFrame) {
             chromeShadowView.frame = chromeFrame
@@ -223,26 +248,46 @@ final class TaskbarPanel: NSPanel {
         updateVisualStyle(for: chromeFrame)
     }
 
-    private static func panelFrame(
-        isAccessibilityGranted: Bool,
+    /// Where the panel and its chrome sit, for whichever edge the bar is on.
+///
+/// The old `panelFrame` could only ever return a strip along the bottom: the height came
+/// from the bar height and the width from the visible frame, with no notion of which edge
+/// the bar was on. That arithmetic is kept for the bottom-edge styles unchanged, and
+/// vertical bars go through `BarPanelLayout`, which is edge-aware and unit-tested.
+    private static func barLayout(
+        spec: TaskbarStyleSpec,
         taskbarHeight: CGFloat,
         dockPosition: DockPosition,
         screen: NSScreen?
-    ) -> NSRect {
-        guard let screen else { return .zero }
+    ) -> BarPanelLayout {
+        guard let screen else {
+            return BarPanelLayout(panel: .zero, chrome: .zero)
+        }
 
-        let isFloating = dockPosition == .floatingCenter
-        let marginY: CGFloat = isFloating ? 8 : 0
+        let edge = spec.edge ?? .bottom
+        let span: BarSpan = spec.usesCompactContentWidth ? .hugContents : .fullSpan
+        let thickness = max(taskbarHeight, minimumContentHeight)
 
-        let contentHeight = max(taskbarHeight, minimumContentHeight)
-        let height = contentHeight + marginY
+        if edge == .bottom {
+            let isFloating = dockPosition == .floatingCenter
+            let height = thickness + (isFloating ? BarGeometry.floatingInset : 0)
+            let panel = NSRect(
+                x: screen.visibleFrame.minX,
+                y: screen.frame.minY,
+                width: screen.visibleFrame.width,
+                height: height
+            )
+            return BarPanelLayout(panel: panel, chrome: panel)
+        }
 
-        let visibleFrame = screen.visibleFrame
-        return NSRect(
-            x: visibleFrame.minX,
-            y: screen.frame.minY,
-            width: visibleFrame.width,
-            height: height
+        return BarPanelLayout.make(
+            screenFrame: screen.frame,
+            visibleFrame: screen.visibleFrame,
+            edge: edge,
+            span: span,
+            thickness: thickness,
+            contentLength: screen.visibleFrame.height * 0.5,
+            floatsClearOfEdge: spec.floatsClearOfEdge
         )
     }
 
