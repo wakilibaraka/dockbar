@@ -30,7 +30,7 @@ Rather than work around a buggy third-party app with a suspicious bundle ID, we'
 11. Blacklist (hide specific apps from taskbar)
 
 ### Should Have (Phase 5, 7)
-12. Preferences window (General, Appearance, Behavior, Launcher, Blacklist tabs)
+12. Preferences window (Taskbar, Windows, Displays, Launcher, Widgets, System sections)
 13. Window grouping by app (optional toggle)
 14. Drag-and-drop task reordering
 15. Middle-click to close window
@@ -97,7 +97,9 @@ Rather than work around a buggy third-party app with a suspicious bundle ID, we'
       TrayIconView.swift             # Individual tray icon
       ThumbnailPopover.swift         # NSPopover for hover thumbnail preview
       SettingsWindowController.swift # Preferences window controller
-      SettingsView.swift             # Preferences UI content
+      Settings/SettingsRootView.swift # Preferences shell: sidebar, search, revert
+      Settings/*SettingsPage.swift   # One page per catalogue section
+      TaskbarStylePreviewView.swift  # Live miniature of a bar style, from its spec
 
     Utilities/
       CGWindowExtensions.swift       # Helpers for CGWindowListCopyWindowInfo
@@ -358,7 +360,7 @@ Icons for running apps that have no visible windows in the current Space/monitor
 
 #### System Resource Widget
 
-DeskBar can show a persistent system resource widget as a compact pane immediately before the right-side tray. The initial widget reports system memory pressure, CPU usage, and GPU usage. The widget is visible by default, can be hidden from Settings, and can be pinned either to all displays or to a specific display's DeskBar via the widget context menu or Settings > Widgets.
+DeskBar can show a persistent system resource widget as a compact pane immediately before the right-side tray. The initial widget reports system memory pressure, CPU usage, and GPU usage. The widget is visible by default, can be hidden from Settings, and can be placed in the bar or the menu bar via Settings > Widgets.
 
 **Expanded state:** The widget shows three compact metric controls: MEM, CPU, and GPU. Each metric can be toggled individually in Settings > Widgets. Each metric includes a small filled bar plus a number (`16/18G` style memory usage when available, percent values for CPU/GPU). Fill bars animate between samples. Memory uses saturation colors (green below 75%, yellow at 75%, red at 90% or critical pressure); CPU/GPU use the same yellow/red thresholds for high utilization. Clicking MEM opens Activity Monitor on the Memory pane, clicking CPU opens Activity Monitor's CPU History window, and clicking GPU opens Activity Monitor's GPU History window when available. A chevron button collapses the widget.
 
@@ -529,6 +531,15 @@ Create: `TaskbarSettings.swift`, `SettingsWindowController.swift`, `SettingsView
 - All settings wired to relevant components
 
 Settings table:
+
+**Settings are catalogued, not hand-listed.** `Models/SettingsCatalog.swift` is the
+authoritative inventory: every `@Published` property on `TaskbarSettings` appears there
+exactly once, with its section, title, help text, control kind, search keywords, and the
+closures that read and restore it. `SettingsCatalogTests` parses `TaskbarSettings.swift`
+and fails if a setting is added without being catalogued, and checks that reverting every
+section reproduces a freshly constructed settings object value for value. The table below
+is the original design-time list and is kept for history; use the catalogue as the source
+of truth.
 
 | Setting | Default |
 |---|---|
@@ -720,6 +731,24 @@ Create: `LoginItemManager.swift`, `DockManager.swift`, `AppsLauncherButtonView.s
 **Minimized/hidden behavior contradicted tray rules.** Must-have feature said minimized windows get visual indicators in the Task Zone, but the tray rule said apps move to the tray when all windows are minimized. **Fix:** Split into two cases: mixed state (some visible, some minimized) keeps indicators in Task Zone; all-minimized moves app to tray.
 
 **Settings tabs inconsistent with launcher feature.** Launcher Zone referenced a "Settings > Launcher tab" that didn't exist in the preferences spec. **Fix:** Added Launcher tab to the preferences window definition.
+
+### Round 7 — implementation drift (0.5.0)
+
+**Two settings implementations, neither canonical.** Six dedicated tab views existed as
+dead code while the window actually rendered a separate, independently maintained set of
+pages that had drifted: it controlled widgets the tabs did not, and omitted ten settings
+the tabs did — grouping, grouped and frontmost click actions, drag reorder, middle-click
+close, hover delay, thumbnail and title sizes, and hold-to-quit. **Fix:** Deleted the dead
+views and rebuilt the window around the six-section catalogue, which now covers every
+persisted setting.
+
+**Per-setting behaviour had no single owner.** Layout and appearance constants were
+re-typed across five strategy classes, menu bar visibility was decided by six independent
+Combine sinks, and the task zone's manual ordering logic was unreachable from tests
+because Swift's `private` is file-scoped and it lived in a file named after an unrelated
+class. **Fix:** `TaskbarStyleSpec` (data), `MenuBarPlan` (pure), `TaskZoneOrderingState`
+(own file, now tested), `TaskButtonWidthPlanner` (pure), and tests that pin the behaviour
+each replaced.
 
 ### Round 6 — user requirement + dedup
 
