@@ -15,6 +15,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             completion(granted)
         }
     }
+
+    
     
     func sendNotification(title: String, body: String, identifier: String) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in

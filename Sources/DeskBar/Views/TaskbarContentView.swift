@@ -296,50 +296,7 @@ final class TaskbarContentView: NSView {
 
     @objc private func checkForUpdatesFromContextMenu(_ sender: Any?) {
         Task { @MainActor in
-            presentUpdateResult(await UpdateService().check())
-        }
-    }
-
-    @MainActor
-    private func presentUpdateResult(_ result: UpdateCheckResult) {
-        switch result {
-        case let .upToDate(_, latest):
-            presentUpdateAlert(
-                title: "DockBar is up to date",
-                message: "You are running the latest version (\(latest)).",
-                releaseURL: nil
-            )
-        case let .updateAvailable(current, latest, releaseURL):
-            presentUpdateAlert(
-                title: "DockBar \(latest) is available",
-                message: "You are running \(current). Open the release page to download it?",
-                releaseURL: releaseURL
-            )
-        case let .failed(message):
-            presentUpdateAlert(
-                title: "Could not check for updates",
-                message: message,
-                releaseURL: nil
-            )
-        }
-    }
-
-    @MainActor
-    private func presentUpdateAlert(title: String, message: String, releaseURL: URL?) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = message
-
-        guard let releaseURL else {
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-            return
-        }
-
-        alert.addButton(withTitle: "Open Release Page")
-        alert.addButton(withTitle: "Later")
-        if alert.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(releaseURL)
+            await UpdatePresenter.checkAndPresent()
         }
     }
 
@@ -790,12 +747,7 @@ final class TaskbarContentView: NSView {
             }
             .store(in: &cancellables)
 
-        settings.$systemResourceWidgetPinnedDisplayID
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.schedulePreferredWidthNotification()
-            }
-            .store(in: &cancellables)
+        
 
         let workspaceNotifications = NSWorkspace.shared.notificationCenter
         let notificationNames: [Notification.Name] = [

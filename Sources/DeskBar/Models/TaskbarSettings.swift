@@ -5,39 +5,48 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
     case custom
     case windows
     case mac
-    case deskBar
+    case classic
     case eskele
-    
+
     var id: String { rawValue }
-    
+
     var displayName: String {
         switch self {
         case .custom: return "Custom"
         case .windows: return "Windows"
         case .mac: return "Mac"
-        case .deskBar: return "DeskBar"
+        case .classic: return "Classic"
         case .eskele: return "Eskele"
         }
     }
-    
+
     var subtitle: String {
         switch self {
         case .custom: return "The classic DeskBar experience."
         case .windows: return "A Windows-style taskbar with Start button."
         case .mac: return "A macOS-style floating dock."
-        case .deskBar: return "The original bar: solid edge to edge, one button per window."
+        case .classic: return "The original bar: solid edge to edge, one button per window."
         case .eskele: return "A fit-to-icons pill, mirroring eskele's bar."
         }
     }
-    
-    /// SF Symbol shown on the onboarding mode cards.
+
+    /// SF Symbol shown on the onboarding and style cards.
     var symbolName: String {
         switch self {
         case .custom: return "macwindow"
         case .windows: return "window.cascading"
         case .mac: return "dock.rectangle"
-        case .deskBar: return "rectangle.grid.1x2"
+        case .classic: return "rectangle.grid.1x2"
         case .eskele: return "capsule"
+        }
+    }
+
+    /// Older releases persisted this style as `deskBar`. Upgrading installs must keep
+    /// their chosen bar, so the legacy raw value is remapped rather than rejected.
+    init?(persistedRawValue: String) {
+        switch persistedRawValue {
+        case "deskBar": self = .classic
+        default: self.init(rawValue: persistedRawValue)
         }
     }
 }
@@ -107,23 +116,62 @@ enum DockPosition: String, CaseIterable, Identifiable {
         }
     }
 }
-enum NativeDockBehavior: String, CaseIterable {
+enum NativeDockBehavior: String, CaseIterable, Identifiable {
     case independent
     case autoHide
     case hidden
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .independent: return "Independent"
+        case .autoHide: return "Replace (auto-hide)"
+        case .hidden: return "Hidden"
+        }
+    }
+
+    var help: String {
+        switch self {
+        case .independent: return "Leave the system Dock exactly as macOS manages it."
+        case .autoHide: return "Hide the system Dock and let it slide out on demand."
+        case .hidden: return "Hide the system Dock completely."
+        }
+    }
 }
 
-enum WindowGroupingMode: String, CaseIterable {
+enum WindowGroupingMode: String, CaseIterable, Identifiable {
     case never
     case automatic
     case always
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .never: return "Never"
+        case .automatic: return "Automatic"
+        case .always: return "Always"
+        }
+    }
 }
 
-enum DeskBarLayoutMode: String, CaseIterable {
+enum DeskBarLayoutMode: String, CaseIterable, Identifiable {
     case fullWidth
     case fullWidthGlass
     case compact
     case compactGlass
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .fullWidth: return "Full Width"
+        case .fullWidthGlass: return "Full Width Glass"
+        case .compact: return "Compact"
+        case .compactGlass: return "Compact Glass"
+        }
+    }
 }
 
 enum BatteryIconSize: String, CaseIterable, Identifiable {
@@ -157,22 +205,52 @@ enum BatteryIconStyle: String, CaseIterable, Identifiable {
     }
 }
 
-enum GroupedClickAction: String, CaseIterable {
+enum GroupedClickAction: String, CaseIterable, Identifiable {
     case showPopover
     case cycleWindows
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .showPopover: return "Show window list"
+        case .cycleWindows: return "Cycle windows"
+        }
+    }
 }
 
-enum FrontmostClickAction: String, CaseIterable {
+enum FrontmostClickAction: String, CaseIterable, Identifiable {
     case minimize
     case cycle
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .minimize: return "Minimise"
+        case .cycle: return "Cycle windows"
+        }
+    }
 }
 
-enum AppsLauncherShortcut: String, CaseIterable {
+enum AppsLauncherShortcut: String, CaseIterable, Identifiable {
     case commandTap
     case rightCommandTap
     case controlOptionReturn
     case controlOptionSpace
     case optionSpace
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .commandTap: return "Double-tap ⌘"
+        case .rightCommandTap: return "Double-tap right ⌘"
+        case .controlOptionReturn: return "⌃⌥ Return"
+        case .controlOptionSpace: return "⌃⌥ Space"
+        case .optionSpace: return "⌥ Space"
+        }
+    }
 }
 
 
@@ -191,20 +269,48 @@ enum AppTheme: String, CaseIterable, Identifiable {
     }
 }
 
-enum LauncherStyle: String, CaseIterable {
+enum LauncherStyle: String, CaseIterable, Identifiable {
     case anchored
     case floating
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .anchored: return "Anchored to bar"
+        case .floating: return "Floating panel"
+        }
+    }
 }
 
-enum TaskTitleSource: String, CaseIterable {
+enum TaskTitleSource: String, CaseIterable, Identifiable {
     case appName        // Show the app name (e.g. "Chrome")
     case windowTitle    // Show the window title (e.g. "GitHub — Google Chrome")
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .appName: return "Application name"
+        case .windowTitle: return "Window title"
+        }
+    }
 }
 
-enum TaskTruncationStyle: String, CaseIterable {
+enum TaskTruncationStyle: String, CaseIterable, Identifiable {
     case tail           // "My Very Long Titl..."
     case middle         // "My Very...g Title"
     case ellipsisHead   // "...Very Long Title"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .tail: return "End"
+        case .middle: return "Middle"
+        case .ellipsisHead: return "Start"
+        }
+    }
 }
 
 
@@ -288,6 +394,17 @@ class TaskbarSettings: ObservableObject {
     static let defaultTitleFontSize: CGFloat = 12
     static let defaultMaxTaskWidth: CGFloat = 240
     static let defaultThumbnailSize: CGFloat = 200
+
+    /// The toggles the quick settings flyout ships with. Kept here so the settings
+    /// catalogue's reset action and `init` agree on one list.
+    static let defaultQuickSettingsIDs: [String] = [
+        "wifi", "bluetooth", "darkMode", "truetone", "mute", "muteMic",
+        "keepAwake", "autohideDock", "autohideMenuBar", "hiddenFiles",
+        "finderPathBar", "showExtensions", "showUserLibrary", "dockRecentApps",
+        "screenshot", "restartFinder", "emptyTrash", "emptyPasteboard",
+        "ejectDiscs", "screenSaver", "hideDesktop", "smallLaunchpad",
+        "xcodeCache", "pomodoro", "keyboardLock", "speedTest",
+    ]
 
     private let defaults: UserDefaults
 
@@ -423,15 +540,7 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(resourceDisplayStyle.rawValue, forKey: "resourceDisplayStyle") }
     }
     
-    @Published var systemResourceWidgetPinnedDisplayID: CGDirectDisplayID? {
-        didSet {
-            if let systemResourceWidgetPinnedDisplayID {
-                defaults.set(Int(systemResourceWidgetPinnedDisplayID), forKey: "systemResourceWidgetPinnedDisplayID")
-            } else {
-                defaults.removeObject(forKey: "systemResourceWidgetPinnedDisplayID")
-            }
-        }
-    }
+    
 
     @Published var startAtLogin: Bool {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
@@ -589,20 +698,13 @@ class TaskbarSettings: ObservableObject {
         fuzzySearch = defaults.object(forKey: "fuzzySearch") as? Bool ?? true
         
         showWindowCountBadges = defaults.object(forKey: "showWindowCountBadges") as? Bool ?? true
-        enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? [
-            "wifi", "bluetooth", "darkMode", "truetone", "mute", "muteMic",
-            "keepAwake", "autohideDock", "autohideMenuBar", "hiddenFiles",
-            "finderPathBar", "showExtensions", "showUserLibrary", "dockRecentApps",
-            "screenshot", "restartFinder", "emptyTrash", "emptyPasteboard",
-            "ejectDiscs", "screenSaver", "hideDesktop", "smallLaunchpad",
-            "xcodeCache", "pomodoro", "keyboardLock", "speedTest"
-        ]
+        enabledQuickSettings = defaults.object(forKey: "enabledQuickSettings") as? [String] ?? Self.defaultQuickSettingsIDs
         taskbarHeight = defaults.object(forKey: "taskbarHeight") as? CGFloat ?? Self.defaultTaskbarHeight
         titleFontSize = defaults.object(forKey: "titleFontSize") as? CGFloat ?? Self.defaultTitleFontSize
         maxTaskWidth = defaults.object(forKey: "maxTaskWidth") as? CGFloat ?? Self.defaultMaxTaskWidth
         showTitles = defaults.object(forKey: "showTitles") as? Bool ?? true
         
-        if let storedDockMode = defaults.string(forKey: "dockMode_system"), let mode = TaskbarMode(rawValue: storedDockMode) {
+        if let storedDockMode = defaults.string(forKey: "dockMode_system"), let mode = TaskbarMode(persistedRawValue: storedDockMode) {
             taskbarMode = mode
         } else {
             let oldWindowsMode = defaults.object(forKey: "windows11Mode") as? Bool ?? false
@@ -637,11 +739,7 @@ class TaskbarSettings: ObservableObject {
         resourceDisplayStyle = ResourceDisplayStyle(
             rawValue: defaults.string(forKey: "resourceDisplayStyle") ?? ""
         ) ?? .bar
-        if let pinnedDisplayID = defaults.object(forKey: "systemResourceWidgetPinnedDisplayID") as? NSNumber {
-            systemResourceWidgetPinnedDisplayID = CGDirectDisplayID(pinnedDisplayID.uint32Value)
-        } else {
-            systemResourceWidgetPinnedDisplayID = nil
-        }
+        
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
         if let rawMode = defaults.string(forKey: "screenMode"),
            let mode = TaskbarScreenMode(rawValue: rawMode) {

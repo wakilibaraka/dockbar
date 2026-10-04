@@ -61,13 +61,13 @@ struct OnboardingView: View {
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                         
                         VStack(spacing: 12) {
-                            PermissionRow(
+                            OnboardingPermissionCard(
                                 title: "Device Control and Data Access",
                                 description: "Required to interact with windows and switch apps.",
                                 isGranted: permissionsManager.isAccessibilityGranted,
                                 action: { permissionsManager.requestAccessibilityPermission() }
                             )
-                            PermissionRow(
+                            OnboardingPermissionCard(
                                 title: "Screen Recording",
                                 description: "Required for window thumbnails.",
                                 isGranted: thumbnailService.isScreenRecordingGranted,
@@ -77,7 +77,7 @@ struct OnboardingView: View {
                                     }
                                 }
                             )
-                            PermissionRow(
+                            OnboardingPermissionCard(
                                 title: "Calendar",
                                 description: "Required to show upcoming events in the widget.",
                                 isGranted: calendarService.isAuthorized,
@@ -234,7 +234,7 @@ struct OnboardingView: View {
     }
 }
 
-struct PermissionRow: View {
+struct OnboardingPermissionCard: View {
     let title: String
     let description: String
     let isGranted: Bool

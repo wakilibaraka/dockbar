@@ -325,7 +325,7 @@ struct MacTaskbarStrategy: TaskbarLayoutStrategy {
 
 /// The original DeskBar look: a solid, edge-to-edge bar with one button per window,
 /// the launcher at the leading edge and the widgets trailing the window cluster.
-struct DeskBarTaskbarStrategy: TaskbarLayoutStrategy {
+struct ClassicTaskbarStrategy: TaskbarLayoutStrategy {
     var visualEffectMaterial: NSVisualEffectView.Material { .contentBackground }
     
     func layoutMode(defaultLayoutMode: DeskBarLayoutMode) -> DeskBarLayoutMode {
@@ -507,7 +507,7 @@ extension TaskbarMode {
         case .custom: return CustomTaskbarStrategy()
         case .windows: return WindowsTaskbarStrategy()
         case .mac: return MacTaskbarStrategy()
-        case .deskBar: return DeskBarTaskbarStrategy()
+        case .classic: return ClassicTaskbarStrategy()
         case .eskele: return EskeleTaskbarStrategy()
         }
     }

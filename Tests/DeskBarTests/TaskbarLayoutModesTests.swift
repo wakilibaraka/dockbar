@@ -26,7 +26,7 @@ func stylesPinTheirGeometry() {
     let expectations: [(TaskbarMode, DeskBarLayoutMode, DockPosition, Bool, Bool)] = [
         (.windows, .fullWidthGlass, .bottomCenter, false, true),
         (.mac, .compactGlass, .floatingCenter, true, true),
-        (.deskBar, .fullWidth, .bottomCenter, false, false),
+        (.classic, .fullWidth, .bottomCenter, false, false),
         (.eskele, .compactGlass, .floatingCenter, true, false)
     ]
 
@@ -40,25 +40,25 @@ func stylesPinTheirGeometry() {
 }
 
 @Test
-func deskBarAndEskeleStylesDifferFromWindows() {
-    // The point of adding them: the DeskBar style is the solid edge-to-edge bar, Eskele
+func classicAndEskeleStylesDifferFromWindows() {
+    // The point of adding them: the Classic style is the solid edge-to-edge bar, Eskele
     // is a fit-to-icons pill. Neither may collapse onto the Windows style.
-    #expect(TaskbarMode.deskBar.strategy.layoutMode(defaultLayoutMode: .compactGlass) != .fullWidthGlass)
+    #expect(TaskbarMode.classic.strategy.layoutMode(defaultLayoutMode: .compactGlass) != .fullWidthGlass)
     #expect(TaskbarMode.eskele.strategy.layoutMode(defaultLayoutMode: .fullWidth) != .fullWidthGlass)
 
     // Windows keeps its distinct behaviours.
     #expect(TaskbarMode.windows.strategy.combinesPinnedApps)
-    #expect(TaskbarMode.deskBar.strategy.combinesPinnedApps == false)
+    #expect(TaskbarMode.classic.strategy.combinesPinnedApps == false)
 }
 
 @Test
 func widgetPlacementWidthsSplitTrailingWindowsCluster() {
     let windows = TaskbarMode.windows.strategy
-    let deskBar = TaskbarMode.deskBar.strategy
+    let classic = TaskbarMode.classic.strategy
 
-    // Windows and DeskBar pin the window cluster to the trailing edge.
+    // Windows and Classic pin the window cluster to the trailing edge.
     #expect(windows.dockWidgetWidths(originalWidths: [40, 60], clusterWidth: 300) == [40, 60, 312])
-    #expect(deskBar.dockWidgetWidths(originalWidths: [40, 60], clusterWidth: 300) == [40, 60, 312])
+    #expect(classic.dockWidgetWidths(originalWidths: [40, 60], clusterWidth: 300) == [40, 60, 312])
 
     // Eskele fits its contents, so the widgets keep their own widths.
     #expect(TaskbarMode.eskele.strategy.dockWidgetWidths(originalWidths: [40, 60], clusterWidth: 300) == [40, 60])

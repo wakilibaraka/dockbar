@@ -23,7 +23,6 @@ struct TaskbarSettingsTests {
         #expect(settings.showProgressIndicators)
         #expect(settings.enableActivityMode)
         #expect(settings.showSystemResourceWidget)
-        #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
         #expect(settings.layoutMode == .compactGlass)
         #expect(settings.enableWindowSwitcher == true)
         #expect(settings.enableBareCommandLauncher == true)
@@ -97,7 +96,6 @@ struct TaskbarSettingsTests {
         settings.enableBareCommandLauncher = false
         settings.appsLauncherShortcut = .optionSpace
         settings.showSystemResourceWidget = false
-        settings.systemResourceWidgetPinnedDisplayID = 12345
 
         settings = TaskbarSettings(defaults: defaults)
 
@@ -106,12 +104,6 @@ struct TaskbarSettingsTests {
         #expect(settings.enableBareCommandLauncher == false)
         #expect(settings.appsLauncherShortcut == .optionSpace)
         #expect(settings.showSystemResourceWidget == false)
-        #expect(settings.systemResourceWidgetPinnedDisplayID == 12345)
-
-        settings.systemResourceWidgetPinnedDisplayID = nil
-        settings = TaskbarSettings(defaults: defaults)
-
-        #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
     }
 
     @Test
