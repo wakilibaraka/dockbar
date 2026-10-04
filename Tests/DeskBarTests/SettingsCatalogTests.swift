@@ -151,9 +151,10 @@ struct SettingsCatalogTests {
         settings.launcherStyle = .floating
         settings.fuzzySearch = false
         settings.autoOpenSingleSearchResult = true
-        settings.connectivityTrayLocation = .menuBar
+        // Every widget defaults to the menu bar, so perturbing means moving to the bar.
+        settings.connectivityTrayLocation = .dock
         settings.splitCalendarAndQuickSettings = true
-        settings.calendarLocation = .menuBar
+        settings.calendarLocation = .dock
         settings.quickSettingsLocation = .dock
         settings.batteryWidgetLocation = .dock
         settings.showBatteryPercentage = false
@@ -164,7 +165,7 @@ struct SettingsCatalogTests {
         settings.showSystemResourceWidget = false
         settings.resourceDisplayStyle = .graph
         settings.weatherEnabled = false
-        settings.weatherWidgetLocation = .menuBar
+        settings.weatherWidgetLocation = .dock
         settings.weatherUnit = .fahrenheit
         settings.weatherPollingInterval = 3600
         settings.weatherLocationMode = .manual

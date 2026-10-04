@@ -100,6 +100,49 @@ struct MenuBarPlanTests {
     }
 
     @Test
+    func theDefaultConfigurationShowsEveryWidgetInTheMenuBar() {
+        // Since v0.6 a fresh install puts every widget in the menu bar, so this is the plan
+        // the app actually starts with. Nothing may be silently dropped along the way.
+        let suiteName = "MenuBarPlanTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = TaskbarSettings(defaults: defaults)
+        let defaultPlan = MenuBarPlan.resolve(
+            batteryLocation: settings.batteryWidgetLocation,
+            isSplit: settings.splitCalendarAndQuickSettings,
+            connectivityLocation: settings.connectivityTrayLocation,
+            calendarLocation: settings.calendarLocation,
+            quickSettingsLocation: settings.quickSettingsLocation,
+            systemResourceLocation: settings.systemResourceWidgetLocation,
+            isWeatherEnabled: settings.weatherEnabled,
+            weatherLocation: settings.weatherWidgetLocation
+        )
+
+        // The combined item and its two halves are mutually exclusive, so the default
+        // (unsplit) shows four of the six slots, not all six.
+        #expect(defaultPlan.orderedVisibleSlots == [.primary, .connectivity, .systemResources, .weather])
+        #expect(!defaultPlan.isVisible(.calendar))
+        #expect(!defaultPlan.isVisible(.quickSettings))
+
+        // Splitting trades the combined item for the two halves and keeps everything else.
+        var splitSettings = settings
+        splitSettings.splitCalendarAndQuickSettings = true
+        let splitPlan = MenuBarPlan.resolve(
+            batteryLocation: splitSettings.batteryWidgetLocation,
+            isSplit: splitSettings.splitCalendarAndQuickSettings,
+            connectivityLocation: splitSettings.connectivityTrayLocation,
+            calendarLocation: splitSettings.calendarLocation,
+            quickSettingsLocation: splitSettings.quickSettingsLocation,
+            systemResourceLocation: splitSettings.systemResourceWidgetLocation,
+            isWeatherEnabled: splitSettings.weatherEnabled,
+            weatherLocation: splitSettings.weatherWidgetLocation
+        )
+        #expect(splitPlan.orderedVisibleSlots == [.primary, .calendar, .quickSettings, .systemResources, .weather])
+    }
+
+    @Test
     func everySlotCanBeMadeVisibleUnderSomeConfiguration() {
         // Guards against a new slot being added to the enum but never handled by the
         // planner, which would leave a status item permanently invisible. The combined

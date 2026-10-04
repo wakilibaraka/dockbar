@@ -763,14 +763,21 @@ class TaskbarSettings: ObservableObject {
         batteryIconSize = BatteryIconSize(rawValue: defaults.string(forKey: "batteryIconSize") ?? "") ?? .large
         enableSessionManagerPlugin = defaults.object(forKey: "enableSessionManagerPlugin") as? Bool ?? true
 
-        connectivityTrayLocation = WidgetLocation(rawValue: defaults.string(forKey: "connectivityTrayLocation") ?? "") ?? .dock
+        // Every widget starts in the menu bar on a fresh install, but installs that predate
+        // v0.6 keep the placement they had. WidgetPlacement owns that decision.
+        let placements = defaults.resolvedWidgetPlacements()
+        func placement(_ slot: WidgetPlacement.Slot) -> WidgetLocation {
+            placements[slot.key] ?? slot.shippingDefault
+        }
+
+        connectivityTrayLocation = placement(.connectivity)
         splitCalendarAndQuickSettings = defaults.object(forKey: "splitCalendarAndQuickSettings") as? Bool ?? false
-        calendarLocation = WidgetLocation(rawValue: defaults.string(forKey: "calendarLocation") ?? "") ?? .dock
-        quickSettingsLocation = WidgetLocation(rawValue: defaults.string(forKey: "quickSettingsLocation") ?? "") ?? .menuBar
-        systemResourceWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "systemResourceWidgetLocation") ?? "") ?? .menuBar
-        batteryWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "batteryWidgetLocation") ?? "") ?? .menuBar
+        calendarLocation = placement(.calendar)
+        quickSettingsLocation = placement(.quickSettings)
+        systemResourceWidgetLocation = placement(.systemResources)
+        batteryWidgetLocation = placement(.battery)
         weatherEnabled = defaults.object(forKey: "weatherEnabled") as? Bool ?? true
-        weatherWidgetLocation = WidgetLocation(rawValue: defaults.string(forKey: "weatherWidgetLocation") ?? "") ?? .dock
+        weatherWidgetLocation = placement(.weather)
         dockWidgetOrder = Self.loadDockWidgetOrder(from: defaults)
         weatherUnit = WeatherUnit(rawValue: defaults.string(forKey: "weatherUnit") ?? "") ?? .celsius
         weatherPollingInterval = defaults.object(forKey: "weatherPollingInterval") as? TimeInterval ?? 900

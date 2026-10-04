@@ -39,12 +39,48 @@ struct TaskbarSettingsTests {
 
         let settings = TaskbarSettings(defaults: defaults)
 
+        // A fresh install gets a clean bar: windows in the bar, status in the menu bar.
         #expect(settings.splitCalendarAndQuickSettings == false)
-        #expect(settings.connectivityTrayLocation == .dock)
-        #expect(settings.calendarLocation == .dock)
+        #expect(settings.connectivityTrayLocation == .menuBar)
+        #expect(settings.calendarLocation == .menuBar)
         #expect(settings.quickSettingsLocation == .menuBar)
         #expect(settings.systemResourceWidgetLocation == .menuBar)
         #expect(settings.batteryWidgetLocation == .menuBar)
+        #expect(settings.weatherWidgetLocation == .menuBar)
+    }
+
+    @Test
+    func existingInstallKeepsItsWidgetPlacementOnUpgrade() {
+        let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        // A pre-v0.6 install: it has preferences on disk, and no placement stamp.
+        defaults.set("bottomCenter", forKey: "dockPosition")
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = TaskbarSettings(defaults: defaults)
+
+        #expect(settings.connectivityTrayLocation == .dock)
+        #expect(settings.calendarLocation == .dock)
+        #expect(settings.weatherWidgetLocation == .dock)
+        #expect(settings.batteryWidgetLocation == .menuBar)
+    }
+
+    @Test
+    func freshInstallSecondLaunchKeepsTheNewDefaults() {
+        let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // First launch stamps the resolved defaults, so the second launch must not mistake
+        // the now-populated domain for an upgrade.
+        _ = TaskbarSettings(defaults: defaults)
+        let settings = TaskbarSettings(defaults: defaults)
+
+        #expect(settings.connectivityTrayLocation == .menuBar)
+        #expect(settings.calendarLocation == .menuBar)
+        #expect(settings.weatherWidgetLocation == .menuBar)
     }
 
     @Test

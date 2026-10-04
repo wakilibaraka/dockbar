@@ -507,7 +507,7 @@ enum SettingsCatalog {
             help: "Put the combined calendar and quick settings widget in the bar or the menu bar.",
             control: .choice,
             keywords: ["tray", "status", "menu bar"],
-            reset: { $0.connectivityTrayLocation = .dock },
+            reset: { $0.connectivityTrayLocation = .menuBar },
             read: { $0.connectivityTrayLocation.displayName }
         ),
         SettingDescriptor(
@@ -525,7 +525,7 @@ enum SettingsCatalog {
             title: "Calendar Location",
             help: "Where the calendar widget appears.",
             control: .choice,
-            reset: { $0.calendarLocation = .dock },
+            reset: { $0.calendarLocation = .menuBar },
             read: { $0.calendarLocation.displayName }
         ),
         SettingDescriptor(
@@ -624,7 +624,7 @@ enum SettingsCatalog {
             title: "Weather Location",
             help: "Where the weather widget appears.",
             control: .choice,
-            reset: { $0.weatherWidgetLocation = .dock },
+            reset: { $0.weatherWidgetLocation = .menuBar },
             read: { $0.weatherWidgetLocation.displayName }
         ),
         SettingDescriptor(
