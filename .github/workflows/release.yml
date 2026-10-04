@@ -1,0 +1,26 @@
+name: Release
+
+# Builds and attaches a DMG whenever a v* tag is pushed.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - name: Build, package, and create DMG
+        run: bash scripts/release.sh "${GITHUB_REF_NAME#v}"
+      - name: Publish release with DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" "DockBar-${GITHUB_REF_NAME}.dmg"
+          --latest --verify-tag --generate-notes --title "DockBar ${GITHUB_REF_NAME}"
