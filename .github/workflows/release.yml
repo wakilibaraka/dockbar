@@ -31,13 +31,10 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      # Full history so the tag itself is present in the checkout; publish-release.sh
-      # verifies the tag exists before creating anything.
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: swift --version
-
+      # Resolve the tag first, so the checkout below can pin to it. On a dispatch the
+      # workflow itself runs from the branch that was dispatched (usually main), which is
+      # not necessarily what the tag points at — building that would ship code the tag
+      # does not describe.
       - name: Resolve tag
         id: tag
         env:
@@ -50,6 +47,26 @@ jobs:
             exit 1
           fi
           echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      # Full history so the tag is present, and pinned to the tag itself rather than the
+      # dispatched branch.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.tag.outputs.value }}
+
+      - name: Verify tag
+        env:
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          git fetch --tags --force
+          if ! git rev-parse --verify --quiet "refs/tags/$TAG^{commit}" >/dev/null; then
+            echo "::error::tag $TAG does not exist. Push it before dispatching a release."
+            exit 1
+          fi
+          echo "Building $TAG at $(git rev-parse --short "refs/tags/$TAG^{commit}")"
+
+      - run: swift --version
 
       - name: Build, package, and create DMG
         env:
