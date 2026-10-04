@@ -20,6 +20,8 @@ final class TaskbarContentView: NSView {
     private let blacklistManager: BlacklistManager
     private let displayID: CGDirectDisplayID
     private let launcherZoneView: LauncherZoneView
+    /// The axis the bar's contents stack along, decided once in `configureLayout`.
+    private var contentAxis: BarContentAxis = .horizontal
     private let launcherButtonView = AppsLauncherButtonView()
     private let windowsTrayClusterView = WindowsTrayClusterView()
     private let systemResourceWidgetView: SystemResourceWidgetView
@@ -330,6 +332,13 @@ final class TaskbarContentView: NSView {
     }
 
     private func configureLayout() {
+        // A bar on a side edge stacks its zones down the screen; a bottom bar stacks them
+        // across it. BarContentAxis owns that choice so it is made once, from the style's
+        // edge, rather than guessed at each stack.
+        let axis = BarContentAxis.forSpec(settings.taskbarMode.spec)
+        contentAxis = axis
+        let zonesOrientation: NSUserInterfaceLayoutOrientation = axis.isVertical ? .vertical : .horizontal
+
         rootStackView.orientation = .vertical
         rootStackView.alignment = .width
         rootStackView.distribution = .fill
@@ -345,8 +354,8 @@ final class TaskbarContentView: NSView {
         ])
 
 
-        zonesStackView.orientation = .horizontal
-        zonesStackView.alignment = .centerY
+        zonesStackView.orientation = zonesOrientation
+        zonesStackView.alignment = axis.isVertical ? .centerX : .centerY
         zonesStackView.distribution = .fill
         zonesStackView.spacing = 0
         zonesStackView.edgeInsets = zoneEdgeInsets(usesCompactOuterInsets: false)
