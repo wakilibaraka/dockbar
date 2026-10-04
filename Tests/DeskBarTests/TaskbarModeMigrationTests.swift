@@ -50,4 +50,12 @@ struct TaskbarModeMigrationTests {
         let symbols = TaskbarMode.allCases.map(\.symbolName)
         #expect(Set(symbols).count == symbols.count, "two styles share an SF Symbol")
     }
+
+    @Test
+    func theHybridIsANewModeNotARenameOfAnOldOne() {
+        // The hybrid was added in v0.6, so nothing should map onto it. If a future rename
+        // reuses its raw value this test is the one that should catch it.
+        #expect(TaskbarMode(persistedRawValue: "hybrid") == .hybrid)
+        #expect(TaskbarMode(persistedRawValue: "eskele") == .eskele)
+    }
 }

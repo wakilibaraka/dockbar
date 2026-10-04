@@ -379,6 +379,33 @@ struct EskeleTaskbarStrategy: TaskbarLayoutStrategy {
     }
 }
 
+/// The hybrid mode keeps the Classic bar's behaviour and swaps only the launcher, so its
+/// strategy is Classic's with one line of spec changed.
+struct HybridTaskbarStrategy: TaskbarLayoutStrategy {
+    let spec: TaskbarStyleSpec = .hybrid
+
+    func handleGroupClick(
+        group: AppGroup,
+        isActive: Bool,
+        app: NSRunningApplication,
+        firstWindow: WindowInfo,
+        accessibilityService: AccessibilityService,
+        defaultHide: () -> Void
+    ) {
+        // The hybrid is a Classic bar underneath, so a click does exactly what Classic's
+        // does. What makes it the hybrid is the launcher, which lives in the strategy's
+        // `launcherKind`, not in here.
+        ClassicTaskbarStrategy().handleGroupClick(
+            group: group,
+            isActive: isActive,
+            app: app,
+            firstWindow: firstWindow,
+            accessibilityService: accessibilityService,
+            defaultHide: defaultHide
+        )
+    }
+}
+
 extension TaskbarMode {
     var strategy: TaskbarLayoutStrategy {
         switch self {
@@ -387,6 +414,7 @@ extension TaskbarMode {
         case .mac: return MacTaskbarStrategy()
         case .classic: return ClassicTaskbarStrategy()
         case .eskele: return EskeleTaskbarStrategy()
+        case .hybrid: return HybridTaskbarStrategy()
         }
     }
 }

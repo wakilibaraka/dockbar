@@ -6,7 +6,10 @@ import Testing
 
 @Test
 func everyStyleHasCopyAndAStrategy() {
-    #expect(TaskbarMode.allCases.count == 5)
+    // Five original styles plus the Hybrid added in v0.6. Counting rather than naming keeps
+    // this from having to be edited every time a mode is added, while still failing loudly
+    // if a case is added without its copy.
+    #expect(TaskbarMode.allCases.count == 6)
 
     for mode in TaskbarMode.allCases {
         #expect(!mode.displayName.isEmpty)

@@ -52,13 +52,15 @@ struct TaskbarStyleSpecTests {
     }
 
     @Test
-    func onlyMacAndClassicTrailTheClusterWithWidgets() {
+    func stylesWithASolidBarTrailTheClusterWithWidgets() {
+        // Every style built on a solid bottom bar puts the window cluster after the widgets,
+        // which includes the new hybrid: it is a Classic bar with a different launcher.
         let trailing = Set(
             TaskbarMode.allCases
                 .filter { $0.spec.windowClusterTrailsWidgets }
                 .map(\.rawValue)
         )
-        #expect(trailing == ["windows", "classic"])
+        #expect(trailing == ["windows", "classic", "hybrid"])
 
         for mode in TaskbarMode.allCases {
             let widths = mode.strategy.dockWidgetWidths(originalWidths: [40, 60], clusterWidth: 300)
@@ -93,6 +95,7 @@ struct TaskbarStyleSpecTests {
             .mac: 0.0,
             .classic: 0.30,
             .eskele: 0.35,
+            .hybrid: 0.30,
         ]
         for mode in TaskbarMode.allCases {
             let alpha = mode.spec.activeFillAlpha
@@ -169,7 +172,85 @@ struct TaskbarStyleSpecTests {
                 .filter { $0.spec.taskTitle == .whenItFits }
                 .map(\.rawValue)
         )
-        #expect(withTitles == ["custom", "classic"])
+        #expect(withTitles == ["custom", "classic", "hybrid"])
+    }
+
+    // MARK: Edge and span
+
+    @Test
+    func onlyEskeleForcesAVerticalEdge() {
+        let forcedEdges = Set(TaskbarMode.allCases.filter { $0.spec.edge != nil }.map(\.rawValue))
+        #expect(forcedEdges == ["windows", "mac", "classic", "eskele", "hybrid"])
+
+        #expect(TaskbarMode.eskele.spec.edge == .left)
+        #expect(TaskbarMode.custom.spec.edge == nil, "Custom must let the user pick the edge")
+
+        let vertical = Set(
+            TaskbarMode.allCases.filter { $0.spec.resolvedEdge(userChoice: .left).isVertical }.map(\.rawValue)
+        )
+        // Custom can be vertical too, because it leaves the edge to the user. Eskele is the
+        // only style that *forces* it.
+        #expect(vertical == ["eskele", "custom"])
+    }
+
+    @Test
+    func aStyleThatForcesAnEdgeAlsoForcesItsSpan() {
+        // eskele's bar hugs its contents; a full-height strip down the side is a different
+        // product from the pill it is imitating.
+        for mode in TaskbarMode.allCases where mode.spec.edge != nil {
+            let span = mode.spec.resolvedSpan(userChoice: .fullSpan)
+            #expect(span == (mode.spec.usesCompactContentWidth ? .hugContents : .fullSpan), "\(mode.rawValue)")
+        }
+        // Custom has no edge of its own, so the user's span stands.
+        #expect(TaskbarMode.custom.spec.resolvedSpan(userChoice: .fullSpan) == .fullSpan)
+        #expect(TaskbarMode.custom.spec.resolvedSpan(userChoice: .hugContents) == .hugContents)
+    }
+
+    @Test
+    func onlyAVerticalBarEverGetsRows() {
+        for mode in TaskbarMode.allCases {
+            #expect(mode.spec.resolvedRowCount(userChoice: 3, edge: .bottom) == 1, "\(mode.rawValue)")
+        }
+        #expect(TaskbarMode.eskele.spec.resolvedRowCount(userChoice: 3, edge: .left) == 3)
+        #expect(TaskbarMode.classic.spec.resolvedRowCount(userChoice: 3, edge: .left) == 1)
+        // A row count of zero or less must not produce an empty bar.
+        #expect(TaskbarMode.eskele.spec.resolvedRowCount(userChoice: 0, edge: .left) == 1)
+    }
+
+    @Test
+    func theEskeleBarIsTheOnlyOneThatFloatsAndStacks() {
+        let floats = Set(TaskbarMode.allCases.filter(\.spec.floatsClearOfEdge).map(\.rawValue))
+        #expect(floats == ["mac", "eskele"])
+
+        let stacks = Set(TaskbarMode.allCases.filter(\.spec.allowsMultipleRows).map(\.rawValue))
+        #expect(stacks == ["custom", "eskele"])
+    }
+
+    // MARK: Launcher
+
+    @Test
+    func eskeleAndHybridUseEskelesLauncher() {
+        let launchpick = Set(
+            TaskbarMode.allCases.filter { $0.spec.launcher == .launchpick }.map(\.rawValue)
+        )
+        #expect(launchpick == ["eskele", "hybrid"])
+
+        let deskBar = Set(
+            TaskbarMode.allCases.filter { $0.spec.launcher == .deskBar }.map(\.rawValue)
+        )
+        #expect(deskBar == ["custom", "windows", "mac", "classic"])
+    }
+
+    @Test
+    func launchpickModesListEveryAppRatherThanThePinnedFew() {
+        // A pinned list inside a searchable panel would be self-defeating: there is nothing
+        // to search.
+        for mode in TaskbarMode.allCases where mode.spec.launcher == .launchpick {
+            #expect(mode.spec.appsMenuSource == .allApps, "\(mode.rawValue)")
+        }
+        for mode in TaskbarMode.allCases where mode.spec.launcher == .deskBar {
+            #expect(mode.spec.appsMenuSource == .pinned, "\(mode.rawValue)")
+        }
     }
 
     @Test

@@ -17,8 +17,14 @@ struct TaskbarStyleSpec {
     var layoutMode: DeskBarLayoutMode?
     /// The position the style forces. `nil` respects the user's choice.
     var dockPosition: DockPosition?
+    /// The screen edge the style forces. `nil` respects the user's choice.
+    var edge: BarEdge?
     /// Whether the bar hugs its contents instead of filling its layout.
     var usesCompactContentWidth: Bool
+    /// Whether the bar floats clear of its edge instead of sitting flush against it.
+    var floatsClearOfEdge: Bool
+    /// Whether the bar's cells wrap onto more than one row. Only a vertical bar can.
+    var allowsMultipleRows: Bool
     /// Padding inside the content stack.
     var zoneInsets: NSEdgeInsets
 
@@ -44,6 +50,13 @@ struct TaskbarStyleSpec {
     /// Whether the window cluster trails the widgets or leads them.
     var windowClusterTrailsWidgets: Bool
 
+    // MARK: Launcher
+
+    /// Which launcher the bar's apps zone shows.
+    var launcher: LauncherKind
+    /// What the apps zone lists.
+    var appsMenuSource: AppsMenuSource
+
     /// How a style draws a task button's title.
     enum TaskTitlePresentation: Equatable {
         /// Show the title when there is room for it.
@@ -63,6 +76,21 @@ struct TaskbarStyleSpec {
         case dot
     }
 
+    /// Which launcher a style puts in its apps zone.
+    enum LauncherKind: Equatable {
+        /// DeskBar's own anchored launcher.
+        case deskBar
+        /// eskele's Launchpick: a searchable panel over a ranked app list.
+        case launchpick
+    }
+
+    /// Where a style's apps list comes from.
+    enum AppsMenuSource: Equatable {
+        case pinned
+        case allApps
+        case recent
+    }
+
     // MARK: Derived
 
     /// `NSVisualEffectView.Material` is not `Equatable`, so equality is written out
@@ -71,7 +99,10 @@ struct TaskbarStyleSpec {
         lhs.material.rawValue == rhs.material.rawValue
             && lhs.layoutMode == rhs.layoutMode
             && lhs.dockPosition == rhs.dockPosition
+            && lhs.edge == rhs.edge
             && lhs.usesCompactContentWidth == rhs.usesCompactContentWidth
+            && lhs.floatsClearOfEdge == rhs.floatsClearOfEdge
+            && lhs.allowsMultipleRows == rhs.allowsMultipleRows
             && lhs.zoneInsets.top == rhs.zoneInsets.top
             && lhs.zoneInsets.left == rhs.zoneInsets.left
             && lhs.zoneInsets.bottom == rhs.zoneInsets.bottom
@@ -86,6 +117,8 @@ struct TaskbarStyleSpec {
             && lhs.runningIndicator == rhs.runningIndicator
             && lhs.hostsWidgetsInBar == rhs.hostsWidgetsInBar
             && lhs.windowClusterTrailsWidgets == rhs.windowClusterTrailsWidgets
+            && lhs.launcher == rhs.launcher
+            && lhs.appsMenuSource == rhs.appsMenuSource
     }
 
     /// The layout to use, given what the user picked.
@@ -95,6 +128,26 @@ struct TaskbarStyleSpec {
 
     func resolvedDockPosition(userChoice: DockPosition) -> DockPosition {
         dockPosition ?? userChoice
+    }
+
+    /// The edge the bar sits on, given what the user picked.
+    func resolvedEdge(userChoice: BarEdge) -> BarEdge {
+        edge ?? userChoice
+    }
+
+    /// Whether the bar spans the edge or only fills what it needs.
+    ///
+    /// A style that forces an edge has an opinion here too: a vertical bar hugs its
+    /// contents, because a full-height bar down the side of the screen is a different
+    /// product from the eskele pill it is imitating.
+    func resolvedSpan(userChoice: BarSpan) -> BarSpan {
+        edge == nil ? userChoice : (usesCompactContentWidth ? .hugContents : .fullSpan)
+    }
+
+    /// The number of rows of cells the bar stacks its buttons into.
+    func resolvedRowCount(userChoice: Int, edge: BarEdge) -> Int {
+        guard edge.isVertical else { return 1 }
+        return allowsMultipleRows ? max(1, userChoice) : 1
     }
 
     /// Whether windows are grouped, given what the user picked.
@@ -149,7 +202,10 @@ extension TaskbarStyleSpec {
         material: .popover,
         layoutMode: nil,
         dockPosition: nil,
+        edge: nil,
         usesCompactContentWidth: true,
+        floatsClearOfEdge: false,
+        allowsMultipleRows: true,
         zoneInsets: NSEdgeInsets(top: 6, left: 8, bottom: 6, right: 8),
         forcesGrouping: nil,
         combinesPinnedApps: false,
@@ -160,7 +216,9 @@ extension TaskbarStyleSpec {
         hoverFillAlpha: 0.10,
         runningIndicator: .none,
         hostsWidgetsInBar: true,
-        windowClusterTrailsWidgets: false
+        windowClusterTrailsWidgets: false,
+        launcher: .deskBar,
+        appsMenuSource: .pinned,
     )
 
     /// A Windows 11 taskbar: full width, Start-style launcher, grouped windows, a run
@@ -169,7 +227,10 @@ extension TaskbarStyleSpec {
         material: .sidebar,
         layoutMode: .fullWidthGlass,
         dockPosition: .bottomCenter,
+        edge: .bottom,
         usesCompactContentWidth: false,
+        floatsClearOfEdge: false,
+        allowsMultipleRows: false,
         zoneInsets: NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12),
         forcesGrouping: true,
         combinesPinnedApps: true,
@@ -180,7 +241,9 @@ extension TaskbarStyleSpec {
         hoverFillAlpha: 0.08,
         runningIndicator: .windowCount,
         hostsWidgetsInBar: true,
-        windowClusterTrailsWidgets: true
+        windowClusterTrailsWidgets: true,
+        launcher: .deskBar,
+        appsMenuSource: .pinned,
     )
 
     /// A macOS-style floating dock: compact, always grouped, icons only, running dot,
@@ -189,7 +252,10 @@ extension TaskbarStyleSpec {
         material: .popover,
         layoutMode: .compactGlass,
         dockPosition: .floatingCenter,
+        edge: .bottom,
         usesCompactContentWidth: true,
+        floatsClearOfEdge: true,
+        allowsMultipleRows: false,
         zoneInsets: NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12),
         forcesGrouping: true,
         combinesPinnedApps: true,
@@ -200,7 +266,9 @@ extension TaskbarStyleSpec {
         hoverFillAlpha: 0.08,
         runningIndicator: .dot,
         hostsWidgetsInBar: false,
-        windowClusterTrailsWidgets: false
+        windowClusterTrailsWidgets: false,
+        launcher: .deskBar,
+        appsMenuSource: .pinned,
     )
 
     /// The original solid bar: edge to edge, one button per window, no grouping.
@@ -208,7 +276,10 @@ extension TaskbarStyleSpec {
         material: .contentBackground,
         layoutMode: .fullWidth,
         dockPosition: .bottomCenter,
+        edge: .bottom,
         usesCompactContentWidth: false,
+        floatsClearOfEdge: false,
+        allowsMultipleRows: false,
         zoneInsets: NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12),
         forcesGrouping: false,
         combinesPinnedApps: false,
@@ -219,16 +290,22 @@ extension TaskbarStyleSpec {
         hoverFillAlpha: 0.10,
         runningIndicator: .none,
         hostsWidgetsInBar: true,
-        windowClusterTrailsWidgets: true
+        windowClusterTrailsWidgets: true,
+        launcher: .deskBar,
+        appsMenuSource: .pinned,
     )
 
-    /// Eskele's pill: fits its contents, icons only, one button per window, widgets
-    /// leading and the cluster trailing.
+    /// Eskele's pill, rebuilt on DockBar's bar: a vertical strip down the left edge that
+    /// hugs its contents, icons only, one button per window, and eskele's launcher and
+    /// apps menu in place of the bar's own zones.
     static let eskele = TaskbarStyleSpec(
         material: .hudWindow,
         layoutMode: .compactGlass,
         dockPosition: .floatingCenter,
+        edge: .left,
         usesCompactContentWidth: true,
+        floatsClearOfEdge: true,
+        allowsMultipleRows: true,
         zoneInsets: NSEdgeInsets(top: 6, left: 8, bottom: 6, right: 8),
         forcesGrouping: false,
         combinesPinnedApps: false,
@@ -239,7 +316,36 @@ extension TaskbarStyleSpec {
         hoverFillAlpha: 0.12,
         runningIndicator: .none,
         hostsWidgetsInBar: true,
-        windowClusterTrailsWidgets: false
+        windowClusterTrailsWidgets: false,
+        launcher: .launchpick,
+        appsMenuSource: .allApps,
+    )
+
+    /// The hybrid: DeskBar's solid edge-to-edge bar, but with eskele's launcher and apps
+    /// menu. The bar itself is the Classic one — full width, flush against the bottom
+    /// edge, widgets trailing — so this mode changes what the bar *does* rather than what
+    /// it looks like.
+    static let hybrid = TaskbarStyleSpec(
+        material: .contentBackground,
+        layoutMode: .fullWidth,
+        dockPosition: .bottomCenter,
+        edge: .bottom,
+        usesCompactContentWidth: false,
+        floatsClearOfEdge: false,
+        allowsMultipleRows: false,
+        zoneInsets: NSEdgeInsets(top: 4, left: 12, bottom: 4, right: 12),
+        forcesGrouping: false,
+        combinesPinnedApps: false,
+        groupsSingleWindows: false,
+        taskTitle: .whenItFits,
+        activeFillAlpha: 0.30,
+        attentionFillAlpha: 0.14,
+        hoverFillAlpha: 0.10,
+        runningIndicator: .none,
+        hostsWidgetsInBar: true,
+        windowClusterTrailsWidgets: true,
+        launcher: .launchpick,
+        appsMenuSource: .allApps,
     )
 }
 
@@ -252,6 +358,7 @@ extension TaskbarMode {
         case .mac: return .mac
         case .classic: return .classic
         case .eskele: return .eskele
+        case .hybrid: return .hybrid
         }
     }
 }

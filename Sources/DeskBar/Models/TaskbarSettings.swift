@@ -7,6 +7,7 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
     case mac
     case classic
     case eskele
+    case hybrid
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
         case .mac: return "Mac"
         case .classic: return "Classic"
         case .eskele: return "Eskele"
+        case .hybrid: return "Hybrid"
         }
     }
 
@@ -26,7 +28,8 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
         case .windows: return "A Windows-style taskbar with Start button."
         case .mac: return "A macOS-style floating dock."
         case .classic: return "The original bar: solid edge to edge, one button per window."
-        case .eskele: return "A fit-to-icons pill, mirroring eskele's bar."
+        case .eskele: return "A vertical strip on the left edge, rebuilt from eskele's bar and launcher."
+        case .hybrid: return "DockBar's solid bar with eskele's launcher and apps menu."
         }
     }
 
@@ -38,6 +41,7 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
         case .mac: return "dock.rectangle"
         case .classic: return "rectangle.grid.1x2"
         case .eskele: return "capsule"
+        case .hybrid: return "square.grid.2x2"
         }
     }
 
