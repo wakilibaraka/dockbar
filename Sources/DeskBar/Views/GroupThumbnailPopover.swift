@@ -169,7 +169,7 @@ private final class ClickableThumbnailView: NSView {
         imageView.imageAlignment = .alignCenter
         imageView.image = item.thumbnail
 
-        let resolvedSize = item.thumbnail.map { resolvedSize(for: $0, boundingSize: size) } ?? NSSize.zero
+        let thumbnailSize = item.thumbnail.map { self.resolvedSize(for: $0, boundingSize: size) } ?? NSSize.zero
         
         actionBar.translatesAutoresizingMaskIntoConstraints = false
         actionBar.wantsLayer = true
@@ -218,7 +218,7 @@ private final class ClickableThumbnailView: NSView {
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-            widthAnchor.constraint(equalToConstant: max(resolvedSize.width + 8, 100)),
+            widthAnchor.constraint(equalToConstant: max(thumbnailSize.width + 8, 100)),
             
             actionStack.leadingAnchor.constraint(equalTo: actionBar.leadingAnchor),
             actionStack.topAnchor.constraint(equalTo: actionBar.topAnchor),
@@ -234,8 +234,8 @@ private final class ClickableThumbnailView: NSView {
                 imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
                 imageView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
                 imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
-                imageView.widthAnchor.constraint(equalToConstant: resolvedSize.width),
-                imageView.heightAnchor.constraint(equalToConstant: resolvedSize.height)
+                imageView.widthAnchor.constraint(equalToConstant: thumbnailSize.width),
+                imageView.heightAnchor.constraint(equalToConstant: thumbnailSize.height)
             ]
         } else {
             imageView.isHidden = true
