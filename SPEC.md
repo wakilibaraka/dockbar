@@ -11,7 +11,7 @@ Rather than work around a buggy third-party app with a suspicious bundle ID, we'
 - **Framework:** Swift / AppKit (pure native, no Electron)
 - **Build system:** Swift Package Manager (no Xcode required)
 - **Min deployment:** macOS 14.0
-- **Position:** Bottom edge of screen, full width by default, with optional compact centered layouts (see Dock Coexistence for interaction with the macOS Dock)
+- **Position:** Any screen edge, full width by default, with optional fit-to-contents layouts (see Dock Coexistence for interaction with the macOS Dock). A side bar's *width* is the bar height you set.
 - **Bundle ID:** `com.dockbar.app`
 
 ## Features
@@ -769,3 +769,32 @@ each replaced.
 ### Round 8 — final phase sync
 
 **Phase bullets stale after launcher exception.** Phase 3 and Phase 6 still described transitions without distinguishing launcher from non-launcher apps in the all-minimized case. **Fix:** Updated both phase bullets to specify the launcher-dot path alongside the non-launcher tray path.
+
+### Round 9 — v0.6 redesign
+
+**`DockPosition` could not describe a vertical bar.** It folded two unrelated ideas — which
+edge, and whether the bar spans it or hugs its contents — into six raw values that were
+really three, and none of them put a bar on the left or right. **Fix:** `BarEdge` and `BarSpan`
+model those separately; `TaskbarStyleSpec` carries an edge, a span, whether the bar floats
+clear of its edge, and whether its cells stack into rows. `DockPosition` remains for
+backwards compatibility and migrates through `init?(persistedRawValue:)`.
+
+**`TaskbarPanel` could only place a bottom bar.** Its frame came from the bar height and the
+visible frame's width, with no edge at all, so the new `edge` field was declarative only —
+Eskele could say "left" and still be drawn along the bottom. **Fix:** `BarPanelLayout` owns
+both the panel and chrome rects and is unit-tested for all three edges in both span modes.
+
+**Widget placement default flip would have moved everyone's widgets.** Changing the default
+to `.menuBar` applies to any install with no stored value, which on upgrade is everyone who
+had never touched that setting. **Fix:** `WidgetPlacement` resolves each widget's home once,
+pins it to disk, and applies the pre-v0.6 default only to installs that predate the change.
+The upgrade test keys off whether the domain holds a key DockBar itself owns
+(`SettingsCatalog`), *not* off whether the domain is non-empty: macOS seeds even a brand new
+domain with ~90 global keys such as `AppleLanguages`, so "non-empty" is true for fresh
+installs too.
+
+**A uniform width cap is wrong for a vertical bar.** `TaskbarWidthPlanner.uniformWidthCap`
+binary-searches one cap for every button, which is right for a horizontal row of labelled
+buttons and wrong for a vertical bar whose cells differ. **Fix:** `BarLengthSolver` (ported
+from eskele) shares the surplus in proportion to each cell's wanted growth; horizontal bars
+keep the uniform cap.

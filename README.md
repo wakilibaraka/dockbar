@@ -27,9 +27,11 @@ It sits at the bottom of your screen — like the Windows taskbar — and shows 
 
 ## What's New
 This fork tracks the `0.x` line — the current release is listed on [Releases](https://github.com/wakilibaraka/dockbar/releases), and every release is recorded in [CHANGELOG.md](CHANGELOG.md). Recent major additions include:
+- **Six bar styles, one definition each:** Custom, Windows, Mac, Classic, Eskele, and Hybrid are declared as data rather than six parallel implementations, with tests pinning each one's behaviour.
+- **The bar lives on any screen edge:** a vertical strip down the left or right, as well as the usual bottom bar. A side bar's *width* is the bar height you set, and its buttons can wrap onto several rows split into equal shares.
+- **Widgets start in the menu bar:** a fresh install opens with a clean split — the bar shows windows, the menu bar shows status. Existing installs keep the placement you already had.
 - **Searchable, self-documenting settings:** a search field that matches setting titles, help text, and keywords, and shows each setting's current value. Six sections, help text on every row, and a per-section revert.
 - **Live style preview:** every bar style is drawn as a miniature bar from the same spec the real bar lays out from, so what you pick is what you get.
-- **Five bar styles, one definition each:** Custom, Windows, Mac, Classic, and Eskele are declared as data rather than five parallel implementations, with tests pinning each one's behaviour.
 - **Check for Updates:** "Check for Updates..." in the taskbar context menu compares the installed build against the latest GitHub release. No third-party auto-updater.
 - **100% Native macOS Settings Window:** overhauled settings UI using six categorised native macOS preference sections.
 - **Start Menu Overhaul:** Spotlight integration for **Most Used Apps**, plus a robust drag-and-drop editor for pinned applications.

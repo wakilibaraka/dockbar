@@ -1,10 +1,44 @@
 # Changelog
 
 All notable changes to DockBar are recorded here. Versions follow this fork's 0.x line
-(`v0.1.0` … `v0.5.0`); `scripts/package.sh` stamps `CFBundleShortVersionString` from the tag,
+(`v0.1.0` … `v0.6.0`); `scripts/package.sh` stamps `CFBundleShortVersionString` from the tag,
 so the bundle version and the release tag always agree.
 
 ## [Unreleased]
+
+## [0.6.0] - 2026-10-04
+
+The bar is rebuilt around an *edge* rather than a position, two new styles appear, and a
+fresh install now starts with every widget in the menu bar.
+
+### Added
+
+- **Hybrid style.** DockBar's solid bar with eskele's Launchpick launcher and a full app
+  list instead of the pinned few. A pinned list inside a searchable panel would be
+  self-defeating, so both Launchpick styles list every app.
+- **Vertical bars.** `BarEdge` replaces the assumption that a bar runs along the bottom.
+  A bar's thickness is now its *width* on a side edge, so the height the user sets is what
+  makes it 48pt wide.
+- **Stacked rows.** A vertical bar may wrap its buttons onto more than one row, split into
+  equal shares rather than filled greedily — a two-row bar with thirty buttons shows fifteen
+  and fifteen, not ten comfortable ones and twenty crammed into what was left.
+
+### Changed
+
+- **Widgets start in the menu bar.** The calendar, quick settings, connectivity and weather
+  widgets used to land in the bar on first launch, crowding out the task buttons people
+  actually wanted. Existing installs keep the placement they had: `WidgetPlacement` resolves
+  each widget's home once, pins it to disk, and only applies the new default to installs
+  that predate it.
+- **Mixed-width bars size proportionally.** `BarLengthSolver` shares a bar's surplus out in
+  proportion to how much each cell wanted to grow, so buttons collapse to plain icons
+  together instead of the last few vanishing while the first stay full width. Horizontal
+  bars keep the existing uniform cap, which is the right answer for a row of labels.
+
+### Fixed
+
+- A floating bar on the right edge took its margin off the wrong side, growing the bar past
+  the panel holding it and toward the edge of the screen.
 
 ## [0.5.0] - 2026-10-04
 
