@@ -30,6 +30,9 @@ enum DesignSystem {
         /// Width of an icon-only task button.
         static let iconOnlyTaskWidth: CGFloat = 48
 
+        /// Padding added to the bar height for an icon-only button.
+        static let iconOnlyInset: CGFloat = 8
+
         /// Width of the gap between the window cluster and the widget cluster.
         static let widgetClusterSpacing: CGFloat = 12
 

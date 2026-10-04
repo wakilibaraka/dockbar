@@ -217,7 +217,7 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
         isAgentWindow: Bool
     ) -> CGFloat {
         guard showsTitles else {
-            return taskbarHeight + 8
+            return taskbarHeight + DesignSystem.Metrics.iconOnlyInset
         }
         let minimumWidth = showsPluginActionButton ? minimumPluginActionTaskWidth : minimumTaskWidth
 
@@ -234,14 +234,14 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private var usesIconOnlyLayout: Bool {
-        guard usesAdaptiveWidth, settings.showTitles else {
-            return false
-        }
-
-        let titleThreshold = showsPluginActionButton
-            ? Self.minimumPluginActionTaskWidth
-            : Self.minimumTaskWidth
-        return effectiveTaskWidth < titleThreshold
+        TaskButtonWidthPlanner.usesIconOnlyLayout(
+            effectiveWidth: effectiveTaskWidth,
+            usesAdaptiveWidth: usesAdaptiveWidth,
+            showsTitles: settings.showTitles,
+            showsPluginActionButton: showsPluginActionButton,
+            minimumTaskWidth: Self.minimumTaskWidth,
+            minimumPluginActionTaskWidth: Self.minimumPluginActionTaskWidth
+        )
     }
 
     private var showsPluginActionButton: Bool {
@@ -249,7 +249,11 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private var showsInlinePluginActionButton: Bool {
-        showsPluginActionButton && effectiveTaskWidth >= Self.minimumInlinePluginActionTaskWidth
+        TaskButtonWidthPlanner.showsInlinePluginActionButton(
+            effectiveWidth: effectiveTaskWidth,
+            showsPluginActionButton: showsPluginActionButton,
+            minimumInlinePluginActionTaskWidth: Self.minimumInlinePluginActionTaskWidth
+        )
     }
 
     private var hasPluginMenu: Bool {
@@ -1171,15 +1175,16 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     }
 
     private func minimumTaskWidth(usesAdaptiveWidth: Bool) -> CGFloat {
-        if !settings.showTitles {
-            return settings.taskbarHeight + 8
-        }
-        
-        if usesAdaptiveWidth {
-            return showsPluginActionButton ? Self.minimumAdaptivePluginActionTaskWidth : Self.minimumAdaptiveTaskWidth
-        }
-
-        return showsPluginActionButton ? Self.minimumPluginActionTaskWidth : Self.minimumTaskWidth
+        TaskButtonWidthPlanner.minimumWidth(
+            showsTitles: settings.showTitles,
+            usesAdaptiveWidth: usesAdaptiveWidth,
+            showsPluginActionButton: showsPluginActionButton,
+            taskbarHeight: settings.taskbarHeight,
+            minimumTaskWidth: Self.minimumTaskWidth,
+            minimumPluginActionTaskWidth: Self.minimumPluginActionTaskWidth,
+            minimumAdaptiveTaskWidth: Self.minimumAdaptiveTaskWidth,
+            minimumAdaptivePluginActionTaskWidth: Self.minimumAdaptivePluginActionTaskWidth
+        )
     }
 
     @objc
