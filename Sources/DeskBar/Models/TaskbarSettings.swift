@@ -5,6 +5,8 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
     case custom
     case windows
     case mac
+    case deskBar
+    case eskele
     
     var id: String { rawValue }
     
@@ -13,6 +15,8 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
         case .custom: return "Custom"
         case .windows: return "Windows"
         case .mac: return "Mac"
+        case .deskBar: return "DeskBar"
+        case .eskele: return "Eskele"
         }
     }
     
@@ -21,6 +25,69 @@ enum TaskbarMode: String, CaseIterable, Identifiable {
         case .custom: return "The classic DeskBar experience."
         case .windows: return "A Windows-style taskbar with Start button."
         case .mac: return "A macOS-style floating dock."
+        case .deskBar: return "The original bar: solid edge to edge, one button per window."
+        case .eskele: return "A fit-to-icons pill, mirroring eskele's bar."
+        }
+    }
+    
+    /// SF Symbol shown on the onboarding mode cards.
+    var symbolName: String {
+        switch self {
+        case .custom: return "macwindow"
+        case .windows: return "window.cascading"
+        case .mac: return "dock.rectangle"
+        case .deskBar: return "rectangle.grid.1x2"
+        case .eskele: return "capsule"
+        }
+    }
+}
+
+/// Which displays get a taskbar. This is eskele's screen model, plus the old
+/// "follow the focused display" behaviour kept as a named mode so upgrading installs
+/// do not silently move their bar.
+enum TaskbarScreenMode: String, CaseIterable, Identifiable {
+    case allScreens
+    case perDisplay
+    case menuBarScreen
+    case focusedScreen
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .allScreens: return "All displays"
+        case .perDisplay: return "Per display"
+        case .menuBarScreen: return "Menu bar display"
+        case .focusedScreen: return "Focused display"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .allScreens: return "The same bar on every display."
+        case .perDisplay: return "A bar on every display, each showing that display's windows."
+        case .menuBarScreen: return "Only on the display that owns the menu bar."
+        case .focusedScreen: return "Follows whichever display has focus (the previous behaviour)."
+        }
+    }
+    
+    /// Whether every connected display gets its own bar.
+    var showsBarOnEveryDisplay: Bool {
+        self == .allScreens || self == .perDisplay
+    }
+    
+    /// Pure display selection, so the rule is unit-testable without NSScreen.
+    /// `focusedIndex` is the index of the focused display within the connected list.
+    func displayIndexes(displayCount: Int, focusedIndex: Int = 0) -> [Int] {
+        guard displayCount > 0 else { return [] }
+        switch self {
+        case .allScreens, .perDisplay:
+            return Array(0..<displayCount)
+        case .menuBarScreen:
+            // NSScreen.screens lists the menu-bar (primary) display first.
+            return [0]
+        case .focusedScreen:
+            return [min(max(focusedIndex, 0), displayCount - 1)]
         }
     }
 }
@@ -370,8 +437,8 @@ class TaskbarSettings: ObservableObject {
         didSet { defaults.set(startAtLogin, forKey: "startAtLogin") }
     }
 
-    @Published var showOnAllMonitors: Bool {
-        didSet { defaults.set(showOnAllMonitors, forKey: "showOnAllMonitors") }
+    @Published var screenMode: TaskbarScreenMode {
+        didSet { defaults.set(screenMode.rawValue, forKey: "screenMode") }
     }
 
     @Published var layoutMode: DeskBarLayoutMode {
@@ -576,7 +643,16 @@ class TaskbarSettings: ObservableObject {
             systemResourceWidgetPinnedDisplayID = nil
         }
         startAtLogin = defaults.object(forKey: "startAtLogin") as? Bool ?? false
-        showOnAllMonitors = defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true
+        if let rawMode = defaults.string(forKey: "screenMode"),
+           let mode = TaskbarScreenMode(rawValue: rawMode) {
+            screenMode = mode
+        } else {
+            // Legacy installs stored a boolean: true meant "every display", false followed
+            // the focused one. Both map onto a named mode so nothing moves on upgrade.
+            screenMode = (defaults.object(forKey: "showOnAllMonitors") as? Bool ?? true)
+                ? .allScreens
+                : .focusedScreen
+        }
         layoutMode = DeskBarLayoutMode(rawValue: defaults.string(forKey: "layoutMode") ?? "") ?? .compactGlass
         enableWindowSwitcher = defaults.object(forKey: "enableWindowSwitcher") as? Bool ?? true
         enableBareCommandLauncher = defaults.object(forKey: "enableBareCommandLauncher") as? Bool ?? true

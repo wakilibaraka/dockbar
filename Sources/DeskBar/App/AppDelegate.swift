@@ -545,7 +545,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        settings.$showOnAllMonitors
+        settings.$screenMode
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.refreshPanelsForCurrentConfiguration()
@@ -621,7 +621,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let targetScreens = screensToShow(showOnAllMonitors: settings.showOnAllMonitors)
+        let targetScreens = screensToShow(screenMode: settings.screenMode)
         let targetIDs = Set(targetScreens.compactMap(ScreenGeometry.displayID(for:)))
 
         for screen in targetScreens {
@@ -721,16 +721,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (permissionsManager?.isAccessibilityGranted ?? false)
     }
 
-    private func screensToShow(showOnAllMonitors: Bool) -> [NSScreen] {
-        if showOnAllMonitors {
-            return NSScreen.screens
-        }
-
-        if let mainScreen = NSScreen.main {
-            return [mainScreen]
-        }
-
-        return NSScreen.screens.prefix(1).map { $0 }
+    /// Which displays get a bar. The rule itself lives in TaskbarScreenMode so it is
+    /// unit-testable; this only maps the chosen indexes onto the connected displays.
+    private func screensToShow(screenMode: TaskbarScreenMode) -> [NSScreen] {
+        let screens = NSScreen.screens
+        let focusedIndex = NSScreen.main.flatMap { main in screens.firstIndex(of: main) } ?? 0
+        return screenMode
+            .displayIndexes(displayCount: screens.count, focusedIndex: focusedIndex)
+            .map { screens[$0] }
     }
 
     private static func taskbarReservationHeight(for height: CGFloat) -> CGFloat {

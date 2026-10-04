@@ -17,7 +17,7 @@ struct TaskbarSettingsTests {
 
         // These mirror the fallbacks in TaskbarSettings.init: a fresh install gets the
         // compact glass bar, window grouping, and the right-Command double-tap launcher.
-        #expect(settings.showOnAllMonitors)
+        #expect(settings.screenMode == .allScreens)
         #expect(settings.groupingMode == .always)
         #expect(settings.flashAttentionIndicators)
         #expect(settings.showProgressIndicators)
