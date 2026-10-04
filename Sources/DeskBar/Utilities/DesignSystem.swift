@@ -35,6 +35,9 @@ enum DesignSystem {
 
         /// Inner padding of a flyout.
         static let flyoutPadding: CGFloat = 12
+
+        /// Height of a widget view hosted in a menu bar status item.
+        static let menuBarItemHeight: CGFloat = 22
     }
 
     // MARK: Shape

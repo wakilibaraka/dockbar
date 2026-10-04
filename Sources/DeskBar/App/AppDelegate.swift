@@ -24,11 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowSwitcherService: WindowSwitcherService?
     private var settingsWindowController: SettingsWindowController?
     private var onboardingWindowController: OnboardingWindowController?
-    private var connectivityStatusItem: NSStatusItem?
-    private var calendarStatusItem: NSStatusItem?
-    private var quickSettingsStatusItem: NSStatusItem?
-    private var systemResourceStatusItem: NSStatusItem?
-    private var weatherStatusItem: NSStatusItem?
+    /// Owns every menu bar status item and the rules for which are visible.
+    private let menuBar = MenuBarController()
     private var weatherService: WeatherService?
     private var weatherMenuBarView: WeatherWidgetView?  // created once; never recreated on location/enabled changes
     private var calendarMenuBarView: CalendarWidgetView?
@@ -133,6 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @MainActor
     private func completeLaunch(
         wm: WindowManager,
         permissions: PermissionsManager,
@@ -252,125 +250,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Creates the menu bar items and attaches the widget views.
+    ///
+    /// The items are created once and never rebuilt; `MenuBarController` owns them and
+    /// decides which are visible. Widgets are created once too, because the weather and
+    /// system-resource views subscribe to their own services and would otherwise be torn
+    /// down and rebuilt every time the user moved one between the bar and the menu bar.
+    @MainActor
     private func configureStatusItem() {
-        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let connectivityStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let calendarStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let quickSettingsStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let systemResourceStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let weatherStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        menuBar.installItems()
+        menuBar.bind(to: settings!)
 
-        self.statusItem = statusItem
-        self.connectivityStatusItem = connectivityStatusItem
-        self.calendarStatusItem = calendarStatusItem
-        self.quickSettingsStatusItem = quickSettingsStatusItem
-        self.systemResourceStatusItem = systemResourceStatusItem
-        self.weatherStatusItem = weatherStatusItem
+        let settings = self.settings!
 
-        if let settings = self.settings {
-            let calendarView = CalendarWidgetView()
-            calendarView.frame = NSRect(x: 0, y: 0, width: calendarView.preferredContentWidth(), height: 22)
-            calendarStatusItem.button?.addSubview(calendarView)
-            calendarStatusItem.length = calendarView.preferredContentWidth()
-            calendarMenuBarView = calendarView
+        let calendarView = CalendarWidgetView()
+        menuBar.attach(calendarView, to: .calendar, preferredWidth: calendarView.preferredContentWidth())
+        calendarMenuBarView = calendarView
 
-            let quickSettingsView = QuickSettingsWidgetView(settings: settings)
-            quickSettingsView.frame = NSRect(x: 0, y: 0, width: quickSettingsView.preferredContentWidth(), height: 22)
-            quickSettingsStatusItem.button?.addSubview(quickSettingsView)
-            quickSettingsStatusItem.length = quickSettingsView.preferredContentWidth()
-            quickSettingsMenuBarView = quickSettingsView
+        let quickSettingsView = QuickSettingsWidgetView(settings: settings)
+        menuBar.attach(quickSettingsView, to: .quickSettings, preferredWidth: quickSettingsView.preferredContentWidth())
+        quickSettingsMenuBarView = quickSettingsView
 
-            let connectivityView = ConnectivityTrayView(settings: settings)
-            connectivityView.frame = NSRect(x: 0, y: 0, width: connectivityView.preferredContentWidth(), height: 22)
-            connectivityStatusItem.button?.addSubview(connectivityView)
-            connectivityStatusItem.length = connectivityView.preferredContentWidth()
-            connectivityMenuBarView = connectivityView
+        let connectivityView = ConnectivityTrayView(settings: settings)
+        menuBar.attach(connectivityView, to: .connectivity, preferredWidth: connectivityView.preferredContentWidth())
+        connectivityMenuBarView = connectivityView
 
-            if let monitor = self.systemResourceMonitor,
-               let plugin = self.smPluginService {
-                let view = SystemResourceWidgetView(
-                    settings: settings,
-                    monitor: monitor,
-                    smPluginService: plugin,
-                    displayID: CGMainDisplayID()
-                )
-                view.frame = NSRect(x: 0, y: 0, width: view.preferredContentWidth(), height: 22)
-                systemResourceStatusItem.button?.addSubview(view)
-                systemResourceStatusItem.length = view.preferredContentWidth()
-                systemResourceMenuBarView = view
-            }
-
-            settings.$batteryWidgetLocation
-                .receive(on: DispatchQueue.main)
-                .sink { [weak statusItem] location in
-                    statusItem?.isVisible = location == .menuBar
-                }
-                .store(in: &cancellables)
-
-            settings.$splitCalendarAndQuickSettings
-                .combineLatest(settings.$connectivityTrayLocation, settings.$calendarLocation, settings.$quickSettingsLocation)
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self, weak connectivityStatusItem, weak calendarStatusItem, weak quickSettingsStatusItem] split, trayLocation, calendarLocation, quickSettingsLocation in
-                    MainActor.assumeIsolated {
-                        guard let self else { return }
-                        connectivityStatusItem?.isVisible = false
-                        calendarStatusItem?.isVisible = false
-                        quickSettingsStatusItem?.isVisible = false
-
-                        if split {
-                            if let item = calendarStatusItem {
-                                item.isVisible = calendarLocation == .menuBar
-                                item.length = self.calendarMenuBarView?.preferredContentWidth() ?? item.length
-                            }
-                            if let item = quickSettingsStatusItem {
-                                item.isVisible = quickSettingsLocation == .menuBar
-                                item.length = self.quickSettingsMenuBarView?.preferredContentWidth() ?? item.length
-                            }
-                        } else if let item = connectivityStatusItem {
-                            item.isVisible = trayLocation == .menuBar
-                            item.length = self.connectivityMenuBarView?.preferredContentWidth() ?? item.length
-                        }
-                    }
-                }
-                .store(in: &cancellables)
-
-            settings.$systemResourceWidgetLocation
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self, weak systemResourceStatusItem] location in
-                    guard let self = self, let item = systemResourceStatusItem else { return }
-                    item.isVisible = location == .menuBar
-                    if let view = self.systemResourceMenuBarView {
-                        item.length = view.preferredContentWidth()
-                    }
-                }
-                .store(in: &cancellables)
-
-            // Create the weather view once at startup — it self-updates via its own
-            // WeatherService.$conditions subscription.  The sink here only controls
-            // visibility and item length; never removes/recreates the view.
-            if let service = self.weatherService {
-                MainActor.assumeIsolated {
-                let weatherView = WeatherWidgetView(service: service, settings: settings)
-                weatherView.frame = NSRect(x: 0, y: 0, width: weatherView.preferredContentWidth(), height: 22)
-                weatherStatusItem.button?.addSubview(weatherView)
-                weatherStatusItem.length = weatherView.preferredContentWidth()
-                self.weatherMenuBarView = weatherView
-                }
-            }
-
-            settings.$weatherEnabled
-                .combineLatest(settings.$weatherWidgetLocation)
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self, weak weatherStatusItem] enabled, location in
-                    MainActor.assumeIsolated {
-                        guard let item = weatherStatusItem else { return }
-                        item.isVisible = enabled && location == .menuBar
-                    }
-                }
-                .store(in: &cancellables)
+        if let monitor = systemResourceMonitor, let plugin = smPluginService {
+            let view = SystemResourceWidgetView(
+                settings: settings,
+                monitor: monitor,
+                smPluginService: plugin,
+                displayID: CGMainDisplayID()
+            )
+            menuBar.attach(view, to: .systemResources, preferredWidth: view.preferredContentWidth())
+            systemResourceMenuBarView = view
         }
-        
-        if let button = statusItem.button {
+
+        if let service = weatherService {
+            let weatherView = WeatherWidgetView(service: service, settings: settings)
+            menuBar.attach(weatherView, to: .weather, preferredWidth: weatherView.preferredContentWidth())
+            weatherMenuBarView = weatherView
+        }
+
+        let primaryItem = menuBar.item(for: .primary)
+        statusItem = primaryItem
+
+        if let button = primaryItem?.button {
             // Synchronously ensure non-zero width so macOS notch collapsing doesn't hide it
             button.image = BatteryStatusRenderer.renderImage(for: BatteryState(percentage: 100, isCharging: false, isACPowered: false))
             button.title = " 100%"
@@ -471,16 +396,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(quitItem)
 
         self.statusMenu = menu
-        self.statusItem = statusItem
         updateRestoreWindowsMenuItem()
-        
+
         // Setup popover for both left and right clicks
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(rootView: BatteryFlyoutView().environmentObject(self.settings!))
         self.batteryPopover = popover
-        
-        if let button = statusItem.button {
+
+        if let button = statusItem?.button {
             button.action = #selector(handleStatusItemClick(_:))
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
