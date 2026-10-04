@@ -3,6 +3,20 @@
 *.xcodeproj/
 .swiftpm/
 .claude/workspace.lock
+.freebuff/
+
+# Build scratch
+*.log
+build_*.txt
+
+# One-off scratch scripts at repo root
+/step*_patch.py
+/remove_*.py
+/test_*.py
+/finish_*.sh
+/release_*.sh
+/wait_and_install.sh
+DockBar*.zip
 
 # Agent scratch files
 .build/
