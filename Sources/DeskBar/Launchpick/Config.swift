@@ -33,7 +33,7 @@ struct LaunchpickConfig: Codable {
             let data = try Data(contentsOf: URL(fileURLWithPath: path))
             return try JSONDecoder().decode(LaunchpickConfig.self, from: data)
         } catch {
-            NSLog("Launchpick: Failed to load config: \(error)")
+            Log.launcher.error("Launchpick: Failed to load config: \(String(describing: error), privacy: .public)")
             return createDefault()
         }
     }

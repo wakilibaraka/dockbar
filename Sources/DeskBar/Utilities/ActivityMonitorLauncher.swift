@@ -20,7 +20,7 @@ enum ActivityMonitorLauncher {
 
         NSWorkspace.shared.openApplication(at: applicationURL, configuration: configuration) { _, error in
             if let error {
-                print("DeskBar: failed to open Activity Monitor: \(error.localizedDescription)")
+                Log.general.error("DeskBar: failed to open Activity Monitor: \(error.localizedDescription, privacy: .public)")
                 return
             }
 
@@ -92,7 +92,7 @@ enum ActivityMonitorLauncher {
         var errorInfo: NSDictionary?
         NSAppleScript(source: navigationScript(for: pane))?.executeAndReturnError(&errorInfo)
         if let errorInfo {
-            print("DeskBar: failed to select Activity Monitor pane: \(errorInfo)")
+            Log.general.error("DeskBar: failed to select Activity Monitor pane: \(String(describing: errorInfo), privacy: .public)")
         }
     }
 

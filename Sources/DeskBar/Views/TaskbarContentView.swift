@@ -283,7 +283,64 @@ final class TaskbarContentView: NSView {
         )
         settingsItem.target = self
         menu.addItem(settingsItem)
+        menu.addItem(.separator())
+        let updateItem = NSMenuItem(
+            title: "Check for Updates...",
+            action: #selector(checkForUpdatesFromContextMenu(_:)),
+            keyEquivalent: ""
+        )
+        updateItem.target = self
+        menu.addItem(updateItem)
         NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+
+    @objc private func checkForUpdatesFromContextMenu(_ sender: Any?) {
+        Task { @MainActor in
+            presentUpdateResult(await UpdateService().check())
+        }
+    }
+
+    @MainActor
+    private func presentUpdateResult(_ result: UpdateCheckResult) {
+        switch result {
+        case let .upToDate(_, latest):
+            presentUpdateAlert(
+                title: "DockBar is up to date",
+                message: "You are running the latest version (\(latest)).",
+                releaseURL: nil
+            )
+        case let .updateAvailable(current, latest, releaseURL):
+            presentUpdateAlert(
+                title: "DockBar \(latest) is available",
+                message: "You are running \(current). Open the release page to download it?",
+                releaseURL: releaseURL
+            )
+        case let .failed(message):
+            presentUpdateAlert(
+                title: "Could not check for updates",
+                message: message,
+                releaseURL: nil
+            )
+        }
+    }
+
+    @MainActor
+    private func presentUpdateAlert(title: String, message: String, releaseURL: URL?) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+
+        guard let releaseURL else {
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+
+        alert.addButton(withTitle: "Open Release Page")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSWorkspace.shared.open(releaseURL)
+        }
     }
 
     private func shouldOpenSettingsMenu(for event: NSEvent) -> Bool {

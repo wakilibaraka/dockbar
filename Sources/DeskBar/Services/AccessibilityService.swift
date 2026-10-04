@@ -24,7 +24,7 @@ final class AccessibilityService {
         if let sym = dlsym(symbolHandle, "_AXUIElementGetWindow") {
             _axGetWindow = unsafeBitCast(sym, to: AXUIElementGetWindowFunc.self)
         } else {
-            print("DeskBar: _AXUIElementGetWindow unavailable, using frame-matching fallback. Thumbnail accuracy may be reduced.")
+            Log.windows.notice("DeskBar: _AXUIElementGetWindow unavailable, using frame-matching fallback. Thumbnail accuracy may be reduced.")
         }
 
         if let sym = dlsym(symbolHandle, "GetProcessForPID") {

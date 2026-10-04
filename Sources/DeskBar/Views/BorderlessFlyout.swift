@@ -97,7 +97,7 @@ open class BorderlessFlyout: NSPanel {
         }
         
         self.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
     }
     
     private func setupRoundedCorners(for view: NSVisualEffectView) {

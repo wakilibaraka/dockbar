@@ -966,7 +966,7 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
                         var focusedWindow: CFTypeRef?
                         let appElement = AXUIElementCreateApplication(app.processIdentifier)
                         if AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &focusedWindow) == .success {
-                            isFocused = (axWindow == (focusedWindow as! AXUIElement))
+                            isFocused = (axWindow == focusedWindow.flatMap { AXCast.element($0) })
                         }
                         item.state = isFocused ? .on : .off
                     }
@@ -1273,7 +1273,7 @@ final class TaskButtonView: NSView, TaskbarWidthParticipant,  NSDraggingSource {
     private func activateSpecificWindow(_ sender: Any?) {
         guard let menuItem = sender as? NSMenuItem,
               let obj = menuItem.representedObject else { return }
-        let axWindow = obj as! AXUIElement
+        guard let axWindow = AXCast.element(obj) else { return }
         if let owningApplication {
             accessibilityService.raiseAndActivate(element: axWindow, app: owningApplication)
         }

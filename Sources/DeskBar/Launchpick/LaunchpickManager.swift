@@ -135,7 +135,7 @@ final class LaunchpickManager {
                 }
             }
         }
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
     }
     
     func hide() {
@@ -168,7 +168,7 @@ final class LaunchpickManager {
         if let bundleIdentifier = item.bundleIdentifier,
            let applicationURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             if !NSWorkspace.shared.open(applicationURL) {
-                NSLog("Launchpick: failed to open application with bundle identifier %@", bundleIdentifier)
+                Log.launcher.error("Launchpick: failed to open application with bundle identifier \(bundleIdentifier, privacy: .public)")
             }
             return
         }
@@ -176,7 +176,7 @@ final class LaunchpickManager {
         if let applicationPath = item.applicationPath,
            applicationPath.hasSuffix(".app") {
             if !NSWorkspace.shared.open(URL(fileURLWithPath: applicationPath)) {
-                NSLog("Launchpick: failed to open application at %@", applicationPath)
+                Log.launcher.error("Launchpick: failed to open application at \(String(describing: applicationPath), privacy: .public)")
             }
             return
         }
@@ -184,19 +184,19 @@ final class LaunchpickManager {
         guard let arguments = splitCommandLine(item.exec),
               let executable = arguments.first
         else {
-            NSLog("Launchpick: could not parse launcher command for %@", item.name)
+            Log.launcher.error("Launchpick: could not parse launcher command for \(item.name, privacy: .public)")
             return
         }
 
         if executable.hasSuffix(".app") {
             if !NSWorkspace.shared.open(URL(fileURLWithPath: executable)) {
-                NSLog("Launchpick: failed to open application at %@", executable)
+                Log.launcher.error("Launchpick: failed to open application at \(String(describing: executable), privacy: .public)")
             }
             return
         }
 
         guard let executableURL = resolveExecutable(named: executable) else {
-            NSLog("Launchpick: executable not found for %@", item.name)
+            Log.launcher.error("Launchpick: executable not found for \(item.name, privacy: .public)")
             return
         }
 
@@ -207,7 +207,7 @@ final class LaunchpickManager {
         do {
             try task.run()
         } catch {
-            NSLog("Launchpick: failed to launch %@: %@", executableURL.path, error.localizedDescription)
+            Log.launcher.error("Launchpick: failed to launch \(executableURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 

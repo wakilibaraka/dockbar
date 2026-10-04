@@ -196,7 +196,7 @@ struct LauncherOptionsTab: View {
                     }
                 }
             case .failure(let error):
-                print("Failed to select app: \(error.localizedDescription)")
+                Log.launcher.error("Failed to select app: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

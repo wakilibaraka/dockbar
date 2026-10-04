@@ -60,7 +60,7 @@ final class HoldToQuitService: ObservableObject {
         )
         
         guard let tap = eventTap else {
-            print("HoldToQuitService: Failed to create event tap. Make sure accessibility permissions are granted.")
+            Log.general.error("HoldToQuitService: Failed to create event tap. Make sure accessibility permissions are granted.")
             return
         }
         

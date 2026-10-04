@@ -7,7 +7,7 @@ enum LauncherApplicationActivator {
             return
         }
 
-        print("DeskBar: unable to resolve launcher application for bundle identifier \(bundleIdentifier)")
+        Log.launcher.error("DeskBar: unable to resolve launcher application for bundle identifier \(bundleIdentifier, privacy: .public)")
     }
 
     static func activate(
@@ -57,7 +57,7 @@ enum LauncherApplicationActivator {
         NSWorkspace.shared.openApplication(at: applicationURL, configuration: configuration) { application, error in
             guard error == nil, let application else {
                 if let error {
-                    print("DeskBar: failed to open launcher application at \(applicationURL.path): \(error)")
+                    Log.launcher.error("DeskBar: failed to open launcher application at \(applicationURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
                 }
                 return
             }
@@ -111,7 +111,7 @@ enum LauncherApplicationActivator {
         configuration.activates = true
         NSWorkspace.shared.openApplication(at: applicationURL, configuration: configuration) { _, error in
             if let error {
-                print("DeskBar: failed to open launcher application at \(applicationURL.path): \(error)")
+                Log.launcher.error("DeskBar: failed to open launcher application at \(applicationURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
             }
         }
     }
@@ -130,7 +130,7 @@ enum LauncherApplicationActivator {
             _ = try event.sendEvent(options: [.noReply, .canInteract], timeout: 1)
             return true
         } catch {
-            print("DeskBar: failed to send reopen event to \(bundleIdentifier): \(error)")
+            Log.launcher.error("DeskBar: failed to send reopen event to \(bundleIdentifier, privacy: .public): \(String(describing: error), privacy: .public)")
             return false
         }
     }

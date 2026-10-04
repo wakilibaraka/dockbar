@@ -123,7 +123,7 @@ struct LauncherFooterView: View {
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&error)
                 if let err = error {
-                    print("AppleScript error: \\(err)")
+                    Log.launcher.error("AppleScript error: \\(String(describing: err), privacy: .public)")
                 }
             }
         }

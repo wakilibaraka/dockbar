@@ -79,7 +79,7 @@ final class SingleInstanceLock {
 
         let descriptor = open(url.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, S_IRUSR | S_IWUSR)
         guard descriptor >= 0 else {
-            print("DeskBar: failed to open instance lock at \(url.path)")
+            Log.app.error("DeskBar: failed to open instance lock at \(url.path, privacy: .public)")
             return .setupFailed
         }
 
@@ -105,7 +105,7 @@ final class SingleInstanceLock {
                 withIntermediateDirectories: true
             )
         } catch {
-            print("DeskBar: failed to create lock parent directory at \(url.deletingLastPathComponent().path): \(error)")
+            Log.app.error("DeskBar: failed to create lock parent directory at \(url.deletingLastPathComponent().path, privacy: .public): \(String(describing: error), privacy: .public)")
             return false
         }
 
@@ -114,29 +114,29 @@ final class SingleInstanceLock {
         }
 
         guard errno == EEXIST else {
-            print("DeskBar: failed to create lock directory at \(url.path)")
+            Log.app.error("DeskBar: failed to create lock directory at \(url.path, privacy: .public)")
             return false
         }
 
         var directoryInfo = stat()
         guard lstat(url.path, &directoryInfo) == 0 else {
-            print("DeskBar: failed to inspect lock directory at \(url.path)")
+            Log.app.error("DeskBar: failed to inspect lock directory at \(url.path, privacy: .public)")
             return false
         }
 
         guard directoryInfo.st_mode & S_IFMT == S_IFDIR else {
-            print("DeskBar: lock directory path is not a directory: \(url.path)")
+            Log.app.error("DeskBar: lock directory path is not a directory: \(url.path, privacy: .public)")
             return false
         }
 
         guard directoryInfo.st_uid == getuid() else {
-            print("DeskBar: lock directory is not owned by the current user: \(url.path)")
+            Log.app.error("DeskBar: lock directory is not owned by the current user: \(url.path, privacy: .public)")
             return false
         }
 
         if directoryInfo.st_mode & (S_IWGRP | S_IWOTH) != 0,
            chmod(url.path, S_IRWXU) != 0 {
-            print("DeskBar: failed to restrict lock directory permissions at \(url.path)")
+            Log.app.error("DeskBar: failed to restrict lock directory permissions at \(url.path, privacy: .public)")
             return false
         }
 
@@ -146,17 +146,17 @@ final class SingleInstanceLock {
     private func validateLockFile(descriptor: Int32, url: URL) -> Bool {
         var fileInfo = stat()
         guard fstat(descriptor, &fileInfo) == 0 else {
-            print("DeskBar: failed to inspect instance lock at \(url.path)")
+            Log.app.error("DeskBar: failed to inspect instance lock at \(url.path, privacy: .public)")
             return false
         }
 
         guard fileInfo.st_mode & S_IFMT == S_IFREG else {
-            print("DeskBar: instance lock is not a regular file at \(url.path)")
+            Log.app.error("DeskBar: instance lock is not a regular file at \(url.path, privacy: .public)")
             return false
         }
 
         guard fileInfo.st_uid == getuid() else {
-            print("DeskBar: instance lock is not owned by the current user: \(url.path)")
+            Log.app.error("DeskBar: instance lock is not owned by the current user: \(url.path, privacy: .public)")
             return false
         }
 

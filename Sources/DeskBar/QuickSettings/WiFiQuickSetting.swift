@@ -22,7 +22,7 @@ final class WiFiQuickSetting: QuickSetting {
                 self?.refreshState()
             }
         } catch {
-            print("Wi-Fi toggle failed: \(error)")
+            Log.quickSettings.error("Wi-Fi toggle failed: \(String(describing: error), privacy: .public)")
         }
     }
 }

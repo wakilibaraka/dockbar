@@ -93,7 +93,7 @@ final class LoginItemManager {
             }
         } catch {
             let action = isEnabled ? "enable" : "disable"
-            print("DeskBar: Failed to \(action) start at login: \(error)")
+            Log.app.error("DeskBar: Failed to \(String(describing: action), privacy: .public) start at login: \(String(describing: error), privacy: .public)")
         }
     }
 

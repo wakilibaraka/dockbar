@@ -205,7 +205,7 @@ final class WindowSwitcherService {
             callback: Self.eventTapCallback,
             userInfo: context
         ) else {
-            print("DeskBar: unable to install Option-Tab window switcher event tap.")
+            Log.windows.error("DeskBar: unable to install Option-Tab window switcher event tap.")
             return
         }
 

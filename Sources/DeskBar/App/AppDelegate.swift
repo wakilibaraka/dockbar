@@ -52,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MigrationManager.runMigrations()
         
         guard singleInstanceLock.acquire() else {
-            print("DeskBar: another instance is already running; exiting duplicate.")
+            Log.app.notice("DeskBar: another instance is already running; exiting duplicate.")
             NSApp.terminate(nil)
             return
         }
@@ -129,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             onboardingWindowController?.showWindow(nil)
             onboardingWindowController?.window?.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activateCompat()
         }
     }
 
@@ -181,7 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func openSettings(_ sender: Any?) {
         settingsWindowController?.showWindow(sender)
         settingsWindowController?.window?.makeKeyAndOrderFront(sender)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
     }
 
     @objc
@@ -497,7 +497,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 closePopover(nil)
             } else {
                 popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                NSApp.activate(ignoringOtherApps: true)
+                NSApp.activateCompat()
                 
                 self.popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
                     self?.closePopover(nil)

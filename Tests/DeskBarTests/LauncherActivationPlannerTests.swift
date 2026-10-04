@@ -5,6 +5,8 @@ import Testing
 func launcherActivationPlannerLaunchesNonRunningApps() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: "com.example.alpha",
             isRunning: false,
             hasVisibleLocalWindows: false,
@@ -17,6 +19,8 @@ func launcherActivationPlannerLaunchesNonRunningApps() {
 func launcherActivationPlannerActivatesVisibleWindows() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: "com.example.alpha",
             isRunning: true,
             hasVisibleLocalWindows: true,
@@ -29,6 +33,8 @@ func launcherActivationPlannerActivatesVisibleWindows() {
 func launcherActivationPlannerActivatesRunningAppsWithoutLocalWindows() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: "com.example.alpha",
             isRunning: true,
             hasVisibleLocalWindows: false,
@@ -41,6 +47,8 @@ func launcherActivationPlannerActivatesRunningAppsWithoutLocalWindows() {
 func launcherActivationPlannerOpensFinderWindowWhenFinderHasNoWindows() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: LauncherActivationPlanner.finderBundleIdentifier,
             isRunning: true,
             hasVisibleLocalWindows: false,
@@ -53,6 +61,8 @@ func launcherActivationPlannerOpensFinderWindowWhenFinderHasNoWindows() {
 func launcherActivationPlannerOpensFinderWindowWhenNoLocalFinderWindowExists() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: LauncherActivationPlanner.finderBundleIdentifier,
             isRunning: true,
             hasVisibleLocalWindows: false,
@@ -65,10 +75,40 @@ func launcherActivationPlannerOpensFinderWindowWhenNoLocalFinderWindowExists() {
 func launcherActivationPlannerOpensFinderWindowWhenFinderWindowStateIsUnknown() {
     #expect(
         LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: false,
             bundleIdentifier: LauncherActivationPlanner.finderBundleIdentifier,
             isRunning: true,
             hasVisibleLocalWindows: false,
             hasAnyWindows: nil
         ) == .openFinderWindow
+    )
+}
+
+@Test
+func launcherActivationPlannerCyclesWindowsWhenAppIsActiveAndClickCycles() {
+    #expect(
+        LauncherActivationPlanner.action(
+            frontmostClickAction: .cycle,
+            isActive: true,
+            bundleIdentifier: "com.example.alpha",
+            isRunning: true,
+            hasVisibleLocalWindows: true,
+            hasAnyWindows: true
+        ) == .cycleWindows
+    )
+}
+
+@Test
+func launcherActivationPlannerMinimizesWhenAppIsActiveAndClickMinimizes() {
+    #expect(
+        LauncherActivationPlanner.action(
+            frontmostClickAction: .minimize,
+            isActive: true,
+            bundleIdentifier: "com.example.alpha",
+            isRunning: true,
+            hasVisibleLocalWindows: true,
+            hasAnyWindows: true
+        ) == .minimizeApplication
     )
 }

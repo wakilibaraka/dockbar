@@ -162,7 +162,7 @@ final class SystemResourceWidgetView: NSView {
         }
         
         popover.show(contentViewController: NSHostingController(rootView: SystemResourceDashboardView(monitor: monitor, smPluginService: smPluginService)), relativeTo: bounds, of: self)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
         
         if popoverEventMonitor == nil {
             popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in

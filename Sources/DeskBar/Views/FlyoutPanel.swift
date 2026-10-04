@@ -121,7 +121,7 @@ final class FlyoutPanel: NSPanel {
         }
 
         self.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
     }
 
     private func closePanel() {

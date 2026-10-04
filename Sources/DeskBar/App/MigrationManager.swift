@@ -10,7 +10,7 @@ struct MigrationManager {
         let runningApps = NSWorkspace.shared.runningApplications
         for app in runningApps {
             if app.bundleIdentifier == "com.deskbar.app" {
-                print("DeskBar Migration: Terminating old instance -> \(app.localizedName ?? "Unknown")")
+                Log.app.notice("DeskBar Migration: Terminating old instance -> \(app.localizedName ?? "Unknown", privacy: .public)")
                 app.forceTerminate()
             }
         }
@@ -24,7 +24,7 @@ struct MigrationManager {
         for agentPath in oldAgents {
             let url = homeDirectory.appendingPathComponent(agentPath)
             if fileManager.fileExists(atPath: url.path) {
-                print("DeskBar Migration: Removing old LaunchAgent -> \(agentPath)")
+                Log.app.notice("DeskBar Migration: Removing old LaunchAgent -> \(agentPath, privacy: .public)")
                 // Attempt to unload
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
@@ -50,7 +50,7 @@ struct MigrationManager {
             .appendingPathComponent("deskbar", isDirectory: true)
         
         if fileManager.fileExists(atPath: oldConfigDir.path) {
-            print("DeskBar Migration: Removing old config directory -> \(oldConfigDir.path)")
+            Log.app.notice("DeskBar Migration: Removing old config directory -> \(oldConfigDir.path, privacy: .public)")
             try? fileManager.removeItem(at: oldConfigDir)
         }
     }

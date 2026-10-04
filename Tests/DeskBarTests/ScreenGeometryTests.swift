@@ -136,7 +136,7 @@ func rightHalfSystemFillWindowIsAdjustedAboveTaskbar() {
 }
 
 @Test
-func leftHalfSystemFillWindowRoutesToLeftTaskbarZone() {
+func leftHalfSystemFillWindowRoutesToNeutralTaskbarZone() {
     let displayBounds = CGRect(x: 0, y: 0, width: 1920, height: 1080)
     let windowBounds = CGRect(x: 0, y: 30, width: 960, height: 1010)
 
@@ -147,11 +147,12 @@ func leftHalfSystemFillWindowRoutesToLeftTaskbarZone() {
         taskbarHeight: 40
     )
 
-    #expect(zone == .left)
+    // Taskbar windows all live in a single unified row, so there are no side zones.
+    #expect(zone == .neutral)
 }
 
 @Test
-func rightHalfSystemFillWindowRoutesToRightTaskbarZone() {
+func rightHalfSystemFillWindowRoutesToNeutralTaskbarZone() {
     let displayBounds = CGRect(x: 0, y: 0, width: 1920, height: 1080)
     let windowBounds = CGRect(x: 960, y: 30, width: 960, height: 1010)
 
@@ -162,7 +163,7 @@ func rightHalfSystemFillWindowRoutesToRightTaskbarZone() {
         taskbarHeight: 40
     )
 
-    #expect(zone == .right)
+    #expect(zone == .neutral)
 }
 
 @Test

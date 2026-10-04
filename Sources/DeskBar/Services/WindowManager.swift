@@ -506,13 +506,12 @@ final class WindowManager: ObservableObject {
             AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionValue) == .success,
             AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success,
             let positionValue,
-            let sizeValue
+            let sizeValue,
+            let positionAXValue = AXCast.value(positionValue),
+            let sizeAXValue = AXCast.value(sizeValue)
         else {
             return nil
         }
-
-        let positionAXValue = positionValue as! AXValue
-        let sizeAXValue = sizeValue as! AXValue
 
         var position = CGPoint.zero
         var size = CGSize.zero

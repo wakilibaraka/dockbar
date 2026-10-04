@@ -102,7 +102,7 @@ final class DockManager {
         do {
             try fileManager.removeItem(at: stateFileURL)
         } catch {
-            print("DeskBar: failed to delete Dock prior state file: \(error)")
+            Log.dock.error("DeskBar: failed to delete Dock prior state file: \(String(describing: error), privacy: .public)")
         }
     }
 
@@ -114,7 +114,7 @@ final class DockManager {
             try writeLaunchAgentPlist()
             reloadLaunchAgent()
         } catch {
-            print("DeskBar: failed to install Dock watchdog: \(error)")
+            Log.dock.error("DeskBar: failed to install Dock watchdog: \(String(describing: error), privacy: .public)")
         }
     }
 
@@ -130,7 +130,7 @@ final class DockManager {
                 try fileManager.removeItem(at: watchdogScriptURL)
             }
         } catch {
-            print("DeskBar: failed to remove Dock watchdog files: \(error)")
+            Log.dock.error("DeskBar: failed to remove Dock watchdog files: \(String(describing: error), privacy: .public)")
         }
     }
 
@@ -154,7 +154,7 @@ final class DockManager {
             try data.write(to: stateFileURL, options: .atomic)
             return true
         } catch {
-            print("DeskBar: failed to save Dock prior state: \(error)")
+            Log.dock.error("DeskBar: failed to save Dock prior state: \(String(describing: error), privacy: .public)")
             return false
         }
     }
@@ -170,7 +170,7 @@ final class DockManager {
             decoder.dateDecodingStrategy = .iso8601
             return try decoder.decode(DockPriorState.self, from: data)
         } catch {
-            print("DeskBar: failed to read Dock prior state: \(error)")
+            Log.dock.error("DeskBar: failed to read Dock prior state: \(String(describing: error), privacy: .public)")
             return nil
         }
     }
@@ -230,7 +230,7 @@ final class DockManager {
             _ = try runProcess(executable: "/usr/bin/killall", arguments: ["Dock"])
             return true
         } catch {
-            print("DeskBar: failed to update Dock preferences: \(error)")
+            Log.dock.error("DeskBar: failed to update Dock preferences: \(String(describing: error), privacy: .public)")
             return false
         }
     }
@@ -329,7 +329,7 @@ final class DockManager {
                 arguments: ["bootstrap", domain, launchAgentURL.path]
             )
         } catch {
-            print("DeskBar: failed to load Dock watchdog LaunchAgent: \(error)")
+            Log.dock.error("DeskBar: failed to load Dock watchdog LaunchAgent: \(String(describing: error), privacy: .public)")
         }
     }
 

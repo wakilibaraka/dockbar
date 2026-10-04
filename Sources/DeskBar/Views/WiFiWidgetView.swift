@@ -35,7 +35,7 @@ final class WiFiWidgetView: TrayIconButton {
                 self?.updateState()
             }
         } catch {
-            print("Failed to toggle Wi-Fi: \(error)")
+            Log.quickSettings.error("Failed to toggle Wi-Fi: \(String(describing: error), privacy: .public)")
         }
     }
 

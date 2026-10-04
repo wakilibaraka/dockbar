@@ -66,7 +66,7 @@ final class KeyboardLockQuickSetting: QuickSetting, ObservableObject {
             callback: callback,
             userInfo: nil
         ) else {
-            print("Failed to create keyboard event tap")
+            Log.quickSettings.error("Failed to create keyboard event tap")
             return
         }
 

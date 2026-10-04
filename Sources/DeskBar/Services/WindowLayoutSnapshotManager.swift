@@ -122,7 +122,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
 
     func captureLatestLayout(reason: String) {
         guard AXIsProcessTrusted() else {
-            print("DeskBar: skipping window layout capture for \(reason); Accessibility permission is unavailable.")
+            Log.layout.notice("DeskBar: skipping window layout capture for \(reason, privacy: .public); Accessibility permission is unavailable.")
             return
         }
 
@@ -175,7 +175,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
     func restoreLatestSnapshot(manual: Bool) {
         guard let latestSnapshot, !latestSnapshot.windows.isEmpty else {
             if manual {
-                print("DeskBar: no sleep window layout snapshot is available.")
+                Log.layout.notice("DeskBar: no sleep window layout snapshot is available.")
             }
             return
         }
@@ -400,7 +400,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
     private func restore(snapshot: WindowLayoutSnapshot, manual: Bool) {
         guard AXIsProcessTrusted() else {
             if manual {
-                print("DeskBar: cannot restore window layout because Accessibility permission is unavailable.")
+                Log.layout.error("DeskBar: cannot restore window layout because Accessibility permission is unavailable.")
             }
             return
         }
@@ -410,7 +410,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
             currentDisplays: currentDisplaySnapshots()
         ) else {
             if manual {
-                print("DeskBar: cannot restore window layout because the captured display topology is unavailable.")
+                Log.layout.error("DeskBar: cannot restore window layout because the captured display topology is unavailable.")
             }
             return
         }
@@ -468,7 +468,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
 
             guard accessibilityService.setFrame(desiredFrame, for: element) else {
                 if manual {
-                    print("DeskBar: failed to restore \(capturedWindow.appName) \(capturedWindow.title)")
+                    Log.layout.error("DeskBar: failed to restore \(capturedWindow.appName, privacy: .public) \(capturedWindow.title, privacy: .public)")
                 }
                 continue
             }
@@ -562,7 +562,7 @@ final class WindowLayoutSnapshotManager: ObservableObject {
             let data = try JSONEncoder().encode(latestSnapshot)
             try data.write(to: storageURL, options: .atomic)
         } catch {
-            print("DeskBar: failed to persist sleep window layout snapshot: \(error)")
+            Log.layout.error("DeskBar: failed to persist sleep window layout snapshot: \(String(describing: error), privacy: .public)")
         }
     }
 

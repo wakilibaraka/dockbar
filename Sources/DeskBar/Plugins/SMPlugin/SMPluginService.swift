@@ -954,7 +954,7 @@ final class SMPluginService: ObservableObject {
         )
 
         renamePopover = popover
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
 
         let hostView = renamePopoverHostView(preferredView: presentationView)
         guard let hostView else {
@@ -2125,7 +2125,7 @@ final class SMPluginService: ObservableObject {
         alert.informativeText = message ?? "DeskBar could not rename this session."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activateCompat()
         alert.runModal()
     }
 

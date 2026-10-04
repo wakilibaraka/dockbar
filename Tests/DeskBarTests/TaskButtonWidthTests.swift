@@ -10,6 +10,7 @@ struct TaskButtonWidthTests {
             title: "AirDrop",
             font: font,
             maxWidth: 200,
+            taskbarHeight: 48,
             showsTitles: true,
             showsPluginActionButton: false,
             isAgentWindow: false
@@ -26,6 +27,7 @@ struct TaskButtonWidthTests {
             title: "Set up new Mac Studio with dev tools",
             font: font,
             maxWidth: 200,
+            taskbarHeight: 48,
             showsTitles: true,
             showsPluginActionButton: false,
             isAgentWindow: false
@@ -41,6 +43,7 @@ struct TaskButtonWidthTests {
             title: "Desktop",
             font: font,
             maxWidth: 200,
+            taskbarHeight: 48,
             showsTitles: false,
             showsPluginActionButton: false,
             isAgentWindow: false
@@ -79,7 +82,7 @@ struct TaskButtonWidthTests {
         defaults.removePersistentDomain(forName: suiteName)
         let settings = TaskbarSettings(defaults: defaults)
         let menuConfiguration = TaskButtonPluginMenuConfiguration(
-            buttonTitle: "sm",
+            imageSymbolName: "speedometer",
             tintColor: .systemGreen,
             showsActionButton: true,
             menuProvider: { NSMenu() }
@@ -121,7 +124,7 @@ struct TaskButtonWidthTests {
         let settings = TaskbarSettings(defaults: defaults)
         let annotation = makeAgentAnnotation()
         let menuConfiguration = TaskButtonPluginMenuConfiguration(
-            buttonTitle: "sm",
+            imageSymbolName: "speedometer",
             tintColor: .systemGreen,
             showsActionButton: true,
             menuProvider: {

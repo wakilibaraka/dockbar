@@ -4,7 +4,7 @@ import Testing
 
 struct TaskbarSettingsTests {
     @Test
-    func showOnAllMonitorsDefaultsToTrue() {
+    func defaultSettingsOnFreshInstall() {
         let suiteName = "TaskbarSettingsTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
 
@@ -15,20 +15,19 @@ struct TaskbarSettingsTests {
 
         let settings = TaskbarSettings(defaults: defaults)
 
+        // These mirror the fallbacks in TaskbarSettings.init: a fresh install gets the
+        // compact glass bar, window grouping, and the right-Command double-tap launcher.
         #expect(settings.showOnAllMonitors)
-        #expect(settings.groupingMode == .never)
+        #expect(settings.groupingMode == .always)
         #expect(settings.flashAttentionIndicators)
         #expect(settings.showProgressIndicators)
         #expect(settings.enableActivityMode)
         #expect(settings.showSystemResourceWidget)
-        #expect(settings.showSystemResourceMemoryMetric)
-        #expect(settings.showSystemResourceCPUMetric)
-        #expect(settings.showSystemResourceGPUMetric)
         #expect(settings.systemResourceWidgetPinnedDisplayID == nil)
-        #expect(settings.layoutMode == .fullWidth)
-        #expect(settings.enableWindowSwitcher == false)
-        #expect(settings.enableBareCommandLauncher == false)
-        #expect(settings.appsLauncherShortcut == .controlOptionReturn)
+        #expect(settings.layoutMode == .compactGlass)
+        #expect(settings.enableWindowSwitcher == true)
+        #expect(settings.enableBareCommandLauncher == true)
+        #expect(settings.appsLauncherShortcut == .rightCommandTap)
         #expect(settings.animateSessionManagerActivity == false)
     }
 
@@ -98,11 +97,7 @@ struct TaskbarSettingsTests {
         settings.enableBareCommandLauncher = false
         settings.appsLauncherShortcut = .optionSpace
         settings.showSystemResourceWidget = false
-        settings.showSystemResourceMemoryMetric = false
-        settings.showSystemResourceCPUMetric = false
-        settings.showSystemResourceGPUMetric = true
         settings.systemResourceWidgetPinnedDisplayID = 12345
-        settings.sessionManagerWidgetPinnedDisplayID = 67890
 
         settings = TaskbarSettings(defaults: defaults)
 
@@ -111,14 +106,9 @@ struct TaskbarSettingsTests {
         #expect(settings.enableBareCommandLauncher == false)
         #expect(settings.appsLauncherShortcut == .optionSpace)
         #expect(settings.showSystemResourceWidget == false)
-        #expect(settings.showSystemResourceMemoryMetric == false)
-        #expect(settings.showSystemResourceCPUMetric == false)
-        #expect(settings.showSystemResourceGPUMetric)
         #expect(settings.systemResourceWidgetPinnedDisplayID == 12345)
-        #expect(settings.sessionManagerWidgetPinnedDisplayID == 67890)
 
         settings.systemResourceWidgetPinnedDisplayID = nil
-        settings.sessionManagerWidgetPinnedDisplayID = nil
         settings = TaskbarSettings(defaults: defaults)
 
         #expect(settings.systemResourceWidgetPinnedDisplayID == nil)

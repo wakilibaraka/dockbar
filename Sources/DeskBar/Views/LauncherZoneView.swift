@@ -847,7 +847,7 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
             return
         }
 
-        let axWindow = object as! AXUIElement
+        guard let axWindow = AXCast.element(object) else { return }
         accessibilityService.raiseAndActivate(element: axWindow, app: runningApplication)
     }
 
@@ -873,7 +873,7 @@ private final class LauncherZoneButtonView: NSView, NSDraggingSource {
                 bundleIdentifier: pinnedApp.bundleIdentifier
             )
         } catch {
-            print("DeskBar: failed to update launcher login item for \(pinnedApp.bundleIdentifier): \(error)")
+            Log.launcher.error("DeskBar: failed to update launcher login item for \(self.pinnedApp.bundleIdentifier, privacy: .public): \(String(describing: error), privacy: .public)")
         }
     }
 

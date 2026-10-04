@@ -16,7 +16,7 @@ final class EmptyTrashQuickSetting: QuickSetting {
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&error)
                 if let err = error {
-                    print("Error emptying trash: \(err)")
+                    Log.quickSettings.error("Error emptying trash: \(String(describing: err), privacy: .public)")
                 }
             }
         }
